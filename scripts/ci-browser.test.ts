@@ -46,7 +46,11 @@ describe("browser lane", () => {
     expect(code).toBe(7);
     expect(rows(text)).toEqual([
       { script: "scripts/demo-build.ts", seconds: expect.any(Number), code: 0 },
-      { script: "scripts/ui-regression.ts", seconds: expect.any(Number), code: 0 },
+      { script: "scripts/ui-regression-palette.ts", seconds: expect.any(Number), code: 0 },
+      { script: "scripts/ui-regression-terminal.ts", seconds: expect.any(Number), code: 0 },
+      { script: "scripts/ui-regression-settings.ts", seconds: expect.any(Number), code: 0 },
+      { script: "scripts/ui-regression-session.ts", seconds: expect.any(Number), code: 0 },
+      { script: "scripts/ui-regression-mobile.ts", seconds: expect.any(Number), code: 0 },
       { script: "scripts/workspace-rows-regression.ts", seconds: expect.any(Number), code: 0 },
       { script: "scripts/pending-pane-switch-regression.ts", seconds: expect.any(Number), code: 0 },
       { script: "scripts/terminal-dispose-browser-qa.ts", seconds: expect.any(Number), code: 0 },
@@ -59,7 +63,7 @@ describe("browser lane", () => {
   it("summarizes every script and exits zero on success without enabling local evidence", async () => {
     const { text, code, evidence } = await lane();
     expect(code).toBe(0);
-    expect(rows(text)).toHaveLength(30);
+    expect(rows(text)).toHaveLength(34);
     expect(rows(text).map((row) => row.script)).toContain("scripts/pending-pane-switch-regression.ts");
     expect(rows(text).map((row) => row.script)).toContain("scripts/terminal-viewport-regression.ts");
     expect(rows(text).map((row) => row.script)).toContain("scripts/palette-machines-demo-regression.ts");
@@ -77,7 +81,7 @@ describe("browser lane", () => {
     for (const script of ["sticky-modifiers-regression.ts", "file-viewer-regression.ts"]) {
       expect(text).toMatch(new RegExp(`STEP=scripts/${script} EVIDENCE=.+/browser-evidence`));
     }
-    for (const script of ["ui-regression.ts", "key-bar-customization-demo-regression.ts"]) {
+    for (const script of ["ui-regression-palette.ts", "ui-regression-terminal.ts", "ui-regression-settings.ts", "ui-regression-session.ts", "ui-regression-mobile.ts", "key-bar-customization-demo-regression.ts"]) {
       expect(text).toContain(`STEP=scripts/${script} EVIDENCE=\n`);
     }
   });

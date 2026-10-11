@@ -147,14 +147,15 @@ jobs:
             .ci/config/herdr/sessions/*/test-server.log
           include-hidden-files: true
           if-no-files-found: ignore
-  browser-main:
-    name: Browser regression (ui-regression)
+  browser-shard-1:
+    name: Browser regression (shard 1 - ui-regression split)
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 12
     env:
       CHECK_DIR: ${{ github.workspace }}/.ci
+      BROWSER_WORKERS: 2
     steps:
       - uses: actions/checkout@v7
         with:
@@ -174,15 +175,16 @@ jobs:
           echo "$RUNNER_TEMP/herdr-bin" >> "$GITHUB_PATH"
       - run: bun install --frozen-lockfile
       - run: bun run build
-      - name: Browser regression (ui-regression.ts)
+      - name: Browser regression (ui-regression split scripts)
         env:
-          BROWSER_SCRIPTS: scripts/ui-regression.ts
+          # 5 scripts split from the former 210s ui-regression.ts (~40-55s each)
+          BROWSER_SCRIPTS: scripts/ui-regression-palette.ts,scripts/ui-regression-terminal.ts,scripts/ui-regression-settings.ts,scripts/ui-regression-session.ts,scripts/ui-regression-mobile.ts
         run: bun scripts/ci-browser-parallel.ts
       - name: Preserve browser logs and evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: browser-main-${{ github.run_id }}-${{ github.run_attempt }}
+          name: browser-shard-1-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             .ci/browser-logs/**
             .ci/browser-evidence/**/*.png
@@ -190,12 +192,12 @@ jobs:
             .ci/browser-evidence/**/*.zip
           include-hidden-files: true
           if-no-files-found: ignore
-  browser-other:
-    name: Browser regression (other scripts)
+  browser-shard-2:
+    name: Browser regression (shard 2 - other scripts)
     needs: changes
     if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 12
     env:
       CHECK_DIR: ${{ github.workspace }}/.ci
       BROWSER_WORKERS: 4
@@ -220,14 +222,14 @@ jobs:
       - run: bun run build
       - name: Browser regression (parallel)
         env:
-          # Every script of scripts/ci-browser.sh except the one browser-main runs.
-          BROWSER_EXCLUDE: scripts/ui-regression.ts
+          # All scripts except the ui-regression split ones
+          BROWSER_EXCLUDE: scripts/ui-regression-palette.ts,scripts/ui-regression-terminal.ts,scripts/ui-regression-settings.ts,scripts/ui-regression-session.ts,scripts/ui-regression-mobile.ts
         run: bun scripts/ci-browser-parallel.ts
       - name: Preserve browser logs and evidence
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: browser-other-${{ github.run_id }}-${{ github.run_attempt }}
+          name: browser-shard-2-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             .ci/browser-logs/**
             .ci/browser-evidence/**/*.png
@@ -237,7 +239,7 @@ jobs:
           if-no-files-found: ignore
   integration-browser:
     name: Integration and browser
-    needs: [changes, integration, browser-main, browser-other]
+    needs: [changes, integration, browser-shard-1, browser-shard-2]
     if: always()
     runs-on: ubuntu-24.04
     steps:
@@ -251,12 +253,12 @@ jobs:
             echo "Integration tests failed"
             exit 1
           fi
-          if [ "${{ needs.browser-main.result }}" != "success" ]; then
-            echo "Browser regression (ui-regression) failed"
+          if [ "${{ needs.browser-shard-1.result }}" != "success" ]; then
+            echo "Browser regression (shard 1 - ui-regression split) failed"
             exit 1
           fi
-          if [ "${{ needs.browser-other.result }}" != "success" ]; then
-            echo "Browser regression (other scripts) failed"
+          if [ "${{ needs.browser-shard-2.result }}" != "success" ]; then
+            echo "Browser regression (shard 2 - other scripts) failed"
             exit 1
           fi
           echo "All tests passed"

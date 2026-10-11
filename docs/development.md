@@ -408,8 +408,9 @@ The [CI workflow](../.github/workflows/ci.yml) runs on every PR and `main` push:
     Missing herdr fails the run. Its herdr servers are stopped even on failure.
     Integration tests have a 15-second default timeout so their bounded process-startup
     probes can finish; individual tests can still specify a longer timeout.
-  - **Browser regression (ui-regression)** runs `scripts/ui-regression.ts` alone.
-  - **Browser regression (other scripts)** runs every other browser script, four at a time.
+  - **Browser regression (shard 1 - ui-regression split)** runs the five split `ui-regression-*.ts` scripts
+    (palette, terminal, settings, session, mobile), each ~40-55s, which replaced the former 210s monolithic script.
+  - **Browser regression (shard 2 - other scripts)** runs every other browser script, four at a time.
 
   Both browser jobs run `scripts/ci-browser-parallel.ts`, which takes its script list from
   `scripts/ci-browser.sh` (`BROWSER_SCRIPTS` picks from it, `BROWSER_EXCLUDE` leaves scripts out,
@@ -432,7 +433,7 @@ are enabled automatically: the UI suite and key-bar demo have evidence branches 
 assertions, viewport changes or font waits, so those remain disabled in the lane. Outside
 `CI`/`CHECK_DIR`, an explicit `UI_EVIDENCE_DIR` still works as before.
 The lane also sets `CHECK_BROWSER_EVIDENCE_DIR` independently of those checkpoint options.
-Explicitly registered fixture pages in `ui-regression.ts` and `prompt-dock-demo-regression.ts`
+Explicitly registered fixture pages in the split `ui-regression-*.ts` scripts and `prompt-dock-demo-regression.ts`
 capture their failure screen and bounded console/page errors before cleanup. Set
 `CHECK_BROWSER_EVIDENCE_TRACE=1` for Playwright traces with screenshots retained on failure;
 DOM snapshots and network recording are disabled, but action parameters and console events can

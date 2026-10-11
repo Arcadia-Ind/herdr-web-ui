@@ -41,6 +41,10 @@ between releases do not reach them. Remote-PC runtime bundles are versioned sepa
   ([#690](https://github.com/devswha/herdr-web-ui/pull/690) by @okcedric)
 
 ### Changed
+- **CI browser tests** run faster: `ui-regression.ts` (207–217s, the serial bottleneck) is split into
+  five independent scripts (`ui-regression-{palette,terminal,settings,session,mobile}.ts`, ~40–55s each)
+  that run in parallel. The browser lane now finishes in ~90–120s instead of ~210–220s at 4 workers.
+
 - Chat updates follow native transcript changes pushed through the existing WebSocket.
   Only visible Chat views subscribe; Terminal views and hidden tabs release conversation
   monitoring. Continuous pushes coalesce into at most one newest-page refresh every 2 seconds,

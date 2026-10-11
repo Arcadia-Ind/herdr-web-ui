@@ -26,7 +26,7 @@ run_script() {
   if [ -n "${CI:-}${CHECK_DIR:-}" ]; then
     # These evidence branches add viewport changes, assertions or font waits, not just captures.
     case "$1" in
-      scripts/ui-regression.ts|scripts/key-bar-customization-demo-regression.ts) evidence="";;
+      scripts/ui-regression-palette.ts|scripts/ui-regression-terminal.ts|scripts/ui-regression-settings.ts|scripts/ui-regression-session.ts|scripts/ui-regression-mobile.ts|scripts/key-bar-customization-demo-regression.ts) evidence="";;
     esac
   fi
   UI_EVIDENCE_DIR="$evidence" bun "$@" || code=$?
@@ -56,7 +56,12 @@ export CHROME_PATH
 HERDR_DEMO_BUILD="$(mktemp -d)"
 export HERDR_DEMO_BUILD
 run_script scripts/demo-build.ts "$HERDR_DEMO_BUILD"
-run_script scripts/ui-regression.ts
+# Split ui-regression scripts (formerly one ~210s script, now 5 x ~40-50s each)
+run_script scripts/ui-regression-palette.ts
+run_script scripts/ui-regression-terminal.ts
+run_script scripts/ui-regression-settings.ts
+run_script scripts/ui-regression-session.ts
+run_script scripts/ui-regression-mobile.ts
 run_script scripts/workspace-rows-regression.ts
 run_script scripts/pending-pane-switch-regression.ts
 run_script scripts/terminal-dispose-browser-qa.ts

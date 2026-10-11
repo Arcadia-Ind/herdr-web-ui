@@ -19,7 +19,7 @@
     "test": "bun test",
     "test:unit": "bun scripts/ci-tests.ts unit",
     "test:integration": "bun scripts/ci-tests.ts integration",
-    "test:ui": "bun run build && bun scripts/ui-regression.ts && bun scripts/sticky-modifiers-regression.ts",
+    "test:ui": "bun run build && bun scripts/ui-regression-palette.ts && bun scripts/ui-regression-terminal.ts && bun scripts/ui-regression-settings.ts && bun scripts/ui-regression-session.ts && bun scripts/ui-regression-mobile.ts && bun scripts/sticky-modifiers-regression.ts",
     "generate:types": "bun run scripts/generate-protocol-types.ts",
     "build:remote": "bun run scripts/build-remote-bundle.ts",
     "build:site": "bun scripts/build-site.ts",
