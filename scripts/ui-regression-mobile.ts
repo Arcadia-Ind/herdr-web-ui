@@ -131,7 +131,7 @@ try {
   await herdrRpc("pane.report_agent", { pane_id: paneB, source: "manual", agent: "claude", state: "idle" });
   await page.route(`**/api/pane/prompt?pane_id=${encodeURIComponent(paneB)}`, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    await route.continue();
+    await route.continue().catch(() => {});
   });
   await selectPane(page, paneB);
   for (let check = 0; check < 8; check++) {
