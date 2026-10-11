@@ -23,6 +23,7 @@ import { checkMobileViewport } from "./mobile-viewport-regression.ts";
 import { checkTerminalPinch } from "./terminal-pinch-regression.ts";
 import { checkMobileTabs } from "./mobile-tabs-regression.ts";
 import { checkTabMenu } from "./tab-menu-regression.ts";
+import { sheetsSettled } from "./sheets-settled.ts";
 import { checkTerminalFileInput } from "./terminal-file-input-regression.ts";
 import { checkTerminalInput } from "./terminal-input-regression.ts";
 import { checkSafariIme } from "./terminal-safari-ime-regression.ts";
@@ -1470,6 +1471,7 @@ try {
   await runMoreItem(tabPhonePage, "Move pane to…");
   const moveSheet = tabPhonePage.getByRole("dialog", { name: /^Move .+ to$/ });
   await moveSheet.waitFor();
+  await sheetsSettled(tabPhonePage);
   const moveItems = moveSheet.locator(".row-sheet-item");
   assert.ok(await moveItems.count() >= 15, `the move sheet lists the dozen tabs and the other workspaces (${await moveItems.count()} items)`);
   const moveList = moveSheet.locator(".row-sheet-items");

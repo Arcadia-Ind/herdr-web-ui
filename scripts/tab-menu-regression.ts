@@ -6,6 +6,7 @@ import { join } from "node:path";
 import type { Browser, Locator, Page } from "playwright-core";
 import type { PaneLayoutSnapshot, PaneSplit } from "../shared/protocol.ts";
 import { paneFocus, paneRead, paneRename, paneSplit, sessionSnapshot, tabClose, tabCreate, tabMove, workspaceClose, workspaceCreate } from "../server/herdr/client.ts";
+import { sheetsSettled } from "./sheets-settled.ts";
 
 const TAB = "Tab 1";
 const evidence = process.env.UI_EVIDENCE_DIR;
@@ -479,6 +480,7 @@ async function checkPhone(browser: Browser, origin: string, first: string, secon
     const tabSheet = page.getByRole("dialog", { name: TAB, exact: true });
     await tabSheet.waitFor();
     assert.deepEqual(await tabSheet.locator(".row-sheet-item").allTextContents(), ["New tab", "Rename tab", "Close tab"]);
+    await sheetsSettled(page);
     const sheetBox = await rect(tabSheet, "the phone tab menu");
     assert.ok(sheetBox.top >= 0 && sheetBox.bottom <= viewport.height + 1);
     await tabSheet.getByRole("button", { name: "Rename tab", exact: true }).tap();
@@ -504,6 +506,7 @@ async function checkPhone(browser: Browser, origin: string, first: string, secon
     await frame(page, second).locator(".pane-frame-menu").tap();
     const paneSheet = page.getByRole("dialog", { name: /^Pane actions for / });
     await paneSheet.waitFor();
+    await sheetsSettled(page);
     const cancel = paneSheet.getByRole("button", { name: "Cancel", exact: true });
     assert.ok((await rect(cancel, "Cancel")).bottom <= viewport.height + 1, "Cancel remains reachable");
     await paneSheet.locator(".row-sheet-items").evaluate((node) => { node.scrollTop = node.scrollHeight; });
