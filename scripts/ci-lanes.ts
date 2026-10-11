@@ -1,6 +1,6 @@
 /**
  * Runs CI commands that do not depend on each other at the same time, one lane each:
- *   bun scripts/ci-lanes.ts "integration=bun run test:integration" "browser=bun scripts/ui-regression.ts"
+ *   bun scripts/ci-lanes.ts "integration=bun run test:integration" "browser=bun scripts/ui-regression-palette.ts"
  * Each line is printed as it arrives under its lane's name, so a hang shows where it is.
  * A failing lane does not stop the others: every lane reports, then the exit code says
  * whether any failed.

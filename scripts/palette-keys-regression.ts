@@ -1,8 +1,8 @@
 /**
  * The command palette's picker keys against a roster that changes under them: a filter letter
  * that names the filter already shown, and panes that leave the filter while the keyboard is on
- * the list, or enter it before the row the keyboard is on. Imported by ui-regression.ts, with the
- * palette closed.
+ * the list, or enter it before the row the keyboard is on. Imported by ui-regression-palette.ts,
+ * with the palette closed.
  */
 import assert from "node:assert/strict";
 import type { Page } from "playwright-core";

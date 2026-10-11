@@ -482,10 +482,39 @@ try {
   await herdrRpc("tab.close", { tab_id: lateAnswer!.created_tab!.tab_id });
   console.log("PASS a pane moved into another workspace is followed under its new id, also when the roster outruns the answer");
 
+  // Server-owned Send now drops the old suggestion itself, before a delayed prompt read returns.
+  await selectPane(page, pendingPane);
+  await reportPending("working");
+  await page.locator('.composer-status[data-status="working"]').waitFor();
+  await pendingReady(pendingPane);
+  await composer.fill("# queued before the suggestion");
+  await page.getByRole("button", { name: "Send message", exact: true }).click();
+  await until(async () => await pendingRows.count() === 1, "suggestion test pending input accepted");
+  await selectPane(page, paneA); await selectPane(page, pendingPane);
+  await page.locator('.pending-message[data-state="held"]').waitFor();
+  await pendingReady(pendingPane);
+  await reportPending("idle");
+  await page.locator('.composer-status:not([data-status="working"])').waitFor();
+  const rule = "─".repeat(40);
+  writeFileSync(pendingScreen, `${rule}\r\n❯ \u001b[2mcheck the diff\u001b[0m\r\n${rule}\r\n`);
+  await until(async () => await composer.getAttribute("placeholder") === "check the diff", "suggestion beside a pending message");
+  await page.route(`**/api/pane/prompt?pane_id=${encodeURIComponent(pendingPane)}`, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await route.continue().catch(() => {});
+  });
+  const sentAt = Date.now();
+  await pendingRows.getByRole("button", { name: /^Send now:/ }).click();
+  await until(async () => await composer.getAttribute("placeholder") !== "check the diff", "Send now drops the suggestion");
+  assert.ok(Date.now() - sentAt < 2500, "the suggestion goes with the Send now, not with a later read");
+  await pendingRows.waitFor({ state: "hidden" });
+  await page.unroute(`**/api/pane/prompt?pane_id=${encodeURIComponent(pendingPane)}`);
+  console.log("PASS Send now on a server-owned pending message drops Claude's suggestion");
+
   // Cleanup pending workspace
   await herdrRpc("pane.send_text", { pane_id: pendingPane, text: "\u0003" });
   await workspaceClose(pendingWorkspace.workspace.workspace_id);
   workspaces.splice(workspaces.indexOf(pendingWorkspace.workspace.workspace_id), 1);
+  await selectPane(page, paneA);
 
   assert.equal(errors.length, 0, errors.join("\n"));
   assertCspClean(session.csp, "session tests");

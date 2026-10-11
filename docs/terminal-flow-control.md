@@ -32,7 +32,7 @@ bun test server/pty/session.test.ts server/output-window.test.ts server/output.c
 bun scripts/pty-compare.ts 30
 bun run build
 bun scripts/output-browser-qa.ts
-bun scripts/ui-regression.ts
+bun scripts/ui-regression-terminal.ts
 ```
 
 The comparison script's native adapter is experimental and is never selected by the server. Both backends passed TTY detection, Korean/emoji input, resize, Ctrl+C input, final output, exit-code reporting, a real `herdr terminal attach`, and attach-process cleanup. Each then streamed 49,152,000 bytes of Korean/emoji output over roughly 30 seconds; SHA-256 and byte counts matched exactly.

@@ -122,7 +122,6 @@ async function main(): Promise<void> {
       if (evidenceDir) mkdirSync(evidenceDir, { recursive: true });
 
       const shouldDisableEvidence = baseEvidenceDir && (
-        script === "scripts/ui-regression.ts" ||
         script === "scripts/ui-regression-palette.ts" ||
         script === "scripts/ui-regression-terminal.ts" ||
         script === "scripts/ui-regression-settings.ts" ||

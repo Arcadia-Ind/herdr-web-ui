@@ -124,7 +124,7 @@ describe("chat width", () => {
     // the root font size is not read in JS: the ceiling is 60rem in the length itself
     expect(css("components/PaneTerminal.tsx")).not.toContain("chatLaneWidth(");
     // Settings and New workspace stay on --content-w. That the chat columns share the lane is
-    // measured in the browser (scripts/ui-regression.ts), not read from the stylesheets
+    // measured in the browser (scripts/ui-regression-settings.ts), not read from the stylesheets
     for (const file of ["components/SettingsDialog.css", "components/NewSessionDialog.css"]) {
       expect(css(file)).toContain("var(--content-w)");
       expect(css(file)).not.toContain("var(--chat-w)");

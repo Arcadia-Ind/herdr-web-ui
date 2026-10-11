@@ -21,7 +21,7 @@ bun run check fast                  # CI's Fast checks: workflow syntax, generat
 bun run check integration browser   # CI's Integration and browser: a build, then both lanes side by side
 bun run check full                  # fast, then both lanes
 bun run check run bun test --timeout 15000 ./server/api.contract.test.ts   # one command on the same isolated herdr
-bun run check run --build bun scripts/ui-regression.ts                     # build and browser script under the same lock
+bun run check run --build bun scripts/ui-regression-palette.ts             # build and browser script under the same lock
 ```
 
 `fast` needs no herdr. The other modes run on a herdr of their own: its config, its plugin state
