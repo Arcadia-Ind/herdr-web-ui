@@ -381,6 +381,7 @@ async function main(): Promise<void> {
   if (todo.fast) {
     specs.push({ name: "workflow syntax", command: null });
     specs.push({ name: "generated types are fresh", command: [bun, "run", "generate:types", "--check"] });
+    specs.push({ name: "input dispatch guards", command: [bun, "scripts/input-guard-check.ts"] });
     specs.push({ name: "typecheck", command: [bun, "run", "typecheck"] });
     specs.push({ name: "build", command: [bun, "run", "build"] });
     specs.push({ name: "unit tests", command: [bun, "run", "test:unit"] });
@@ -725,6 +726,7 @@ async function main(): Promise<void> {
       code = actionlintResult;
       for (const [label, command] of [
         ["generated types are fresh", [bun, "run", "generate:types", "--check"]],
+        ["input dispatch guards", [bun, "scripts/input-guard-check.ts"]],
         ["typecheck", [bun, "run", "typecheck"]],
       ] as const) {
         if (code !== 0 || ending) break;

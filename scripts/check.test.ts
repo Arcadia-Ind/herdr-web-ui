@@ -403,6 +403,10 @@ describe("check CLI", () => {
     writeFileSync(join(cwd, ".gitignore"), "node_modules/\n.check/\ndist/\n");
     const noOp = 'node -e "process.exit(0)" --';
     const fixtureBuild = 'node -e "const fs=require(\'node:fs\');fs.mkdirSync(\'dist\',{recursive:true});fs.writeFileSync(\'dist/index.html\',\'fixture\')"';
+    // The input-guard-check.ts script expects a server/ directory to scan
+    mkdirSync(join(cwd, "scripts"), { recursive: true });
+    mkdirSync(join(cwd, "server"), { recursive: true });
+    writeFileSync(join(cwd, "scripts/input-guard-check.ts"), 'console.log("Input guard check: scanned 0 files, found 0 call sites"); console.log("✅ All agent pane input calls have guards or are in allowed exceptions."); process.exit(0);');
     writeFileSync(join(cwd, "package.json"), JSON.stringify({
       name: "check-cli-fixture",
       scripts: {
@@ -412,7 +416,7 @@ describe("check CLI", () => {
         "test:unit": noOp,
       },
     }));
-    git(cwd, "add", ".gitignore", "package.json");
+    git(cwd, "add", ".gitignore", "package.json", "scripts", "server");
     git(cwd, "commit", "-qm", "fixture");
 
     const actionlintDirectory = join(cwd, "node_modules", ".cache", "actionlint-1.7.12");
