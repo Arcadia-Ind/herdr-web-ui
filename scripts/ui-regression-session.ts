@@ -359,8 +359,7 @@ try {
   worktreeWorkspaces.push(initialWorktree.workspace_id);
   const initialRow = page.locator(`.worktree-children .workspace-group[data-workspace="${initialWorktree.workspace_id}"]`);
   await until(async () => await initialRow.locator(".workspace-name").textContent() === "Existing checkout", "worktree row titled");
-  await initialRow.locator(".worktree-workspace-label").waitFor();
-  assert.equal(await initialRow.locator(".worktree-workspace-label").textContent(), "browser/initial");
+  await until(async () => await initialRow.locator(".worktree-workspace-label").textContent() === "browser/initial", "worktree branch label");
 
   // New worktree from menu
   await repoRow.locator(".workspace-select").click();
