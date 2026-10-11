@@ -193,4 +193,28 @@ describe("watchDrawerSwipe", () => {
   test("a selection after the drawer moved leaves the stroke with it", () => {
     expect(stroke([[4, 400], [70, 400], [90, 400], [100, 400]], false, null, () => { selection = { isCollapsed: false }; })).toEqual({ reached: 0, calls: [true] });
   });
+
+  test("a fast swipe with one move settles by fling speed from start", () => {
+    const drawer = { style: {} as Record<string, string>, getBoundingClientRect: () => ({ width: 300 }) };
+    const scrim = { style: {} as Record<string, string> };
+    const doc = (globalThis as Record<string, unknown>)["document"] as Record<string, unknown>;
+    doc["getElementById"] = (id: string) => (id === "workspace-drawer" ? drawer : null);
+    doc["querySelector"] = (selector: string) => (selector === ".scrim" ? scrim : null);
+    const calls: boolean[] = [];
+    const stop = watchDrawerSwipe(() => false, (next) => calls.push(next));
+    // one fast move (100px in 16ms = 6.25 px/ms, well over the fling threshold of 0.35 px/ms)
+    // followed by a quick release should open the drawer from fling speed
+    listeners.get("touchstart")!({ touches: [{ clientX: 4, clientY: 400 }], target: null, timeStamp: 0, preventDefault: () => {}, stopPropagation: () => {} });
+    listeners.get("touchmove")!({ touches: [{ clientX: 100, clientY: 400 }], target: null, timeStamp: 16, preventDefault: () => {}, stopPropagation: () => {} });
+    expect(calls).toEqual([true]);
+    // the drawer is partway, under the fling threshold by position (96px < 150px half), but the flick opened it
+    expect(drawer.style["transform"]).toBe("translateX(-204px)");
+    // release quickly (within REST_MS)
+    listeners.get("touchend")!({ touches: [], timeStamp: 20 });
+    // the drawer stays open because the fling speed from start (96px in 16ms) beats the threshold
+    expect(calls).toEqual([true]);
+    stop();
+    delete doc["getElementById"];
+    delete doc["querySelector"];
+  });
 });

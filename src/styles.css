@@ -1455,10 +1455,11 @@ button {
 
   /* A stroke on a sheet or its scrim is the sheet's: it pans nothing behind it, the chat
      included. Its own lists still scroll, each a scroll container where touch-action starts
-     afresh, and keep their overscroll to themselves; a drag down is lib/sheets.ts's. */
+     afresh, and keep their overscroll to themselves; a drag down is lib/sheets.ts's. Pinch
+     zoom stays available so users can zoom Settings and dialog text. */
   .modal-scrim,
   .modal-scrim > * {
-    touch-action: none;
+    touch-action: pan-y pinch-zoom;
   }
 
   .modal-scrim * {

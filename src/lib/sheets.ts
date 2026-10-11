@@ -104,6 +104,13 @@ export function useSheetSwipe(surface: RefObject<HTMLElement | null>, onDismiss:
     const onMove = (event: TouchEvent): void => {
       const touch = event.touches[0];
       if (stroke === null || !touch) return;
+      // a second touch joined: a pinch begins, so let the browser handle the gesture
+      if (event.touches.length > 1) {
+        if (drag !== null) settle(stroke.node, drag.scrim);
+        stroke = null;
+        drag = null;
+        return;
+      }
       const dx = touch.clientX - stroke.x;
       const dy = touch.clientY - stroke.y;
       if (drag === null) {
