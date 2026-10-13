@@ -77,6 +77,9 @@ between releases do not reach them. Remote-PC runtime bundles are versioned sepa
   ([#860](https://github.com/devswha/herdr-web-ui/pull/860))
 
 ### Fixed
+- A tab that opens a busy pane late (a phone or tablet coming back to a pane another tab holds) shows
+  the whole screen again. It got only the last part of the pane's output, so the prompt and the
+  status line under a working agent stayed blank until something redrew them.
 - First-device pairing waits for the browser to return its device cookie before restricting
   access. A proxy that drops the cookie no longer locks out an otherwise open installation;
   Settings reports the failed pairing instead. Already restricted installations stay restricted.
