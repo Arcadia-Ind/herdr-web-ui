@@ -487,9 +487,12 @@ One set for both themes: the card is island black wherever it shows.
   worktree actions, and Expand/Collapse for a group. Dismissal restores the prior focus. The
   explicit `⋯` uses those same actions at its button. An edited name keeps the browser's paste menu;
   touch long press still reorders. Agents and PC headers keep the browser's context menu.
-  An agent row selects its pane. Its `⋯` (shown as a workspace row's is: on hover, focus,
-  selection, an open menu, and always on touch) opens its menu with one item, Pin agent or Unpin
-  agent; a right-click opens the same menu at the pointer and leaves the focus where it was.
+  An agent row selects its pane. Its `⋯` (drawn as a workspace row's is) opens its menu with one
+  item, Pin agent or Unpin agent; a right-click opens the same menu at the pointer and leaves the
+  focus where it was.
+  A desktop (`pointer: fine` wider than 768px, the tab strip's rule) draws no row `⋯`: a
+  right-click or the context-menu key opens the menu, at the pointer or at the row, and dismissal
+  returns the focus where it was.
 
 - Close follows herdr's `ui.confirm_close`: a workspace close, or a pane close that takes its
   workspace with it, asks in a confirm first. A busy pane also asks before it stops. After a
@@ -585,9 +588,10 @@ One set for both themes: the card is island black wherever it shows.
   share the existing combined machine roster and its SSE updates; neither adds a status subscription.
   A disconnected PC's saved workspace and agent rows are dimmed, inert and draw no state until that PC reconnects.
 - The Agents list is flat and every row names its own place. Pinned agents (pinned from a row's
-  menu) stand first, in the order they were pinned, under a **Pinned** head in `--text-dim`
-  `--fs-xs` aligned with the rows' titles; the rest follow `--space-2` below in the chosen order,
-  with no head. Without pins there is no head. Pins are shared with the other browsers of the server.
+  menu) stand first, in the order they were pinned, each with a `--space-3` pin in `--text-dim`
+  after its title; a `--hairline` `--border` rule with `--space-2` on each side parts them from the
+  rest, in the chosen order. The Agents head is the only head (the pinned list is labelled
+  **Pinned** for screen readers); without pins there is no rule. Pins are shared with the other browsers of the server.
 - Appearance's **Sidebar rows** is **Two lines** by default; on **One line** a workspace row is
   its name. Two lines draws the row as the roster did before it was one line, on an agent row's
   height and type: the title of the pane the row opens, and under it in `--text-dim` `--fs-xs` the place,
@@ -614,7 +618,7 @@ One set for both themes: the card is island black wherever it shows.
   where it lands. Alt+Up/Down moves the focused row one step at a time.
   Dragging is disabled while a name field is open. Each workspace's `⋯` opens its row menu
   (`.row-menu-toggle`: no width at rest; shown on hover, focus, selection and while its menu is
-  open; always on touch). Inline server failures
+  open; always on touch; not drawn on a desktop, where a right-click opens the menu). Inline server failures
   stay beside their workspace. A repository's workspace moves past the
   next or previous group with its worktrees, and a worktree moves among its siblings only.
 - A title that is a working directory written out (`/home/me/dev/api`, `~/dev/api`, `C:\work\api`)

@@ -337,9 +337,10 @@ button.sidebar-section-label:focus-visible { outline-offset: calc(var(--ring-off
   .sidebar-row-action:hover:not(:disabled) { color: var(--text-strong); }
 }
 
-/* A row's menu button takes no room until the row is hovered, focused, selected or its menu is
-   open; only the name gives way to it. It stays in the focus order (never display: none): the
-   menu and the confirm dialog hand the focus back to it. */
+/* A row's menu button is for touch and narrow layouts, where it takes no room until the row is
+   hovered, focused, selected or its menu is open; only the name gives way to it. A desktop draws
+   none: a right-click or the context-menu key opens the same menu at the row, and hands the
+   focus back where it was. */
 .workspace-actions {
   display: flex;
   align-items: center;
@@ -363,6 +364,11 @@ button.sidebar-section-label:focus-visible { outline-offset: calc(var(--ring-off
     overflow: visible;
     opacity: 1;
   }
+}
+
+/* as the tab strip's (TabStrip.css): no "..." button where there is a mouse and room for a right-click */
+@media (pointer: fine) and (min-width: 769px) {
+  .workspace-actions { display: none; }
 }
 
 /* The status cell belongs to the selector (a click or a drag on it is the row's) and is drawn at

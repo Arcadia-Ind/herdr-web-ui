@@ -79,19 +79,13 @@
   list-style: none;
 }
 
-/* Pinned agents stand first, under a quiet head in the rows' text column; the rest follow after a gap. */
-.agent-pinned-head {
-  display: flex;
-  align-items: center;
-  min-height: var(--space-6);
-  margin: 0;
-  padding-left: var(--side-box);
-  color: var(--text-dim);
-  font-size: var(--fs-xs);
-  line-height: var(--lh-tight);
+/* Pinned agents stand first, each marked with a pin; a hairline, with a gap on each side, parts
+   them from the rest. The Agents head stays the list's only head. */
+.agent-list-pinned + .agent-list {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: var(--hairline) solid var(--border);
 }
-
-.agent-list-pinned + .agent-list { margin-top: var(--space-2); }
 
 /* The agent row selects its pane; its ⋯ (or a right-click) opens its pin menu. */
 /* The trailing padding keeps the state cell, which the row draws at its right edge after the ⋯, as
@@ -157,6 +151,11 @@
   }
 }
 
+/* as a workspace row's (Sidebar.css): no "..." button where there is a mouse and room for a right-click */
+@media (pointer: fine) and (min-width: 769px) {
+  .agent-actions { display: none; }
+}
+
 .agent-copy {
   display: flex;
   flex: 1 1 auto;
@@ -180,6 +179,21 @@
 }
 
 .agent-item.is-selected .agent-title { color: var(--text-strong); }
+
+/* the title gives way to its pin, which follows it as a quiet mark */
+.agent-title-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.agent-pin-mark {
+  flex: none;
+  width: var(--space-3);
+  height: var(--space-3);
+  color: var(--text-dim);
+}
 
 .agent-context {
   color: var(--text-dim);

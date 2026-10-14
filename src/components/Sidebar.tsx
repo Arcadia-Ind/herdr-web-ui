@@ -141,15 +141,16 @@ interface InlineError {
  * A workspace right-click opens herdr's workspace menu at the pointer without moving focus.
  * Dismissal restores the prior input. A name editor keeps the browser's paste menu.
  * A finger's long press is left alone: it picks a workspace row up to be moved (lib/touchReorder.ts),
- * and the ⋯ is always there on touch.
+ * and the ⋯ is always there on touch. A desktop draws no ⋯ (Sidebar.css): the row itself anchors the menu.
  */
 export function onRowContextMenu(event: MouseEvent<HTMLElement>, toggle: (anchor: HTMLElement, point?: { x: number; y: number }, previousFocus?: HTMLElement | null) => void): void {
   if ((event.target as HTMLElement).closest("input")) return;
   // Chrome and Safari say what pressed; Firefox does not, so there the device's main pointer decides
   const pointer = (event.nativeEvent as PointerEvent).pointerType;
   if (pointer ? pointer === "touch" : window.matchMedia("(pointer: coarse)").matches) return;
-  const anchor = event.currentTarget.querySelector<HTMLElement>(".row-menu-toggle");
-  if (!anchor) return;
+  const toggleButton = event.currentTarget.querySelector<HTMLElement>(".row-menu-toggle");
+  if (!toggleButton) return;
+  const anchor = toggleButton.getClientRects().length > 0 ? toggleButton : event.currentTarget;
   event.preventDefault();
   const box = anchor.getBoundingClientRect();
   toggle(anchor, event.clientX || event.clientY ? { x: event.clientX, y: event.clientY } : { x: box.left, y: box.bottom }, document.activeElement instanceof HTMLElement ? document.activeElement : null);
