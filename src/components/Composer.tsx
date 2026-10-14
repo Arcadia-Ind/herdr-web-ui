@@ -610,13 +610,8 @@ export function Composer({
     highlightedSearchKey: highlightedSearchKey.current,
   });
   const selectedIndex = activeItemId === null ? 0 : choiceIds.indexOf(activeItemId);
-  if (activeItemId !== null && searchKey !== null) {
-    highlightedItemId.current = activeItemId;
-    highlightedSearchKey.current = searchKey;
-  } else {
-    highlightedItemId.current = null;
-    highlightedSearchKey.current = searchKey;
-  }
+  highlightedItemId.current = searchKey === null ? null : activeItemId;
+  highlightedSearchKey.current = searchKey;
 
   // dictation lands at the caret without taking focus (a phone's keyboard stays as it was)
   const dictation = useDictation({
