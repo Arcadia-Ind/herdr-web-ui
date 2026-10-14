@@ -5,10 +5,10 @@ The HTTP/WS contract plus the few policy modules the browser and the server have
 ## CONTRACT
 - `protocol.ts` carries the route catalogue in doc comments above the types: method, path, answer and the quirk of each one. Voice routes are catalogued in `voice.ts` the same way. A route changed without its comment leaves that index wrong.
 - Importing a VALUE from `protocol.ts` also evaluates `HERDR_SOCKET_PATH`, which reads `process.env` at module scope. Constants the browser needs therefore live in their own files (`attachments.ts`, `terminal-flow.ts`); keep `src/` imports from `protocol.ts` type-only.
-- The generated herdr types are re-exported from here, and `generate:types --check` compares them with the saved `scripts/herdr-schema.json`: a herdr upgrade shows only after `--refresh` re-reads its schema, so refresh first instead of trusting a passing check. Their string enums arrive widened with `(string & {})`: never narrow one back to a closed union.
-- `HerdrPane` is herdr's `PaneInfo` widened with `background_tasks`. The bridge's own additions to a herdr type belong on an alias here, never in the generated file.
-- `ServerFeature` is what a client checks before it uses `submit`, `pending-input`, `secret-input`, `input-ready` or `take-over`: an older server simply omits one, so never assume a frame is supported.
-- `patch.test.ts` and `secret-prompt.test.ts` are the only tests in this directory; other shapes are held by the server's contract tests and the client's unit tests.
+- The generated herdr types are re-exported from here, and the generated-types check compares them with the saved `scripts/herdr-schema.json`: a herdr upgrade shows only after a refresh re-reads its schema, so refresh first instead of trusting a passing check (commands in [Checks](../docs/development.md#checks)). Their string enums arrive widened with `(string & {})`: never narrow one back to a closed union.
+- Bridge-owned pane fields belong on `HerdrPane` (herdr's `PaneInfo` widened; see its doc comment for the current fields). The bridge's own additions to a herdr type belong on an alias here, never in the generated file.
+- Every optional capability is gated through `ServerFeature`: a client checks it before using the frame or behavior it names, and an older server simply omits it, so never assume one is supported. A new capability joins that union.
+- Most shapes here are held by the server's contract tests and the client's unit tests rather than tests in this directory.
 
 ## ROUTE SHAPES
 - Legacy paths and a missing machine ID still mean the local PC. `/ws?machine_id=` fixes the target for the life of the socket, with the role and output-ACK protocol unchanged.
@@ -22,7 +22,7 @@ The HTTP/WS contract plus the few policy modules the browser and the server have
 - `notify-policy.ts` is shared by the browser's tab notifications and the server's web push on purpose, so a device with the app open and a phone with it closed judge an event by the same rule; permission, preferences and subscriptions still decide what each path shows. A new rule belongs here, not in either caller. `paneNotificationTag` gives one slot per pane, and a newer notification replaces the older whichever path showed it.
 - Unknown alert values fall back to the default (`parseAlerts`, `alertsAllow`): a device must never lose its alerts to a typo or to a field a newer build writes.
 - `machines.ts` `terminal_attach: false` is a working PC with the chat lens and a mirrored terminal, not a broken one. It is false on a Windows host (herdrdev/herdr#4821) and on any bridge whose runtime ships no PTY sidecar, and absent on older bridges that do not report it.
-- `update.ts` release summaries are keyed by the app's own languages (`src/lib/i18n.ts`): a language the release did not write is absent, and a list with no line is absent rather than empty.
+- `update.ts` release summaries are keyed by `SUMMARY_LANGUAGES`, the app's own languages (`src/lib/i18n.ts`): a language the release did not write is absent, and a list with no line is absent rather than empty.
 - `voice.ts`: `base_url` moves only together with `api_key` while a key is saved, and never while the environment sets the key, so a saved key cannot be pointed at a server other than the one it was saved for.
 
 ## ANTI-PATTERNS
