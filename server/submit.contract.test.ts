@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createServer, SUBMIT_DEADLINE_MS, SUBMIT_DELAY_MS } from "./index.ts";
 import { herdrRpc } from "./herdr/client.ts";
 import * as herdr from "./herdr/client.ts";
+import { PtySession } from "./pty/session.ts";
 
 /**
  * Contract test for the composer's "submit" frame, against the real herdr server.
@@ -1168,17 +1169,34 @@ describe("WebSocket submit", () => {
 
   it("sends a message typed right after a Stop only once the Stop reached the pane", async () => {
     const socket = await Socket.connect();
+    const originalWrite = PtySession.prototype.write;
+    const originalSendText = herdr.paneSendText;
+    let releaseStop: (() => void) | undefined;
+    // A busy sidecar can still hold the Stop when the later RPC paste reaches herdr.
+    // Force that interleaving without a clock: release PTY Escape only after the paste.
+    const write = spyOn(PtySession.prototype, "write").mockImplementation(function (this: PtySession, text) {
+      if (text === "\u001b") {
+        releaseStop = () => { originalWrite.call(this, text); };
+        return true;
+      }
+      return originalWrite.call(this, text);
+    });
+    const sendText = spyOn(herdr, "paneSendText").mockImplementation(async (...args) => {
+      const result = await originalSendText(...args);
+      if (args[0] === shell.pane && args[1] === "after") releaseStop?.();
+      return result;
+    });
     try {
-      socket.send({ type: "attach", pane_id: shell.pane, cols: 100, rows: 30 });
-      await socket.waitFor((message) => message.type === "pty-data" && message.pane_id === shell.pane);
-      await Bun.sleep(300);
+      await attached(socket, shell.pane);
       const from = chunks(shell).length;
       socket.send({ type: "input", pane_id: shell.pane, text: "\u001b" });
       socket.send({ type: "submit", id: 8, pane_id: shell.pane, text: "after", payload: "after" });
-      await socket.result(8);
+      expect(await socket.result(8)).toMatchObject({ ok: true });
       await received(shell, from, 1);
       expect(typed(shell, from)).toBe("\u001bafter\r");
     } finally {
+      write.mockRestore();
+      sendText.mockRestore();
       socket.close();
     }
   }, 30_000);

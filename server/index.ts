@@ -3051,7 +3051,9 @@ export function createServer(
                   for (const [pane, at] of lastTyped) if (Date.now() - at > TYPED_SETTLE_MS) { lastTyped.delete(pane); typedEscape.delete(pane); }
                 }
               };
-              if (paneQueues.has(message.pane_id)) {
+              // Stop must finish through herdr before a later submit starts. A pty write
+              // only queues bytes in the sidecar; even TYPED_SETTLE_MS cannot prove delivery.
+              if (paneQueues.has(message.pane_id) || message.text === "\u001b") {
                 const text = message.text;
                 // a click or a wheel (a click replayed behind a held arrow) is the attach's own mouse:
                 // herdr encodes it for the program's mouse mode, send_text would type its bytes (#667)
