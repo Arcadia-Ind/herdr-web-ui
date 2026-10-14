@@ -535,6 +535,25 @@ describe("microphone button", () => {
   });
 });
 
+it("falls back for malformed cursor and dictation choices across a saved round-trip", () => {
+  // given: values that cannot name a cursor shape, microphone mode or dictation language
+  for (const value of [null, 0, "", "UNKNOWN", ["on"], { name: "bar" }]) {
+    const raw = { terminalCursorStyle: value, voiceInput: value, voiceLanguage: value };
+    // when: the stored record is loaded
+    const settings = sanitizeSettings(JSON.parse(JSON.stringify(raw)));
+    // then: only the built-in defaults survive, never the malformed values
+    expect({
+      terminalCursorStyle: settings.terminalCursorStyle,
+      voiceInput: settings.voiceInput,
+      voiceLanguage: settings.voiceLanguage,
+    }).toEqual({
+      terminalCursorStyle: "block",
+      voiceInput: "auto",
+      voiceLanguage: "auto",
+    });
+  }
+});
+
 describe("composer strip", () => {
   it("stays on until turned off in settings", () => {
     expect(DEFAULT_SETTINGS.showComposerStrip).toBe(true);

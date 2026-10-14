@@ -385,7 +385,7 @@ export const QUICK_REPLY_MAX_CHARS = 200;
  */
 function voiceButton(value: unknown): VoiceButton {
   if (value === true) return "on";
-  return VOICE_BUTTONS.includes(value as VoiceButton) ? value as VoiceButton : DEFAULT_SETTINGS.voiceInput;
+  return VOICE_BUTTONS.find((button) => button === value) ?? DEFAULT_SETTINGS.voiceInput;
 }
 
 /** Whether an input asks for dictation at all: auto leaves the terminal input line and a phone's composer alone. */
@@ -509,9 +509,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     fontSmoothing: sanitizeFontSmoothing(record["fontSmoothing"]),
     panelMotion: sanitizePanelMotion(record["panelMotion"]),
     terminalFontSize: typeof font === "number" && Number.isFinite(font) ? clampFont(font) : DEFAULT_SETTINGS.terminalFontSize,
-    terminalCursorStyle: TERMINAL_CURSOR_STYLES.includes(record["terminalCursorStyle"] as TerminalCursorStyle)
-      ? record["terminalCursorStyle"] as TerminalCursorStyle
-      : DEFAULT_SETTINGS.terminalCursorStyle,
+    terminalCursorStyle: TERMINAL_CURSOR_STYLES.find((style) => style === record["terminalCursorStyle"]) ?? DEFAULT_SETTINGS.terminalCursorStyle,
     terminalCursorBlink: typeof record["terminalCursorBlink"] === "boolean" ? record["terminalCursorBlink"] : DEFAULT_SETTINGS.terminalCursorBlink,
     terminalWheelSpeed: typeof record["terminalWheelSpeed"] === "number" && Number.isFinite(record["terminalWheelSpeed"])
       ? Math.min(TERMINAL_WHEEL_SPEED_MAX, Math.max(TERMINAL_WHEEL_SPEED_MIN, Math.round(record["terminalWheelSpeed"])))
@@ -556,7 +554,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     usageOrder: usageKeys(record["usageOrder"]),
     usageHidden: usageKeys(record["usageHidden"]),
     voiceInput: voiceButton(record["voiceInput"]),
-    voiceLanguage: DICTATION_LANGUAGES.includes(record["voiceLanguage"] as (typeof DICTATION_LANGUAGES)[number]) ? record["voiceLanguage"] as DictationLanguage : DEFAULT_SETTINGS.voiceLanguage,
+    voiceLanguage: DICTATION_LANGUAGES.find((language) => language === record["voiceLanguage"]) ?? DEFAULT_SETTINGS.voiceLanguage,
     voicePolishChat: typeof record["voicePolishChat"] === "boolean" ? record["voicePolishChat"] : DEFAULT_SETTINGS.voicePolishChat,
     voicePolishTerminal: typeof record["voicePolishTerminal"] === "boolean" ? record["voicePolishTerminal"] : DEFAULT_SETTINGS.voicePolishTerminal,
     wrapCode: typeof record["wrapCode"] === "boolean" ? record["wrapCode"] : DEFAULT_SETTINGS.wrapCode,
