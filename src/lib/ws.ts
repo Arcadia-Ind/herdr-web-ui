@@ -3,11 +3,11 @@ import { OUTPUT_STALLED_CLOSE_CODE } from "../../shared/terminal-flow.ts";
 
 type Handler = (message: ServerMessage) => void;
 
-/** A submit was delivered, accepted into the bridge's pending queue, or refused. */
-/** `draft`: an input_draft refusal's one-row Claude draft, which a send with clearDraft may clear;
- * `box`: a refusal naming no draft, what the server read in the box, after which a send with sendAnyway may go */
 /** immediate: typed now; queue: waits for the next turn; hold: waits for the user's Send now */
 export type SubmitDelivery = "immediate" | "queue" | "hold";
+/** A submit was delivered, accepted into the bridge's pending queue, or refused.
+ * `draft`: an input_draft refusal's one-row Claude draft, which a send with clearDraft may clear;
+ * `box`: a refusal naming no draft, what the server read in the box, after which a send with sendAnyway may go */
 export type SubmitResult = { ok: true; pending?: PendingMessage } | { ok: false; code: string; message: string; draft?: string; box?: string };
 
 /** Right after a reconnect the snapshot that says what the server supports may still be on its way. */
@@ -438,8 +438,8 @@ export class HerdrSocket {
     if (!socket || socket.readyState !== WebSocket.OPEN || !this.pingKnown || this.probeTimer !== null) return;
     this.connectionState = "probing";
     // a paused probe goes on with a fresh ping: whoever waits on it keeps waiting
-    if (this.probePaused) this.probePaused = false;
-    else this.probeDone = new Promise((resolve) => { this.markProbeDone = resolve; });
+    if (!this.probePaused) this.probeDone = new Promise((resolve) => { this.markProbeDone = resolve; });
+    this.probePaused = false;
     this.ping(socket, 1);
   }
 

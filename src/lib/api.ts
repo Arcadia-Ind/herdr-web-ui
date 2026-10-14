@@ -123,7 +123,6 @@ export async function requestPortal(action: "start" | "stop", relay?: string): P
   if (!response.ok) throw await errorFrom(url, response);
 }
 
-/** Anonymous install and update counts; null from a server that sends none (404). */
 /** What every browser of this server shares (shared/preferences.ts); null where the server predates it. */
 export async function fetchPreferences(): Promise<SharedPreferences | null> {
   try { return await getJson<SharedPreferences>("/api/preferences"); }
@@ -137,6 +136,7 @@ export async function savePreferences(body: PreferencesChange): Promise<SharedPr
   return (await response.json()) as SharedPreferences;
 }
 
+/** Anonymous install and update counts; null from a server that sends none (404). */
 export async function fetchTelemetry(): Promise<TelemetryStatus | null> {
   try { return await getJson<TelemetryStatus>("/api/telemetry"); }
   catch (error) { if (error instanceof ApiError && error.status === 404) return null; throw error; }
@@ -675,8 +675,7 @@ export async function renameTab(tabId: string, label: string, machineId = "local
 
 /** Move within its workspace without changing the selected pane or tab. */
 export async function moveTab(tabId: string, insertIndex: number, machineId = "local"): Promise<TabMoved> {
-  const request: MoveTabRequest = { tab_id: tabId, insert_index: insertIndex };
-  const response = await sendJson(machinePath(machineId, "tab/move"), "POST", request);
+  const response = await sendJson(machinePath(machineId, "tab/move"), "POST", { tab_id: tabId, insert_index: insertIndex } satisfies MoveTabRequest);
   return (await response.json()) as TabMoved;
 }
 

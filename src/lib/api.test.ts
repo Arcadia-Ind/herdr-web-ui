@@ -1,7 +1,7 @@
 import { afterEach, expect, it } from "bun:test";
 import { MAX_ATTACHMENT_BYTES } from "../../shared/attachments.ts";
 import { NOTICE_VERSION } from "../../shared/telemetry.ts";
-import { AttachmentTooLargeError, ApiError, changeTelemetry, fetchTelemetry, uploadPaneImage } from "./api.ts";
+import { AttachmentTooLargeError, ApiError, changeTelemetry, fetchTelemetry, moveTab, uploadPaneImage } from "./api.ts";
 import { DEFAULT_SETTINGS, telemetrySettingsSnapshot } from "./settings.ts";
 
 const realFetch = globalThis.fetch;
@@ -81,4 +81,43 @@ it("treats a missing telemetry route as unavailable for reads and an API error f
   const error = await changeTelemetry({ enabled: true }).catch((failure: unknown) => failure);
   expect(error).toBeInstanceOf(ApiError);
   expect(error).toMatchObject({ status: 404, code: "not_found" });
+});
+
+it("moves a tab on its machine with the requested insertion index and returns the server answer", async () => {
+  // given
+  const answer = { ok: true as const, tabs: [] };
+  const requests: Request[] = [];
+  globalThis.fetch = Object.assign(async (input: RequestInfo | URL, init?: RequestInit) => {
+    requests.push(new Request(new URL(String(input), "https://test"), init));
+    return Response.json(answer);
+  }, { preconnect: realFetch.preconnect });
+
+  // when
+  const result = await moveTab("w1:t2", 0, "remote pc");
+
+  // then
+  expect(result).toEqual(answer);
+  expect(requests).toHaveLength(1);
+  const request = requests[0];
+  if (!request) throw new Error("tab move sent no request");
+  expect(new URL(request.url).pathname).toBe("/api/machines/remote%20pc/tab/move");
+  expect(request.method).toBe("POST");
+  expect(request.headers.get("content-type")).toBe("application/json");
+  expect(request.headers.get("x-herdr-machine")).toBe("1");
+  expect(await request.json()).toEqual({ tab_id: "w1:t2", insert_index: 0 });
+});
+
+it("preserves a tab move refusal as an API error", async () => {
+  // given
+  globalThis.fetch = Object.assign(async () => Response.json(
+    { error: { code: "tab_not_found", message: "No such tab" } },
+    { status: 404 },
+  ), { preconnect: realFetch.preconnect });
+
+  // when
+  const error = await moveTab("missing", 2).catch((failure: unknown) => failure);
+
+  // then
+  expect(error).toBeInstanceOf(ApiError);
+  expect(error).toMatchObject({ status: 404, code: "tab_not_found", detail: "No such tab" });
 });
