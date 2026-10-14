@@ -1524,7 +1524,10 @@ export function createServer(
       if (attachment.joining?.get(client) !== held) return;
       attachment.joining.delete(client);
       if (attachments.get(paneId) !== attachment || !attachment.clients.has(client)) return;
-      sendOutput(client, paneId, screen + held.join(""));
+      const frame = screen + held.join("");
+      // the screen is this joiner's replay frame: it gets the same first-ACK budget a replayed tail does
+      client.data.output.get(paneId)?.join(frame, client.getBufferedAmount());
+      sendOutput(client, paneId, frame);
       reconcileOutput(paneId);
     });
   }
