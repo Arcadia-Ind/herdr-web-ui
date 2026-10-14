@@ -3077,7 +3077,9 @@ export function createServer(
                     typedIntoPty(text);
                     return;
                   }
-                  return paneSendText(message.pane_id, text, undefined, allowed);
+                  // a lone Stop still starts the settling gap herdr's ESC hold needs, so a following
+                  // message waits it out and checks again for a question before pasting
+                  return paneSendText(message.pane_id, text, undefined, allowed).then(() => { if (text === "\u001b") typedIntoPty(text); });
                 }).catch(inputFailed);
               } else {
                 if (!attachment.pty.write(message.text)) { inputFailed(); break; }
