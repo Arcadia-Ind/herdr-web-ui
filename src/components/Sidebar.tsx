@@ -18,6 +18,7 @@ import { focusWorkspaceListToggle } from "../lib/focus.ts";
 import { folderName, shortPathTitle, stripPaneChrome, taskRowLines } from "../lib/paneName.ts";
 import { ApiError } from "../lib/api.ts";
 import { useT } from "../lib/i18n.ts";
+import { userErrorMessage } from "../lib/userError.ts";
 import { rosterPanes } from "../lib/dagPane.ts";
 import { useSidebarActivity } from "../lib/sidebarActivity.tsx";
 import { useSettings } from "../lib/settings.ts";
@@ -142,6 +143,7 @@ function cwdBasename(cwd: string | null | undefined): string {
 interface InlineError {
   workspaceId?: string;
   message: string;
+  detail: string | null;
 }
 
 /**
@@ -331,7 +333,7 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
     revealOpenedWorkspace.current = null;
   }, [snapshot, selectedPaneId, branches]);
 
-  const noteError = (message: string, workspaceId?: string): void => setInlineError({ message, workspaceId });
+  const noteError = (message: string, workspaceId?: string, detail: string | null = null): void => setInlineError({ message, workspaceId, detail });
 
   /** the pane a workspace's row shows and opens, among the panes the row stands for */
   const currentPane = (workspace: WorkspaceInfo, panes: PaneInfo[]): PaneInfo => {
@@ -461,7 +463,8 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
         setEditingWorkspaceId(workspaceId);
         setWorkspaceLabel(typed);
       }
-      noteError(t("Rename failed: {reason}", { reason: reason instanceof Error ? reason.message : String(reason) }), workspaceId);
+      const failure = userErrorMessage(reason);
+      noteError(t("Rename failed: {reason}", { reason: failure.message }), workspaceId, failure.detail);
     });
   };
 
@@ -476,7 +479,8 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
       // only this move's own optimistic order is rolled back: if a later reorder has landed in
       // the meantime, its order is the newer one and reverting to `previous` would undo it
       setWorkspaceOrder((current) => (current.length === next.length && current.every((id, index) => id === next[index]) ? previous : current));
-      noteError(t("Reorder failed: {reason}", { reason: reason instanceof Error ? reason.message : String(reason) }));
+      const failure = userErrorMessage(reason);
+      noteError(t("Reorder failed: {reason}", { reason: failure.message }), undefined, failure.detail);
     });
   };
 
@@ -694,7 +698,7 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
           </button>
         </div>
       </div>
-      {inlineError?.workspaceId === workspace.workspace_id && <p className="sidebar-inline-error" role="alert">{inlineError.message}</p>}
+      {inlineError?.workspaceId === workspace.workspace_id && <p className="sidebar-inline-error" role="alert">{inlineError.message}{inlineError.detail !== null && <><br /><code>{inlineError.detail}</code></>}</p>}
     </li>;
   };
 
@@ -730,7 +734,7 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
           {shownGroups.pinned.some(({ workspace }) => roster.some((pane) => pane.workspace_id === workspace.workspace_id)) && <ul className="workspace-list workspace-list-pinned sidebar-pinned" aria-label={t("Pinned")}>{shownGroups.pinned.map((group) => renderGroup(group, true))}</ul>}
           <ul className="workspace-list">{shownGroups.rest.map((group) => renderGroup(group, false))}</ul>
           {inlineError && inlineError.workspaceId === undefined && (
-            <p className="sidebar-inline-error" role="alert">{inlineError.message}</p>
+            <p className="sidebar-inline-error" role="alert">{inlineError.message}{inlineError.detail !== null && <><br /><code>{inlineError.detail}</code></>}</p>
           )}
         </>
       </nav>

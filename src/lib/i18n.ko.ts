@@ -731,7 +731,17 @@ export const KO: Record<string, string> = {
   "Transcription failed": "음성 변환에 실패했습니다",
   "Voice input": "음성 입력",
   "Voice input needs HTTPS": "음성 입력에는 HTTPS가 필요합니다",
+  // ---- errors (lib/userError.ts) ----
+  "This browser is not signed in to this PC any more. Pair it again in Settings → Phone & devices.": "이 브라우저는 더 이상 이 PC에 로그인되어 있지 않습니다. 설정 → 폰 및 기기에서 다시 페어링하세요.",
+  "That item no longer exists on the PC. Refresh and try again.": "그 항목은 PC에 더 이상 없습니다. 새로 고친 뒤 다시 시도하세요.",
+  "It changed on the PC while you were acting. Check it and try again.": "작업하는 동안 PC에서 내용이 바뀌었습니다. 확인한 뒤 다시 시도하세요.",
+  "The PC took too long to answer. Try again.": "PC가 너무 오래 응답하지 않았습니다. 다시 시도하세요.",
+  "The PC could not do that. Try again; if it keeps failing, restart herdr web ui on the PC.": "PC에서 그 작업을 할 수 없었습니다. 다시 시도하고, 계속 실패하면 PC에서 herdr web ui를 다시 시작하세요.",
+  "Can't reach the PC. Check your connection, then try again.": "PC에 연결할 수 없습니다. 연결을 확인한 뒤 다시 시도하세요.",
+  "Something went wrong. Try again.": "문제가 생겼습니다. 다시 시도하세요.",
+
   // ---- sign-in ----
+  "Enter all 6 digits of the pairing code.": "페어링 코드 6자리를 모두 입력하세요.",
   "That code is wrong, used up or expired. Start a new pairing on the PC.": "코드가 틀렸거나 이미 쓰였거나 만료되었습니다. PC에서 새 페어링을 시작하세요.",
   "Token does not match.": "토큰이 맞지 않습니다.",
   "Tailscale says this device belongs to someone other than this PC's owner. The owner can still let it in with a pairing code.": "Tailscale에 따르면 이 기기는 이 PC 주인이 아닌 다른 사람의 것입니다. 주인이 페어링 코드로 들여보낼 수는 있습니다.",

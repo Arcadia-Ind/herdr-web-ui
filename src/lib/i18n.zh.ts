@@ -735,7 +735,17 @@ export const ZH: Record<string, string> = {
   "Transcription failed": "转录失败",
   "Voice input": "语音输入",
   "Voice input needs HTTPS": "语音输入需要 HTTPS",
+  // ---- errors (lib/userError.ts) ----
+  "This browser is not signed in to this PC any more. Pair it again in Settings → Phone & devices.": "此浏览器已不再登录此电脑。请在设置 → 手机和设备中重新配对。",
+  "That item no longer exists on the PC. Refresh and try again.": "该项目在电脑上已不存在。请刷新后重试。",
+  "It changed on the PC while you were acting. Check it and try again.": "你操作期间电脑上的内容已更改。请检查后重试。",
+  "The PC took too long to answer. Try again.": "电脑响应时间过长。请重试。",
+  "The PC could not do that. Try again; if it keeps failing, restart herdr web ui on the PC.": "电脑无法完成该操作。请重试；如果一直失败，请在电脑上重启 herdr web ui。",
+  "Can't reach the PC. Check your connection, then try again.": "无法连接到电脑。请检查网络连接后重试。",
+  "Something went wrong. Try again.": "出了点问题。请重试。",
+
   // ---- sign-in ----
+  "Enter all 6 digits of the pairing code.": "请输入配对码的全部 6 位数字。",
   "That code is wrong, used up or expired. Start a new pairing on the PC.": "该代码错误、已使用或已过期。请在 PC 上开始新的配对。",
   "Token does not match.": "Token 不匹配。",
   "Tailscale says this device belongs to someone other than this PC's owner. The owner can still let it in with a pairing code.": "Tailscale 显示此设备属于此 PC 所有者以外的其他人。所有者仍可通过配对码让其访问。",
