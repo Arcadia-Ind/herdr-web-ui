@@ -41,6 +41,11 @@
   vertical-align: middle;
 }
 
+/* revoking is destructive: the danger ink from the first state, the fill only once it asks to confirm */
+.btn.devices-revoke {
+  color: var(--status-blocked);
+}
+
 .devices-actions,
 .devices-rename {
   display: flex;

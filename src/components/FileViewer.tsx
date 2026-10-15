@@ -281,10 +281,10 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
     if (directory !== null) return <DirectoryBrowser key={directory} start={directory} onOpenFile={onOpen ?? setPath} />;
     if (error !== null) return <p className="file-viewer-note" role="alert">{error === "missing" ? t("No readable file at this path.") : t("The file could not be opened.")}</p>;
     if (candidates !== null) return <div className="file-viewer-choices">
-      <p className="file-viewer-note">Several files are named {target.path.split("/").pop()}:</p>
+      <p className="file-viewer-note">{t("Several files are named {name}:", { name: target.path.split("/").pop() ?? target.path })}</p>
       <ul>{candidates.map((candidate) => <li key={candidate}><button type="button" className="btn btn-ghost" onClick={() => setPath(candidate + path.slice(target.path.length))}>{candidate}</button></li>)}</ul>
     </div>;
-    if (info === null) return <p className="file-viewer-note">{t("Opening…")}</p>;
+    if (info === null) return <p className="file-viewer-note" role="status">{t("Opening…")}</p>;
     switch (info.kind) {
       case "image":
         return info.size > MAX_INLINE_IMAGE_BYTES
@@ -304,7 +304,7 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
         return <>
           {htmlPage && modes}
           {loaded === null || (view === "markdown" && preview.status !== "ready")
-          ? <p className="file-viewer-note">{t("Opening…")}</p>
+          ? <p className="file-viewer-note" role="status">{t("Opening…")}</p>
           // a text the renderer cannot draw fails here, not the app: the header (Show source, Open raw file,
           // Close) stays, and a Preview that fails offers its source
           : <RenderBoundary key={view} resetKey={loaded} fallback={() => view === "markdown"
@@ -317,7 +317,7 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
           </RenderBoundary>}
         </>;
       default:
-        return <p className="file-viewer-note">{info.mime}, {formatBytes(info.size)}. This file can't be shown here; download it instead.</p>;
+        return <p className="file-viewer-note">{t("This file can't be previewed here. Download it to open it.")} <span className="file-viewer-note-meta">{info.mime}, {formatBytes(info.size)}</span></p>;
     }
   })();
 

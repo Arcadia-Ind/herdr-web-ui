@@ -157,7 +157,7 @@ export function DevicesPanel({ pairUrl, auth, onPaired }: DevicesPanelProps) {
                   </div>
                   <div className="devices-actions">
                     <button type="button" className="icon-button" aria-label={t("Rename {name}", { name: d.label })} onClick={() => setRenaming({ id: d.id, label: d.label })}><Pencil /></button>
-                    <button type="button" className={`btn ${confirming === d.id ? "btn-danger" : "btn-ghost"}`} onClick={() => void revoke(d.id)}>
+                    <button type="button" className={`btn ${confirming === d.id ? "btn-danger" : "btn-ghost devices-revoke"}`} onClick={() => void revoke(d.id)}>
                       <Trash2 aria-hidden="true" />{t(confirming === d.id ? "Revoke?" : "Revoke")}
                     </button>
                   </div>

@@ -147,6 +147,9 @@ blue there instead of `--accent`, and Latte's colors are darkened to stay readab
   `--bg`, `--bg-panel` and `--bg-elevated`: amber `#e8c55c` / `#7a5a00`, light
   charcoal `#8a5300`, dark charcoal `#d9b26a`, Catppuccin Mocha `#f9e2af` (yellow), Latte
   `#8a5710`.
+- The header's meta line (size, folder) is `--fs-xs`. A file that cannot be previewed says so in
+  one sentence ("This file can't be previewed here. Download it to open it.") over its type and
+  size as a dim mono `--fs-xs` line; "Opening…" is a `role="status"` note.
 - `--line-number` colors the line numbers beside code: tertiary text, quieter than the code. It is
   `--text-dim`, except in Catppuccin, whose `--text-dim` (subtext1) is nearly `--text`: Mocha
   overlay2 `#9399b2` (5.8:1), Latte `#64677d` (subtext0 darkened to 4.9:1 on `--bg`).
@@ -434,6 +437,10 @@ One set for both themes: the card is island black wherever it shows.
 ### Button (`.btn`, `.icon-button`)
 - `.btn` is a medium text control. Variants: neutral, `.btn-primary`, `.btn-danger`, `.btn-ghost`.
   Primary uses `--primary`; danger uses danger tint plus blocked border; ghost removes fill/edge.
+  A destructive action that asks twice (Settings → Phone & devices, Revoke) is a ghost button in
+  `--status-blocked` text from its first state (`.devices-revoke`), and takes `.btn-danger` only
+  while it asks to confirm. A trust decision (the SSH host key) states its consequence in a hint
+  above Reject and Trust.
 - `.icon-button` is a square unlabeled visual control with mandatory `aria-label`; `.is-outlined`
   adds the border. Both families use `--control-h`, `--radius-md`, focus ring, hover and disabled.
 - Coarse pointers grow controls to `--touch-target`.
