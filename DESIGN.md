@@ -1455,6 +1455,13 @@ One set for both themes: the card is island black wherever it shows.
 - That is the default row. Settings → Terminal → Key bar can add, remove and reorder every
   terminal key and register exact combinations. Removing a held modifier clears it immediately.
   A deliberately empty row retains only the keyboard mode control on a touch screen.
+- When the row outgrows the viewport it scrolls sideways, and the edge that hides more keys fades
+  out: `KeyBar` sets `data-overflow-start` / `data-overflow-end` on `.key-bar` (measured before
+  first paint, on scroll and on resize, once a frame) and `KeyBar.css` masks that edge with a
+  `--space-6` (24px) `mask-image` gradient, static, so reduced motion changes nothing. Every key
+  whose cap is a symbol or abbreviation carries its spoken name as `aria-label` (Esc → Escape,
+  `^C` → Control C, ⌫ → Backspace, Ctrl → Control, the arrows and page keys), translated with the
+  UI; a cap that is a word (Tab, Enter, Home, End) is its own name.
 - The mobile drawer slides over a scrim. Closed visibility removes its controls from the tab order.
 
 ### In-app alert
