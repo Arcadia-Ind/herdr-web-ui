@@ -232,6 +232,23 @@ The values are the ones in `src/styles.css`. Every token but `--fs-input` is `ca
   `--chat-scale` is the chat's size over the interface's: unchosen, the chat follows the interface size;
   chosen, it is drawn as itself whatever the interface size.
 
+### Line breaking
+- The UI language is `<html lang>` (`lib/settings.ts`), and `src/styles.css` keys the breaking
+  on it, on `body` alone, so every text inherits it once and no descendant sets it again. Korean
+  (`html:lang(ko)`) is `word-break: keep-all`: a word moves to the next line whole, at a space or
+  punctuation, never as "시도하 / 세요.". Japanese and Chinese (`html:is(:lang(ja), :lang(zh))`)
+  are `line-break: strict`: no line starts with closing punctuation or a small kana (。」ょ).
+  English keeps the browser's defaults. Chat prose in another language follows the UI language.
+- `pre`, `code`, `kbd`, `samp`, the terminal (`.xterm`) and the two text boxes (`.composer-text`,
+  `.terminal-input-text`) reset to `word-break: normal; line-break: auto`, and their children
+  inherit that: a path, a command or a terminal cell is not a word. `overflow-wrap` is no part of
+  the rule; the chat's and the composer's own rules keep it. The file viewer's virtualized source
+  rows live in `@pierre/diffs`' shadow root, which document CSS does not reach: they inherit
+  `body`'s value.
+- `text-wrap: balance` on `.modal-title`, `.composer-greeting-title` and a Settings group's
+  caption (`.settings-section h3`): a title that wraps takes even lines, never a full line over a
+  one-word stub.
+
 ### Settings
 - `theme`: `dark`, `light`, or `system`; default `dark`.
 - `palette`: `amber`, `charcoal` or `catppuccin`; default `amber`. A removed palette (`report`,
@@ -1108,9 +1125,10 @@ One set for both themes: the card is island black wherever it shows.
   (the only other card on this surface is the prompt card docked over it, while an agent asks);
   focus turns its border `--accent` (no inner outline). Above it the notices (below), the
   completion popover and the background-task list; inside, the image strip is its own row at the top, then the auto-growing
-  message box as a row of its own at the card's full width (each tile's X keeps its `--chip-h`
-  circle: with a mouse it takes a `--pointer-target` hit area through an invisible `::before`
-  expander, and a finger gets `--touch-target`), then ONE row of controls under it:
+  message box as a row of its own at the card's full width (each tile's X is a `--chip-h` circle
+  with a mouse, reaching `--pointer-target` through an invisible `::before` expander; under a
+  coarse pointer the button itself grows to `--touch-target` wide and `--touch-target` plus
+  `--space-1` tall), then ONE row of controls under it:
   on the left the add button (lucide `Plus`, named "Attach files"), the mic when voice input
   shows it (see Voice input), and the background-task chip; on the right the status content and ONE round Send/Stop button.
   The message's text starts `--space-4` in (`--space-3` on a phone, `480px` and below).

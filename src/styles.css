@@ -527,6 +527,36 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ---------- line breaking ---------- */
+
+/* The UI language is <html lang> (lib/settings.ts applyToDocument). Set on body alone so that every
+   text inherits it once and no descendant sets it again: Korean keeps each word whole (keep-all
+   breaks at spaces and punctuation only, never "시도하 / 세요."), Japanese and Chinese take strict
+   kinsoku (no line starts with 。」 or a small kana). English keeps the browser's defaults. */
+html:lang(ko) body {
+  word-break: keep-all;
+}
+
+html:is(:lang(ja), :lang(zh)) body {
+  line-break: strict;
+}
+
+/* Code, keys, the terminal and the two text boxes keep the browser's breaking, and their children
+   inherit this reset: a path or a command is not a word, and xterm lays out its own cells.
+   overflow-wrap is not part of this rule; the chat's and the composer's own rules keep it. */
+:is(pre, code, kbd, samp, .xterm, .composer-text, .terminal-input-text) {
+  word-break: normal;
+  line-break: auto;
+}
+
+/* A title that wraps takes even lines, never a full line over a one-word stub: dialog titles, the
+   empty chat's greeting and a Settings group's caption. */
+.modal-title,
+.composer-greeting-title,
+.settings-section h3 {
+  text-wrap: balance;
+}
+
 button {
   font: inherit;
   color: inherit;
