@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { ApiError } from "./api.ts";
+import { withChatReadDeadline } from "./chatReadDeadline.ts";
 import { setCurrentLanguage, translate } from "./i18n.ts";
 import { userErrorMessage } from "./userError.ts";
 
@@ -26,6 +27,11 @@ describe("userErrorMessage", () => {
     expect(userErrorMessage(api(504)).message).toBe(slow);
     expect(userErrorMessage(new DOMException("The operation was aborted.", "AbortError")).message).toBe(slow);
     expect(userErrorMessage(new DOMException("signal timed out", "TimeoutError")).message).toBe(slow);
+  });
+
+  it("says the PC was too slow when the chat read misses its own deadline", async () => {
+    const missed = await withChatReadDeadline(() => new Promise<never>(() => {}), 0).then(() => null, (cause: unknown) => cause);
+    expect(userErrorMessage(missed)).toEqual({ message: "The PC took too long to answer. Try again.", detail: "Chat read timed out." });
   });
 
   it("says the PC could not do it for any other 5xx", () => {
