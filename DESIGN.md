@@ -241,7 +241,9 @@ The values are the ones in `src/styles.css`. Every token but `--fs-input` is `ca
 - Terminal font size is independent: default `13px`, clamped to `10–22px`.
   During a two-finger pinch the font follows the fingers live and a badge above the grid shows the
   size in pixels; the grid refits locally and the shared pty resizes once when a finger lifts.
-  Cancellation restores the starting size.
+  Cancellation restores the starting size. The badge is hidden from assistive tech; a polite live
+  region says "Terminal text size {px} px" once, when a pinch ends at a new size, and says nothing
+  for a cancelled pinch.
 - A split pane that would have fewer than 80 columns at that size draws in the largest smaller
   whole-pixel size that gives it 80, never below `10px`. A pane alone in its tab or zoomed, a pane that `10px` cannot bring
   to 80 columns, and a pane this browser only watches or mirrors keep the user's size. The saved
@@ -1456,6 +1458,9 @@ One set for both themes: the card is island black wherever it shows.
   Under the chat lens, while the input card shows, the ones it shares with the composer (another
   app holds the pane, a failed output stream, the held draft, a copy note) stand over the card
   instead (Composer: Notices).
+  Banners wrap inside their pane at any width (a phone, or a narrow split on a desktop): text breaks
+  between words, or anywhere in held input with no space, and what does not fit beside the text
+  (held input, actions) moves to the next line with button labels kept whole.
 - The mobile key bar starts with Esc, Tab and `^C`, then sticky Ctrl/Alt/Shift, Enter and arrows;
   it never steals typing focus. Modifiers remain highlighted until toggled off,
   leaving the pane/lens or disconnecting; each exposes `aria-pressed`.
