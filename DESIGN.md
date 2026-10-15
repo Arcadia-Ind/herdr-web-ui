@@ -752,8 +752,9 @@ One set for both themes: the card is island black wherever it shows.
 - The tab strip is shown even for one pane, as herdr's TUI shows its single tab and `+`.
   Tabs retain their names, status dots, active underline, keyboard navigation, rename field and
   close confirmation. A right-click opens tab actions at the pointer, including Move tab left/right
-  when a neighbouring position exists. Desktop tabs have no close or dropdown buttons. Touch and narrow layouts show a `⋯` beside
-  the selected tab for a trimmed menu; Shift+F10 or the menu key opens the full tab menu from a focused tab.
+  when a neighbouring position exists. Tabs have no close buttons or chevrons. Touch and narrow layouts show a `⋯` beside
+  the selected tab for a trimmed menu; a desktop with a mouse draws the same `⋯` on the selected tab, hidden in its place
+  until the strip is hovered or the tab has keyboard focus (Menu / popover). Shift+F10 or the menu key opens the full tab menu from a focused tab.
   Pane actions are not tab actions. Up to 768px, where a split tab shows one pane at a time, the
   tab's menu lists the tab's panes first, the open one marked current, over a hairline.
   Its touch menu omits New tab (the strip's `+` opens it). Only at these narrow widths does it
@@ -772,7 +773,7 @@ One set for both themes: the card is island black wherever it shows.
   (`any-pointer: coarse`), the ellipsis; a mouse opens the same menu by right-click. Keyboard users
   tab to the pane's ellipsis, which becomes visible on keyboard focus, and press Enter.
   Shift+F10 in the terminal goes to the terminal program, not the app menu. A lone or zoomed
-  pane is borderless; on touch its actions live in the tab menu rather than a second ellipsis.
+  pane is borderless; its actions live in the tab's `⋯` menu rather than a second ellipsis, on a desktop as on touch.
 - A left click or keyboard focus selects the actual pane. Right-click opens the clicked pane's
   menu without changing the selected pane: Rename pane, Clear pane name when named, Swap with
   focused pane when another is selected, Split right, Split down, Zoom/Unzoom pane, Close
