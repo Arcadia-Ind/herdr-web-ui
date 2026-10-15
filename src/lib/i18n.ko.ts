@@ -142,6 +142,7 @@ export const KO: Record<string, string> = {
   "Agent {status}": "에이전트 {status}",
 
   // ---- app header and shell ----
+  "Opening link…": "링크 여는 중…",
   "Connecting to herdr web ui…": "herdr web ui에 연결하는 중…",
   "Close workspace list": "워크스페이스 목록 닫기",
   "Open workspace list": "워크스페이스 목록 열기",
@@ -198,6 +199,7 @@ export const KO: Record<string, string> = {
   "Alerts on while this tab is open (closed-app alerts need https, and on iPhone the home-screen app). Tap to turn them off": "이 탭이 열려 있는 동안 알림이 옵니다 (앱을 닫은 뒤의 알림은 https가 필요하고, iPhone에서는 홈 화면 앱이어야 합니다). 누르면 꺼집니다",
 
   // ---- sidebar ----
+  "Loading agents…": "에이전트 불러오는 중…",
   "Herdr workspaces": "herdr 워크스페이스",
   "Agents": "에이전트",
   "No agents running": "실행 중인 에이전트가 없습니다",

@@ -429,7 +429,8 @@ One set for both themes: the card is island black wherever it shows.
 - The terminal stack contains a positioned terminal surface, then composer or key bar. The xterm
   mount stays alive under the chat lens; changing views never creates a second connection.
 - At `<=480px` the brand name, the offline pill and desktop-only control labels go, and the
-  palette's button gives its room to the title (a hardware keyboard still opens it).
+  palette's button gives its room to the title (the More menu's first item and a hardware
+  keyboard still open it).
   Icons and selected context remain.
 
 ## 5. Components
@@ -547,7 +548,7 @@ One set for both themes: the card is island black wherever it shows.
   A tab's mark follows the same choice, held still.
 
 ### Pill (`.pill`)
-- Mono metadata at `--chip-h`. Offline is the one header pill that stays, and uses danger tokens. A deep link that could not open what it named, and Copy link, say so in a plain `.header-note` pill for a moment (8 s, 1.6 s for Link copied). The note takes the flexible context's place and ellipsizes when narrow, keeping the lens and More controls in view.
+- Mono metadata at `--chip-h`. Offline is the one header pill that stays, and uses danger tokens. A deep link waiting for its PC's roster says **Opening link…** in the same `.header-note` pill (`role="status"`) until it lands or its failure note replaces it. A deep link that could not open what it named, and Copy link, say so in a plain `.header-note` pill for a moment (8 s, 1.6 s for Link copied). The note takes the flexible context's place and ellipsizes when narrow, keeping the lens and More controls in view.
 
 ### Sidebar roster row and footer
 - No top bar. The sidebar opens with the plan panel (when Settings puts it there), the PC workspace groups and a separate **Agents** list spanning the connected PCs. A workspace starts from the `+` on its PC's header, or from the **New workspace**
@@ -565,7 +566,8 @@ One set for both themes: the card is island black wherever it shows.
   workspace list has the rest. The Agents heading stays outside its scroll area and shows its
   count only while folded. A list that is cut fades out at its lower edge. An empty or folded
   Agents list gives its space back; PC and workspace folds do not hide agent rows. In the drawer
-  (`max-width: 768px`) the list starts folded.
+  (`max-width: 768px`) the list starts folded. Until the PCs are in and every connected PC's
+  panes have come, an empty list says **Loading agents…**, never "No agents running".
 - A PC's header is the head of its workspaces, and the caret beside its `+` is the one fold over
   them. The roster has no label or fold of its own.
 - A repository's parent row keeps `workspace.label`; its opened linked
@@ -858,9 +860,10 @@ One set for both themes: the card is island black wherever it shows.
   whole title it is not drawn, and the title has the row. The full path is in the context's
   tooltip and at the top of the More menu. With no selection, the brand fills the context slot.
 - The More menu (`.header-more-button`, the `RowMenu` popover, a bottom sheet at `<=640px`) opens
-  with the location on two lines, "PC › workspace" then the full path in mono, and holds
-  **Browse files** and **Alerts**, each under the condition its own button had. New tab stays
-  on the tab strip's `+`; Command palette is not in More. The Alerts item says
+  with the location on two lines, "PC › workspace" then the full path in mono. Its first item,
+  at every width, is **Search panes and actions**, which opens the command palette (its shortcut
+  as the item's hint where the pointer is fine); then **Browse files** and **Alerts**, each under
+  the condition its own button had. New tab stays on the tab strip's `+`. The Alerts item says
   this device's state in words after its label ("On in the app", "On in this tab", "On, pushed to
   this device", "Off on this device") and switches it: it is a `menuitemcheckbox` with
   `aria-checked` in the popover and a button with `aria-pressed` in the sheet. While alerts are off on this device the
@@ -1295,9 +1298,10 @@ One set for both themes: the card is island black wherever it shows.
   Amber only; `--danger` stays for errors.
 
 ### Command palette
-- The command palette and its plugin actions are not available in the phone touch UI
-  (`<=480px`): neither the header nor Files offers a palette button. Use a wider screen;
-  a connected keyboard can still open it with `Mod+Shift+K` (or the configured binding).
+- At `<=480px` the header has no palette button: the More menu's first item, **Search panes and
+  actions**, opens it by touch, and a connected keyboard still opens it with `Mod+Shift+K` (or
+  the configured binding). A folder listing that fails says so in the empty list with a **Try
+  again** button that asks for the same folder again.
 - `Mod+Shift+K` opens a top-offset `--palette-w` dialog searching panes across all connected PCs
   and the selected PC's actions. PC names participate in search. Recent panes
   lead an empty query; arrows in the search field cycle through visible results, Enter activates

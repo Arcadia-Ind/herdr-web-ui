@@ -144,6 +144,7 @@ export const JA: Record<string, string> = {
   "Agent {status}": "エージェント {status}",
 
   // ---- app header and shell ----
+  "Opening link…": "リンクを開いています…",
   "Connecting to herdr web ui…": "herdr web ui に接続しています…",
   "Close workspace list": "ワークスペース一覧を閉じる",
   "Open workspace list": "ワークスペース一覧を開く",
@@ -200,6 +201,7 @@ export const JA: Record<string, string> = {
   "Alerts on while this tab is open (closed-app alerts need https, and on iPhone the home-screen app). Tap to turn them off": "このタブを開いている間は通知が届きます (アプリを閉じた後の通知には https が必要で、iPhone ではホーム画面のアプリである必要があります)。タップするとオフになります",
 
   // ---- sidebar ----
+  "Loading agents…": "エージェントを読み込み中…",
   "Herdr workspaces": "herdr ワークスペース",
   "Agents": "エージェント",
   "No agents running": "実行中のエージェントはありません",

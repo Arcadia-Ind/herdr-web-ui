@@ -231,6 +231,8 @@ export function CommandPalette({ open, initialQuery = "", onClose, machines, onS
   const folder = open ? folderQuery(query) : null;
   const folderDirectory = folder?.directory ?? null;
   const folderHidden = folder?.filter.startsWith(".") ?? false;
+  // Try again after a failed listing asks for the same folder once more
+  const [browseAttempt, setBrowseAttempt] = useState(0);
   useEffect(() => {
     if (folderDirectory === null || !online) return;
     let alive = true;
@@ -246,7 +248,7 @@ export function CommandPalette({ open, initialQuery = "", onClose, machines, onS
       },
     );
     return () => { alive = false; };
-  }, [folderDirectory, folderHidden, online, api]);
+  }, [folderDirectory, folderHidden, online, api, browseAttempt]);
   const browseTo = useCallback((path: string): void => {
     setQuery(folderQueryFor(path, home));
     setSelection(NO_SELECTION);
@@ -680,6 +682,15 @@ export function CommandPalette({ open, initialQuery = "", onClose, machines, onS
             </div>
           ))}
           {itemCount === 0 && <p className="palette-empty" role="status">{emptyText}</p>}
+          {itemCount === 0 && online && browseListing?.error === "failed" && (
+            <p className="palette-empty">
+              <button type="button" className="btn" onClick={(event) => {
+                setBrowseAttempt((attempt) => attempt + 1);
+                // the button goes while the listing is asked again: a key or a mouse goes back to the search, a finger keeps its keyboard down
+                if (event.detail === 0 || !touch) inputRef.current?.focus();
+              }}>{t("Try again")}</button>
+            </p>
+          )}
         </div>
         <footer className="palette-footer">
           <div className="palette-footer-where" aria-live="polite">
