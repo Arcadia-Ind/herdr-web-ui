@@ -693,6 +693,12 @@ export const JA: Record<string, string> = {
   "Held until the agent is ready": "エージェントの準備ができるまで保持",
   "Codex has a question open in the terminal: answer it above first": "Codex がターミナルで質問を表示しています。先に上で回答してください",
   "Confirm your answer in the card above, or type another…": "上のカードで回答を確認するか、別の回答を入力してください…",
+  "Terminal ended": "ターミナルが終了しました",
+  "Held input discarded": "保持した入力は破棄しました",
+  "Reconnecting to herdr web ui…": "herdr web ui に再接続しています…",
+  "Input held:": "保持した入力:",
+  "View only — the operator’s screen size is untouched": "表示のみ — 操作している人の画面サイズは変わりません",
+  "Terminal text size {px} px": "ターミナルの文字サイズ {px} px",
 
   // ---- install help ----
   "Tap the Share button, then Add to Home Screen.": "共有ボタンをタップし、「ホーム画面に追加」を選択してください。",

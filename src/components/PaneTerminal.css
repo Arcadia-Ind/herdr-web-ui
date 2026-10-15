@@ -184,7 +184,18 @@
   background: var(--bg-elevated);
   font-size: var(--fs-xs);
   color: var(--text-dim);
+  /* a narrow pane (a phone, or a split on a desktop) wraps a banner instead of letting it run past
+     the pane's edge; held input with no space in it breaks anywhere */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  /* what does not fit beside the text (held input, actions) goes to the next line */
+  flex-wrap: wrap;
+}
+
+/* a button's label stays whole: it moves to the next line instead of breaking letter by letter */
+.terminal-banner button {
   white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .terminal-banner-warning {
@@ -325,13 +336,9 @@
   outline-offset: var(--ring-offset);
 }
 
-/* phones: banners wrap instead of overflowing - a wrapping box stops being a chip, so it
-   takes padding and --radius-md (the review banner already does) */
+/* phones: a wrapping box stops being a chip, so it takes padding and --radius-md (the review
+   banner already does) */
 @media (max-width: 480px) {
-  .terminal-banner {
-    white-space: normal;
-  }
-
   .terminal-banner-observe,
   .terminal-banner-soon,
   .terminal-banner-warning {
