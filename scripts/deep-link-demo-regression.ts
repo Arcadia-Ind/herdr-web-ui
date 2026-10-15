@@ -499,7 +499,8 @@ try {
       });
       console.log("PASS a pane Back selects under an open modal does not take the keyboard out of it");
 
-      // Phone touch controls cannot open the palette; resizing restores the Files entry.
+      // A phone's header has no palette button: the More menu's first item opens it by touch.
+      // Files offers no palette entry on a phone; resizing restores it.
       const palettePhone = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, locale: "en-US" });
       try {
         await palettePhone.addInitScript(() => localStorage.setItem("herdr-web-ui:settings", JSON.stringify({ language: "en" })));
@@ -510,7 +511,9 @@ try {
         await page.locator(".header-more-button").tap();
         const more = page.getByRole("dialog", { name: "More", exact: true });
         await more.waitFor();
-        assert.equal(await more.getByRole("button", { name: "Command palette", exact: true }).count(), 0, "More has no palette entry");
+        const search = more.getByRole("button", { name: "Search panes and actions", exact: true });
+        assert.equal(await search.count(), 1, "More offers Search panes and actions");
+        assert.equal((await more.locator(".row-sheet-item .row-sheet-label").allTextContents())[0], "Search panes and actions", "Search panes and actions is More's first item");
         await more.getByRole("button", { name: "Browse files", exact: true }).tap();
         const files = page.getByRole("dialog", { name: "Files", exact: true });
         await files.waitFor();
@@ -530,8 +533,16 @@ try {
         await browse.waitFor({ state: "detached" });
         await page.keyboard.press("ControlOrMeta+Shift+K");
         await palette.waitFor();
+        await page.keyboard.press("Escape");
+        await palette.waitFor({ state: "detached" });
+        await page.locator(".header-more-button").tap();
+        await more.waitFor();
+        await search.tap();
+        await palette.waitFor();
+        await page.waitForFunction(() => document.activeElement?.matches(".command-palette .palette-search input") === true, undefined, { timeout: 5000 });
+        assert.equal(await more.count(), 0, "the More sheet has gone");
       } finally { await palettePhone.close(); }
-      console.log("PASS phone header, More and Files omit palette entry points; wider Files and keyboard shortcuts still open it");
+      console.log("PASS phone header and Files omit palette buttons; More's first item opens the palette by touch; wider Files and keyboard shortcuts still open it");
 
       // a phone's ⋯ sheet is an entry of its own: Back closes it and stays on the pane; a sheet
       // closed by Cancel or by an item leaves no entry behind, so the next Back goes to the pane before
