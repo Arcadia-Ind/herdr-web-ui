@@ -682,6 +682,12 @@ export const KO: Record<string, string> = {
   "Held until the agent is ready": "에이전트가 준비될 때까지 보관",
   "Codex has a question open in the terminal: answer it above first": "Codex가 터미널에 질문을 열어 두었습니다. 먼저 위에서 답하세요",
   "Confirm your answer in the card above, or type another…": "위 카드에서 답을 확인하거나 다른 답을 입력하세요…",
+  "Terminal ended": "터미널이 종료되었습니다",
+  "Held input discarded": "보관한 입력은 버렸습니다",
+  "Reconnecting to herdr web ui…": "herdr web ui에 다시 연결하는 중…",
+  "Input held:": "보관한 입력:",
+  "View only — the operator’s screen size is untouched": "보기 전용 — 조작하는 사람의 화면 크기는 그대로입니다",
+  "Terminal text size {px} px": "터미널 글자 크기 {px}px",
 
   // ---- install help ----
   "Tap the Share button, then Add to Home Screen.": "공유 버튼을 누른 뒤 홈 화면에 추가를 선택하세요.",

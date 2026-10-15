@@ -24,7 +24,8 @@ import { type DraftRefusal, MAX_COMPOSER_CHARS, QUEUE_READY_STATUS, agentDisplay
 import { afterRead, afterSend, afterSettled, composerLift, greetingMemory, rememberGreeting, greetingFits, greetingFolder, roomOverComposer, showsGreeting, type ChatRead } from "../lib/greeting.ts";
 import { DETACHED, usePaneBranch } from "../lib/paneBranch.ts";
 import { answerFromText, answerHint, answerRefusal, needsConfirmation, type TypedAnswer } from "../lib/promptAnswer.ts";
-import { ApiError, assertAttachable, fetchPaneScroll, fetchPaneSelection, scrollPane } from "../lib/api.ts";
+import { ApiError, AttachmentTooLargeError, assertAttachable, fetchPaneScroll, fetchPaneSelection, scrollPane } from "../lib/api.ts";
+import { userErrorMessage } from "../lib/userError.ts";
 import { parseOsc52 } from "../lib/osc52.ts";
 import { composerDrafts } from "../lib/composerDraft.ts";
 import { appendQuote, formatTerminalQuote } from "../lib/terminalQuote.ts";
@@ -71,6 +72,12 @@ const RELEASE_AFTER_MS = 1000;
 // in the background: taking the pane then sized it for nobody, and herdr's own TUI drew it cut
 // off at its split's edge
 const inUse = (): boolean => document.visibilityState === "visible" && document.hasFocus();
+
+/** A failure as one line: the plain sentence, then what the server or the browser said. */
+const plainError = (cause: unknown): string => {
+  const failure = userErrorMessage(cause);
+  return failure.detail === null ? failure.message : `${failure.message} (${failure.detail})`;
+};
 
 export interface PaneTerminalProps {
   /** The pane this terminal attaches to; null renders the placeholder. */
@@ -219,6 +226,7 @@ export function PaneTerminal({
   wheelSpeedRef.current = terminalWheelSpeed;
   const hostRef = useRef<HTMLDivElement | null>(null);
   const pinchBadgeRef = useRef<HTMLSpanElement | null>(null);
+  const pinchStatusRef = useRef<HTMLSpanElement | null>(null);
   /** the user's font size (settings, or a pinch in progress); a narrow split pane may draw smaller */
   const baseFontRef = useRef(terminalFontSize);
   const stackRef = useRef<HTMLDivElement | null>(null);
@@ -1440,7 +1448,8 @@ export function PaneTerminal({
         pasteText(paths.map((path) => `'${path.replaceAll("'", "'\\''")}'`).join(" ") + " ");
         if (activeRef.current && !findOpenRef.current) term.focus();
       } catch (error) {
-        if (paneRef.current === pane) noteClipboard(error instanceof Error ? error.message : String(error));
+        // a file over the limit already says which file and the limit, in the UI language
+        if (paneRef.current === pane) noteClipboard(error instanceof AttachmentTooLargeError ? error.message : plainError(error));
       }
     };
     const onFilePaste = (event: ClipboardEvent): void => {
@@ -1560,6 +1569,9 @@ export function PaneTerminal({
         // a pinch can end after the pane went behind a sibling of its split: it saves the size, sizing no pty
         if (current && inUse() && !adopted() && !chatViewRef.current && sizesPty()) socket.resize(current, term.cols, term.rows, true);
         updateSettings({ terminalFontSize: finished.size });
+        // said once, for the size kept: the badge that follows the fingers is not read out
+        const t = tRef.current; // the language of now, not of the attach
+        if (pinchStatusRef.current) pinchStatusRef.current.textContent = t("Terminal text size {px} px", { px: finished.size });
       }
       hidePinchBadge();
     };
@@ -2558,7 +2570,7 @@ export function PaneTerminal({
           () => { setPromptRefresh((key) => key + 1); return true; },
           (cause: unknown) => {
             setPromptRefresh((key) => key + 1);
-            return cause instanceof ApiError && cause.status === 409 ? t("The question on screen changed; check it and answer again.") : String(cause instanceof Error ? cause.message : cause);
+            return cause instanceof ApiError && cause.status === 409 ? t("The question on screen changed; check it and answer again.") : plainError(cause);
           },
         );
       }
@@ -2762,13 +2774,13 @@ export function PaneTerminal({
         {/* the chat lens says these itself (ChatView), inline; the pills are the grid's */}
         {paneId !== null && !chatView && ended && !outputError && (
           <div className="terminal-banner" role="status">
-            terminal ended{!draftIsEmpty(draft) ? " — held input discarded" : ""}
+            {t("Terminal ended")}{!draftIsEmpty(draft) ? ` · ${t("Held input discarded")}` : ""}
           </div>
         )}
         {paneId !== null && !chatView && !ended && !connected && (
           <div className="terminal-banner terminal-banner-warning" role="status">
-            reconnecting to herdr web ui…
-            {draft.text.length > 0 && <span className="draft-held"> input held: “{draft.text}”</span>}
+            {t("Reconnecting to herdr web ui…")}
+            {draft.text.length > 0 && <span className="draft-held"> {t("Input held:")} “{draft.text}”</span>}
           </div>
         )}
         {paneId !== null && !ended && connected && !draftIsEmpty(draft) && !noticesDocked && (
@@ -2791,7 +2803,7 @@ export function PaneTerminal({
         )}
         {paneId !== null && !ended && observing && (
           <div className="terminal-banner terminal-banner-observe" role="status">
-            view only — the operator’s screen size is untouched
+            {t("View only — the operator’s screen size is untouched")}
           </div>
         )}
         {paneId !== null && !chatView && selectionQuote?.pane === paneId && (
@@ -2827,6 +2839,7 @@ export function PaneTerminal({
             stop on the wrapper would only be an empty one ahead of it. */}
         <div className={`pane-terminal${paneId === null ? " is-idle" : ""}`} ref={hostRef} role={chatView ? undefined : "region"} aria-roledescription={chatView ? undefined : t("Terminal")} aria-label={chatView ? undefined : terminalName} />
         <span className="terminal-font-size" ref={pinchBadgeRef} hidden aria-hidden="true" />
+        <span className="visually-hidden" ref={pinchStatusRef} aria-live="polite" />
         {paneId !== null && <TerminalViewportTools key={paneId} viewportIntent={viewportIntent} terminal={terminal} paneId={paneId}
           pageScroll={chatView ? undefined : pageScroll}
           onApplicationPage={sendApplicationPage}

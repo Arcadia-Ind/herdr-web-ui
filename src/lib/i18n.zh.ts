@@ -686,6 +686,12 @@ export const ZH: Record<string, string> = {
   "Held until the agent is ready": "保留至 Agent 就绪",
   "Codex has a question open in the terminal: answer it above first": "Codex 在终端中有一个未关闭的问题。请先在上方回答",
   "Confirm your answer in the card above, or type another…": "请在上方卡片中确认你的回答，或输入其他回答…",
+  "Terminal ended": "终端已结束",
+  "Held input discarded": "已丢弃保留的输入",
+  "Reconnecting to herdr web ui…": "正在重新连接 herdr web ui…",
+  "Input held:": "保留的输入：",
+  "View only — the operator’s screen size is untouched": "仅查看 — 操作者的屏幕尺寸保持不变",
+  "Terminal text size {px} px": "终端文字大小 {px} px",
 
   // ---- install help ----
   "Tap the Share button, then Add to Home Screen.": "点按“共享”按钮，然后选择“添加到主屏幕”。",
