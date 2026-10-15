@@ -6,4 +6,6 @@
 - Screen readers hear when an attachment finishes ("photo.png attached") or fails, with the reason;
   the chat log is named by the pane's title instead of its id, and a picture a tool read is named
   by its number and the tool.
+- A failed attachment's note over the message box says in plain words why it failed, with the PC's
+  own words kept beneath it, instead of `/api/pane/image failed (500): ...`.
 - With reduced motion, the prompt card's options and question chips change colour without fading.

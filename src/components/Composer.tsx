@@ -315,6 +315,8 @@ export function Composer({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragging, setDragging] = useState(false);
   const [note, setNote] = useState<string | DraftRefusal | null>(null);
+  /** what the PC or the browser said about a failed upload, shown under its note while that note is up */
+  const [noteDetail, setNoteDetail] = useState<{ note: string; detail: string } | null>(null);
   // shown only when chosen in Settings → Quick replies: a button beside the box was one more thing to read
   const quickOpen = settings.showQuickReplies;
   const quickReplies = quickReplyButtons(settings);
@@ -810,10 +812,12 @@ export function Composer({
             setAttachments((current) =>
               current.map((item) => (item.id === attachment.id ? { ...item, state: "error" } : item)),
             );
-            const failed = error instanceof Error ? error.message : String(error);
-            setNote(attachment.leftOut ? `${failed} ${attachment.leftOut}` : failed);
-            const reason = error instanceof AttachmentTooLargeError ? error.message : userErrorMessage(error).message;
-            setAnnouncement(t("{name} could not be attached: {reason}", { name: attachment.file.name, reason }));
+            // the size limit's own sentence is already plain; anything else is said plainly, its words kept beneath
+            const failure = error instanceof AttachmentTooLargeError ? { message: error.message, detail: null } : userErrorMessage(error);
+            const shown = attachment.leftOut ? `${failure.message} ${attachment.leftOut}` : failure.message;
+            setNote(shown);
+            setNoteDetail(failure.detail === null ? null : { note: shown, detail: failure.detail });
+            setAnnouncement(t("{name} could not be attached: {reason}", { name: attachment.file.name, reason: failure.message }));
           },
         )
         .finally(() => {
@@ -1144,7 +1148,7 @@ export function Composer({
       {note !== null && (
         <div className={`composer-note${typeof note === "object" ? " composer-note-offer" : ""}`} role="alert">
           <TriangleAlert className="composer-note-icon" aria-hidden="true" />
-          <span className="composer-note-text">{typeof note === "string" ? note : note.note}</span>
+          <span className="composer-note-text">{typeof note === "string" ? note : note.note}{typeof note === "string" && noteDetail?.note === note && <><br /><code>{noteDetail.detail}</code></>}</span>
           {/* the draft named above, never what has replaced it since: the server checks; a box it could
               not tell empty, sent over only in the same Claude terminal the refusal was for */}
           {typeof note === "object" && <button type="button" className="composer-note-action" disabled={!connected || uploading || roomless !== undefined || sending || text.trim().length === 0}
