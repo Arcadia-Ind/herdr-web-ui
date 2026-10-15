@@ -73,6 +73,7 @@ import type { AgentStatus, ConversationMetadata, ConversationPart, ConversationR
 import { chatIsBlank, type ChatRead } from "../lib/greeting.ts";
 import { TurnTime } from "./TurnTime.tsx";
 import { useT } from "../lib/i18n.ts";
+import { userErrorMessage, type UserError } from "../lib/userError.ts";
 
 // No row is this object, so the list finds nothing to scroll to.
 const NO_ROW = Object.freeze({});
@@ -135,6 +136,8 @@ export interface ChatViewProps {
   promptDock?: HTMLElement | null;
   /** a prompt was answered from its card; `toMessageBox`: the keyboard's focus was in the card and may go on to the message box */
   onPromptAnswered?: (toMessageBox: boolean) => void;
+  /** the pane's own name, as App's header shows it: the log is named by it, never by the pane id */
+  title?: string | null;
 }
 
 interface ChatState {
@@ -355,7 +358,8 @@ function ToolImages({ paneId, part }: { paneId: string; part: ToolPartType }) {
   if (part.images === undefined || part.images.length === 0) return null;
   const images = part.images.map((image, index): GalleryImage => ({
     src: machinePath(machineId, `pane/conversation/image?${new URLSearchParams({ pane_id: paneId, ref: image.ref }).toString()}`),
-    name: t("Attached image"),
+    // a tool's picture carries no file name: it is named by its place and the tool that read it
+    name: t("Image {n} from {tool}", { n: index + 1, tool: part.name }),
     file: attachmentFileName(image.media_type, index),
   }));
   return <ImageGallery images={images} className="chat-tool-images" />;
@@ -683,7 +687,7 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
   const t = useT();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UserError | null>(null);
   useEffect(() => {
     if (!open || !visible) return;
     let cancelled = false;
@@ -695,7 +699,7 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
         setText(toTranscriptMessages(result.text).filter((message) => message.role !== "status").map((message) => message.text).join("\n\n"));
         setError(null);
       } catch (cause) {
-        if (!cancelled) setError(cause instanceof Error ? cause.message : String(cause));
+        if (!cancelled) setError(userErrorMessage(cause));
       } finally {
         if (!cancelled) timer = window.setTimeout(() => void read(), PROMPT_POLL_MS);
       }
@@ -707,12 +711,12 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
     <summary>{t("Conversation unavailable — show terminal output")}</summary>
     {text !== null && <pre>{text}</pre>}
     {text === null && error === null && <p className="chat-inline-state" role="status">{t("Loading…")}</p>}
-    {error !== null && <p className="chat-inline-state chat-inline-error" role="alert">{error}</p>}
+    {error !== null && <p className="chat-inline-state chat-inline-error" role="alert">{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</p>}
   </details>;
 }
 
 // the app re-renders on every pane-status and poll; an unchanged transcript sits those out
-export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered }: ChatViewProps) {
+export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
   const t = useT();
   const { fetchPaneConversation, peekPaneConversation, fetchPanePromptState, fetchPaneTranscript } = useMachineApi();
   const { settings } = useSettings();
@@ -733,7 +737,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const smoothFollow = followGlides({ working: activity !== "idle" && agentStatus !== "blocked", reducedMotion });
   const workStatus = state.activity !== undefined && agentStatus !== "blocked" ? activity === "idle" ? "idle" : "working" : agentStatus;
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UserError | null>(null);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
   const [newMessages, setNewMessages] = useState(false);
   /** scrolled up from the end: the way back is offered even when nothing new came */
@@ -975,7 +979,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       } catch (cause) {
         if (cancelled || generation !== olderGeneration.current) return;
         setLoaded(true);
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(userErrorMessage(cause));
         setErrorStatus(cause instanceof ApiError ? cause.status : null);
       }
     };
@@ -1343,6 +1347,9 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       <Turn paneId={paneId} turn={turn} live={live} waiting={isWaitingWorkTurn(live, agentStatus)} showThinking={settings.showThinking} skills={skillMatcher} />
     </RenderBoundary>;
   }, [shownTurns.length, workStatus, finishedBeforeSend, t, paneId, agentStatus, settings.showThinking, skillMatcher]);
+  // displayPaneTitle falls back to the pane id for a pane with nothing else to call it
+  const shownTitle = title?.trim() ?? "";
+  const logLabel = shownTitle !== "" && shownTitle !== paneId ? t("conversation of {pane}", { pane: shownTitle }) : t("Conversation");
   const header = <>
       {/* the conversation below is not all the file holds: a /tree left these behind, and pi moved
           its leaf without writing anything, so nothing here could say they were ever there. First
@@ -1368,7 +1375,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
   </>;
   const footer = <>
       {!ended && !connected && <p className="chat-inline-state" role="status">{t("Reconnecting…")}</p>}
-      {error !== null && <p className="chat-inline-state chat-inline-error" role="alert">{errorStatus === 401 ? t("locked — the token gate is asking again") : error}</p>}
+      {error !== null && <p className="chat-inline-state chat-inline-error" role="alert">{errorStatus === 401 ? t("locked — the token gate is asking again") : <>{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</>}</p>}
       {!loaded && error === null && <p className="chat-inline-state" role="status">{t("Loading conversation…")}</p>}
       {loaded && error === null && agent === "grok" && state.source !== "conversation" && <p className="chat-inline-state" role="status">{t("Grok chat is unavailable. Open Terminal to see activity and tool calls.")}</p>}
       {loaded && error === null && agent === "agy" && state.source !== "conversation" && <p className="chat-inline-state" role="status">{t("Antigravity chat is unavailable. Open Terminal to see activity and tool calls.")}</p>}
@@ -1385,7 +1392,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
     <div className="chat-frame-body">
     {state.source === "conversation" ? ChatTimeline === null
       // its chunk is still loading: no turn is read until it arrives, so this is the loading state
-      ? <div className="chat-view chat-view-virtual" role="log" aria-live="polite" aria-label={t("conversation of {pane}", { pane: paneId })}>
+      ? <div className="chat-view chat-view-virtual" role="log" aria-live="polite" aria-label={logLabel}>
         <div className="chat-transcript chat-transcript-virtual">
           <div className="chat-virtual-header">{header}</div>
           <div className="chat-virtual-footer">{footer}</div>
@@ -1402,10 +1409,10 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       memories={rowMemories}
       header={header}
       footer={footer}
-      label={t("conversation of {pane}", { pane: paneId })}
+      label={logLabel}
       onScroll={onScroll}
       renderRow={renderTurn}
-    /> : <div className="chat-view" ref={scroller} onScroll={onScroll} role="log" aria-live="polite" aria-label={t("conversation of {pane}", { pane: paneId })}>
+    /> : <div className="chat-view" ref={scroller} onScroll={onScroll} role="log" aria-live="polite" aria-label={logLabel}>
       <div className="chat-transcript" data-conversation-source={state.conversationSource}>
         {agent !== null ? <TerminalFallback key={paneId} paneId={paneId} visible={visible} />
           : state.messages.map((message, index) => <FallbackTurn key={index} paneId={paneId} message={message} />)}

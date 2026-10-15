@@ -9,6 +9,7 @@ import type { InteractivePrompt, PromptAnswer } from "../../shared/protocol.ts";
 import { focusFollowsAnswer, pressOrigin, type TypedAnswer } from "../lib/promptAnswer.ts";
 import { dismissKeyboardOn } from "../lib/keyboard.ts";
 import { useT } from "../lib/i18n.ts";
+import { userErrorMessage, type UserError } from "../lib/userError.ts";
 import { OpenFileContext } from "../lib/filePaths.ts";
 
 /**
@@ -34,7 +35,7 @@ export function PromptCard({ paneId, prompt, onPromptChanged, onAnswered, typedA
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [custom, setCustom] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UserError | null>(null);
   const cardRef = useRef<HTMLElement | null>(null);
   const confirmRef = useRef<HTMLDivElement | null>(null);
   // the control Enter or Space last went down on: the click that follows on it is that key's
@@ -90,10 +91,10 @@ export function PromptCard({ paneId, prompt, onPromptChanged, onAnswered, typedA
       // a card read before the question moved on: refused as changed (409), or as an answer it no longer fits (400).
       // The note stays until the card is replaced or answered again, so the button never looks dead
       if (cause instanceof ApiError && ((cause.status === 409 && cause.code === "prompt_changed") || (cause.status === 400 && cause.code === "invalid_answer"))) {
-        setError(t("The question on screen changed; check it and answer again."));
+        setError({ message: t("The question on screen changed; check it and answer again."), detail: null });
         onPromptChanged();
       } else {
-        setError(cause instanceof Error ? cause.message : String(cause));
+        setError(userErrorMessage(cause));
       }
     }
     setPending(false);
@@ -221,7 +222,8 @@ export function PromptCard({ paneId, prompt, onPromptChanged, onAnswered, typedA
           </span>
         </div>
       )}
-      {error !== null && <p className="prompt-card-error" role="alert">{error}</p>}
+      {pending && <p className="prompt-card-status" role="status">{t("Sending your answer…")}</p>}
+      {error !== null && <p className="prompt-card-error" role="alert">{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</p>}
     </section>
   );
 }

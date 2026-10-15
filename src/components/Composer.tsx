@@ -55,6 +55,8 @@ import { BackgroundTasks } from "./BackgroundTasks.tsx";
 import { MicButton, VoiceRecordingPill, useDictation } from "./VoiceInput.tsx";
 import { cachedPaneCommands } from "../lib/paneCommandCache.ts";
 import { useT } from "../lib/i18n.ts";
+import { userErrorMessage } from "../lib/userError.ts";
+import { AttachmentTooLargeError } from "../lib/api.ts";
 import { modalOpen } from "../lib/focus.ts";
 
 export interface ComposerProps {
@@ -300,6 +302,10 @@ export function Composer({
   const filledFrom = useRef<string | null>(null);
   const [commands, setCommands] = useState<SlashCommand[]>([]);
   const [files, setFiles] = useState<string[]>([]);
+  /** the file list could not be read: said in the menu, never drawn as "no matches" */
+  const [filesFailed, setFilesFailed] = useState(false);
+  /** what the last settled attachment did, for assistive tech (the tiles say it on screen) */
+  const [announcement, setAnnouncement] = useState("");
   const [slashUsage, setSlashUsage] = useState<Record<string, number>>(readSlashUsage);
   // the highlight lives in the refs below: a move redraws the menu, also when it lands on an index it held before
   const [, redrawMenu] = useState(0);
@@ -380,15 +386,16 @@ export function Composer({
     const request = ++fileRequest.current;
     if (trigger?.kind !== "file") {
       setFiles([]);
+      setFilesFailed(false);
       return;
     }
     const timer = window.setTimeout(() => {
       void fetchPaneFiles(paneId, trigger.query, 20)
         .then((next) => {
-          if (request === fileRequest.current) setFiles(next);
+          if (request === fileRequest.current) { setFiles(next); setFilesFailed(false); }
         })
         .catch(() => {
-          if (request === fileRequest.current) setFiles([]);
+          if (request === fileRequest.current) { setFiles([]); setFilesFailed(true); }
         });
     }, 150);
     return () => window.clearTimeout(timer);
@@ -630,6 +637,8 @@ export function Composer({
   );
   const choices: readonly (SlashCommand | string)[] = trigger?.kind === "slash" ? orderedCommands : files;
   const menuOpen = !menuDismissed && trigger !== null && choices.length > 0;
+  // a failed listing opens the menu on its one line, which no key picks
+  const filesFailedShown = !menuDismissed && trigger?.kind === "file" && filesFailed && files.length === 0;
   // clamped as the list is drawn, not by an effect after it: a Tab or Enter typed before that
   // effect's render found no row at the old index and did nothing
   const choiceIds = choices.map((choice) => trigger?.kind === "slash"
@@ -725,14 +734,15 @@ export function Composer({
   /** paths placed so far, by attachment id: ids follow pick order */
   const placedMentions = useRef(new Map<number, string>());
   /** finished uploads whose paths wait for a /command or an IME composition to end, or for room */
-  const waitingMentions = useRef<{ id: number; path: string }[]>([]);
+  const waitingMentions = useRef<{ id: number; path: string; name: string }[]>([]);
 
   const placeWaitingMentions = useCallback(() => {
     if (waitingMentions.current.length === 0) return;
     if (composingRef.current || /^\/\S*$/u.test(textRef.current)) return;
     const waiting = waitingMentions.current.sort((a, b) => a.id - b.id);
     waitingMentions.current = [];
-    for (const [index, { id, path }] of waiting.entries()) {
+    const attached: string[] = [];
+    for (const [index, { id, path, name }] of waiting.entries()) {
       if (removedAttachments.current.has(id)) continue;
       const mention = imageMention(path);
       const earlier = [...placedMentions.current].filter(([placed]) => placed < id).map(([, placed]) => placed);
@@ -747,8 +757,10 @@ export function Composer({
       }
       placedMentions.current.set(id, mention);
       setAttachments((current) => current.map((item) => (item.id === id ? { ...item, path, state: "ready" } : item)));
+      attached.push(t("{name} attached", { name }));
     }
-  }, [insertMentionAtStart]);
+    if (attached.length > 0) setAnnouncement(attached.join(" "));
+  }, [insertMentionAtStart, t]);
 
   // whatever wrote the text (typing, a completion, dictation, a cleared draft), a waiting path tries
   // again in the next frame, after that write's own caret placement has landed
@@ -790,7 +802,7 @@ export function Composer({
         .then(
           (path) => {
             if (!mounted.current || removedAttachments.current.has(attachment.id)) return;
-            waitingMentions.current.push({ id: attachment.id, path });
+            waitingMentions.current.push({ id: attachment.id, path, name: attachment.file.name });
             placeWaitingMentions();
           },
           (error: unknown) => {
@@ -800,6 +812,8 @@ export function Composer({
             );
             const failed = error instanceof Error ? error.message : String(error);
             setNote(attachment.leftOut ? `${failed} ${attachment.leftOut}` : failed);
+            const reason = error instanceof AttachmentTooLargeError ? error.message : userErrorMessage(error).message;
+            setAnnouncement(t("{name} could not be attached: {reason}", { name: attachment.file.name, reason }));
           },
         )
         .finally(() => {
@@ -807,7 +821,7 @@ export function Composer({
           pumpUploads();
         });
     }
-  }, [onUploadImage, placeWaitingMentions]);
+  }, [onUploadImage, placeWaitingMentions, t]);
 
   const uploadImages = useCallback(
     (incoming: readonly File[]) => {
@@ -1221,6 +1235,18 @@ export function Composer({
             )}
           </div>
         )}
+
+        {filesFailedShown && (
+          <div className="menu composer-menu">
+            <div className="composer-menu-group">
+              <div className="menu-heading">{t("Files")}</div>
+              <p className="chat-inline-state chat-inline-error" role="status">{t("Couldn't load suggestions")}</p>
+            </div>
+          </div>
+        )}
+
+        {/* mounted before anything settles: a live region that appears with its text is not read */}
+        <p className="visually-hidden" aria-live="polite">{announcement}</p>
 
         {attachments.length > 0 && (
           <div className="composer-attachments" aria-label={t("Attached files")}>

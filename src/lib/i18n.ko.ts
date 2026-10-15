@@ -545,6 +545,7 @@ export const KO: Record<string, string> = {
   "Custom answer": "직접 입력한 답",
   "Send {answer}?": "{answer} 보낼까요?",
   "Confirm": "확인",
+  "Sending your answer…": "답을 보내는 중…",
 
   // ---- markdown ----
   "Code copied": "코드 복사됨",
@@ -615,6 +616,9 @@ export const KO: Record<string, string> = {
   "Type {range} to choose…": "{range} 중 하나를 입력…",
   "Choose with the option numbers above, e.g. 1 3.": "위 선택지 번호로 고르세요 (예: 1 3).",
   "Choose one of the options above: type {range}.": "위 선택지 중 하나를 고르세요: {range} 입력.",
+  "Couldn't load suggestions": "제안을 불러오지 못했습니다",
+  "{name} attached": "{name} 첨부됨",
+  "{name} could not be attached: {reason}": "{name}을(를) 첨부하지 못했습니다: {reason}",
 
   // ---- chat view ----
   "Copied": "복사됨",
@@ -660,6 +664,8 @@ export const KO: Record<string, string> = {
   "{m}m": "{m}분",
   "{m}m {s}s": "{m}분 {s}초",
   "{h}h {m}m": "{h}시간 {m}분",
+  "Conversation": "대화",
+  "Image {n} from {tool}": "{tool}이(가) 가져온 이미지 {n}",
 
   // ---- terminal ----
   "Codex has a question open in the terminal: answer it above, or close it there (alt+↓) to message Codex.": "Codex가 터미널에 질문을 열어 두었습니다. 위에서 답하거나, 터미널에서 닫으면(alt+↓) Codex에게 메시지를 보낼 수 있습니다.",
