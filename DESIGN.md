@@ -333,7 +333,8 @@ Comfortable values are `:root`; the final column is the complete compact overrid
 | `--header-h-wide` | `46px` | — | App header from `769px`, in either density (`--header-h` takes this value there) |
 | `--sidebar-w` | `320px` | `300px` | Sidebar/drawer; the default while the user has not dragged the sidebar's edge |
 | `--control-h` | `34px` | `32px` | Buttons and fields |
-| `--touch-target` | `40px` | — | Coarse-pointer minimum |
+| `--touch-target` | `44px` | — | Coarse-pointer minimum: every control a finger can reach is at least this in both dimensions |
+| `--pointer-target` | `24px` | — | Fine-pointer minimum hit area: a glyph button under `--control-h` (the chat's copy and format buttons, an attachment tile's X) keeps its look and reaches it through an invisible `::before` expander |
 | `--keybar-h` | `48px` | — | Terminal key bar |
 | `--row-h` | `56px` | `44px` | Palette, worktree, device and background-task list rows; chat and composer list height caps |
 | `--chip-h` | `20px` | `18px` | Badge/pill height |
@@ -442,6 +443,9 @@ One set for both themes: the card is island black wherever it shows.
 - One `aria-pressed="true"` option receives hover fill and strong text; the group itself is an
   elevated, bordered `--radius-md` track.
 - Used for Chat/Terminal, theme and density. It is not a generic tab list.
+- On a coarse pointer the track keeps its height; each option is at least `--touch-target` wide,
+  so neighbours never share a tap, and reaches `--touch-target` tall through an invisible `::before`
+  expander, as the palette's filter chips do.
 
 ### Keyboard hint (`.kbd`)
 - An inline mono keycap: `18px` high, strong bottom edge, `--radius-sm`, `--fs-2xs`.
@@ -914,7 +918,10 @@ One set for both themes: the card is island black wherever it shows.
   beside its bubble, and an answer has one copy glyph (it copies Markdown) with a **Plain text**
   text button in the regular weight beside it. Otherwise the answer keeps two labelled buttons,
   glyph + MD and glyph + TXT; where the primary pointer is coarse each is a `--touch-target` target on a
-  one-line row, as is a user turn's copy, and a skill list under a user turn clears that target.
+  one-line row, as is a user turn's copy, and a skill list under a user turn clears that target; the
+  first copy drops its own left inset so its glyph stays on the prose edge (an overhang past the
+  transcript's edge cannot be tapped). With a mouse the copy and format buttons keep their `--chip-h`
+  look and take a `--pointer-target` hit area through an invisible `::before` expander.
 - Markdown supports headings, lists (a task item `- [x]` / `- [ ]` shows a checked or empty box in
   place of its bullet, not clickable), links, quotes, tables, inline/fenced code and code-copy
   actions.
@@ -996,9 +1003,10 @@ One set for both themes: the card is island black wherever it shows.
   starts with the list-checks glyph, the word **Plan** and `done/total` in tabular figures; running
   background tasks follow after a hairline as their glyph and number. The chip keeps the working
   tint while a step or a task is left, and goes quiet once every step is done and nothing runs. A
-  narrow card drops the words and keeps the glyphs and numbers. The chip shows only in the chat
-  lens, and not for an offline PC's cached plan. The sidebar's agent row repeats the count beside
-  the background count, in its quiet mono figures and with no box (`.plan-count`).
+  narrow card drops the words and keeps the glyphs and numbers, and a finger gets a `--touch-target`
+  chip in both dimensions. The chip shows only in the chat lens, and not for an offline PC's cached
+  plan. The sidebar's agent row repeats the count beside the background count, in its quiet mono
+  figures and with no box (`.plan-count`).
 - The chip opens one list above the card: a **Plan** heading with `N of M done`, the steps in wave
   order (a status glyph, the name, what a running step does now, then a dim state · time · teammate
   line; a waiting step's name is dim), then a **Background tasks** heading over the tasks list when
@@ -1090,7 +1098,9 @@ One set for both themes: the card is island black wherever it shows.
   (the only other card on this surface is the prompt card docked over it, while an agent asks);
   focus turns its border `--accent` (no inner outline). Above it the notices (below), the
   completion popover and the background-task list; inside, the image strip is its own row at the top, then the auto-growing
-  message box as a row of its own at the card's full width, then ONE row of controls under it:
+  message box as a row of its own at the card's full width (each tile's X keeps its `--chip-h`
+  circle: with a mouse it takes a `--pointer-target` hit area through an invisible `::before`
+  expander, and a finger gets `--touch-target`), then ONE row of controls under it:
   on the left the add button (lucide `Plus`, named "Attach files"), the mic when voice input
   shows it (see Voice input), and the background-task chip; on the right the status content and ONE round Send/Stop button.
   The message's text starts `--space-4` in (`--space-3` on a phone, `480px` and below).
@@ -1131,7 +1141,7 @@ One set for both themes: the card is island black wherever it shows.
   with lucide `ArrowUp`; Stop is `--text-strong` with a `--bg` square, and turns
   `--status-blocked` on hover and focus. Not connected, Stop is disabled and loses its fill
   (`--border-strong` outline, `--text-dim` glyph). A coarse pointer keeps that compact visible
-  circle inside a transparent `--touch-target` / `40px` button, so tapping remains easy.
+  circle inside a transparent `--touch-target` / `44px` button, so tapping remains easy.
 - The status content (`.composer-status`, `role="status"`) sits between the two control groups,
   pushed to the button's side. It draws, at `--fs-xs`: the model pill and the uploading
   or reconnecting sentence in `--text-dim`. The background-task chip is a button in the left controls;
@@ -1189,7 +1199,7 @@ One set for both themes: the card is island black wherever it shows.
   prompt dock. `PendingMessages` uses the chat's column and neutral user-bubble surface: plain
   text aligned right, with no outer card. Its scrolling stack is capped by `--pending-max-h`
   (`min(20dvh, 12rem)`). The text stays selectable. Its separate ↑ Send now action sends it, and the small sibling X
-  discards it. Actions keep a 40px touch target on phones.
+  discards it. Actions keep a `--touch-target` touch target on phones.
   Sending disables that item's actions; errors stay inline. Uncertain messages offer Copy and
   Discard saved copy, with no retry action. Desktop and phones share this flow.
 - Accepted pending messages clear only the draft prefix acknowledged by the bridge. Actual

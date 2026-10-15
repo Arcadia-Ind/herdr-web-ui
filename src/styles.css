@@ -153,7 +153,10 @@
   --header-h-wide: 46px;
   --sidebar-w: 320px;
   --control-h: 34px;
-  --touch-target: 40px;
+  --touch-target: 44px;
+  /* the smallest hit area a mouse gets: a glyph button under --control-h keeps its look and reaches
+     it through an invisible ::before expander (ChatView.css, Composer.css), never by growing */
+  --pointer-target: 24px;
   --keybar-h: 48px;
   --row-h: 56px;
   --chip-h: 20px;
@@ -1112,6 +1115,20 @@ button {
   .btn,
   .error-retry {
     height: var(--touch-target);
+  }
+
+  /* the segmented track keeps its height; each option is a finger's width, so neighbours never
+     share a tap, and reaches the target's height through an invisible expander, as the palette's
+     filter chips do (CommandPalette.css) */
+  .segmented > button {
+    position: relative;
+    min-width: var(--touch-target);
+  }
+
+  .segmented > button::before {
+    content: "";
+    position: absolute;
+    inset: calc((var(--control-h) - 6px - var(--touch-target)) / 2) 0;
   }
 }
 

@@ -73,6 +73,13 @@
   }
 }
 
+/* a finger gets the target's height as well as its width */
+@media (pointer: coarse) {
+  .composer-surface[data-compact] .bg-tasks-toggle {
+    min-height: var(--touch-target);
+  }
+}
+
 /* nothing running: the list of what ran stays at hand, without the working tint */
 .bg-tasks-toggle.is-idle {
   background: transparent;
