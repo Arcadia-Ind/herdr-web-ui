@@ -370,6 +370,7 @@ export const JA: Record<string, string> = {
   "Cancel": "キャンセル",
   "Starting…": "起動しています…",
   "Open": "開く",
+  "The workspace opened, but {agent} did not start. Check that it is installed on the PC, then open it again.": "ワークスペースは開きましたが、{agent} は起動しませんでした。PC にインストールされているか確認してから、もう一度開いてください。",
   "Start": "開始",
   "Starting {agent}… up to 60s": "{agent} を起動しています… 最大 60 秒",
   "Starting shell…": "シェルを起動しています…",

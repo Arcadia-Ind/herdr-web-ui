@@ -148,7 +148,8 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
         : await createWorkspace({ cwd: directory.trim() || null, label: name.trim() || null, agent });
       if (agentKind && !result.agent_started && result.error?.message) {
         setPending(false);
-        setError({ message: result.error.message, detail: null });
+        // the workspace exists: say so plainly, keep the PC's own words beneath, and Open it rather than make another
+        setError({ message: t("The workspace opened, but {agent} did not start. Check that it is installed on the PC, then open it again.", { agent: selectedAgent?.label ?? agentKind }), detail: result.error.message });
         setCreatedPaneId(result.pane_id);
         return;
       }

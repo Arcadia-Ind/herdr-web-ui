@@ -368,6 +368,7 @@ export const KO: Record<string, string> = {
   "Cancel": "취소",
   "Starting…": "시작 중…",
   "Open": "열기",
+  "The workspace opened, but {agent} did not start. Check that it is installed on the PC, then open it again.": "워크스페이스는 열렸지만 {agent}이(가) 시작되지 않았습니다. PC에 설치되어 있는지 확인한 뒤 다시 여세요.",
   "Start": "시작",
   "Starting {agent}… up to 60s": "{agent} 시작 중… 최대 60초",
   "Starting shell…": "셸 시작 중…",

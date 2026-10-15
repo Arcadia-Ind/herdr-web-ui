@@ -372,6 +372,7 @@ export const ZH: Record<string, string> = {
   "Cancel": "取消",
   "Starting…": "正在启动…",
   "Open": "打开",
+  "The workspace opened, but {agent} did not start. Check that it is installed on the PC, then open it again.": "工作区已打开，但 {agent} 未能启动。请确认 PC 上已安装它，然后再次打开。",
   "Start": "启动",
   "Starting {agent}… up to 60s": "正在启动 {agent}… 最多 60 秒",
   "Starting shell…": "正在启动 Shell…",

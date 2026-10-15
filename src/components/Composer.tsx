@@ -304,8 +304,12 @@ export function Composer({
   const [files, setFiles] = useState<string[]>([]);
   /** the file list could not be read: said in the menu, never drawn as "no matches" */
   const [filesFailed, setFilesFailed] = useState(false);
-  /** what the last settled attachment did, for assistive tech (the tiles say it on screen) */
-  const [announcement, setAnnouncement] = useState("");
+  /**
+   * what the last settled attachment did, for assistive tech (the tiles say it on screen); each
+   * settlement gets its own id, so a repeat of the same words is a new node and is read again
+   */
+  const [announcement, setAnnouncement] = useState<{ id: number; text: string } | null>(null);
+  const announce = useCallback((text: string) => setAnnouncement((previous) => ({ id: (previous?.id ?? 0) + 1, text })), []);
   const [slashUsage, setSlashUsage] = useState<Record<string, number>>(readSlashUsage);
   // the highlight lives in the refs below: a move redraws the menu, also when it lands on an index it held before
   const [, redrawMenu] = useState(0);
@@ -761,8 +765,8 @@ export function Composer({
       setAttachments((current) => current.map((item) => (item.id === id ? { ...item, path, state: "ready" } : item)));
       attached.push(t("{name} attached", { name }));
     }
-    if (attached.length > 0) setAnnouncement(attached.join(" "));
-  }, [insertMentionAtStart, t]);
+    if (attached.length > 0) announce(attached.join(" "));
+  }, [announce, insertMentionAtStart, t]);
 
   // whatever wrote the text (typing, a completion, dictation, a cleared draft), a waiting path tries
   // again in the next frame, after that write's own caret placement has landed
@@ -817,7 +821,7 @@ export function Composer({
             const shown = attachment.leftOut ? `${failure.message} ${attachment.leftOut}` : failure.message;
             setNote(shown);
             setNoteDetail(failure.detail === null ? null : { note: shown, detail: failure.detail });
-            setAnnouncement(t("{name} could not be attached: {reason}", { name: attachment.file.name, reason: failure.message }));
+            announce(t("{name} could not be attached: {reason}", { name: attachment.file.name, reason: failure.message }));
           },
         )
         .finally(() => {
@@ -825,7 +829,7 @@ export function Composer({
           pumpUploads();
         });
     }
-  }, [onUploadImage, placeWaitingMentions, t]);
+  }, [announce, onUploadImage, placeWaitingMentions, t]);
 
   const uploadImages = useCallback(
     (incoming: readonly File[]) => {
@@ -1250,7 +1254,7 @@ export function Composer({
         )}
 
         {/* mounted before anything settles: a live region that appears with its text is not read */}
-        <p className="visually-hidden" aria-live="polite">{announcement}</p>
+        <p className="visually-hidden" aria-live="polite">{announcement && <span key={announcement.id}>{announcement.text}</span>}</p>
 
         {attachments.length > 0 && (
           <div className="composer-attachments" aria-label={t("Attached files")}>
