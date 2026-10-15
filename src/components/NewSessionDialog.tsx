@@ -11,6 +11,7 @@ import { DirectoryBrowser, homeRelative } from "./DirectoryBrowser.tsx";
 import { RecentFolderChips } from "./RecentFolderChips.tsx";
 import { useMachineApi, useMachineId } from "../lib/machineContext.tsx";
 import { useT } from "../lib/i18n.ts";
+import { userErrorMessage, type UserError } from "../lib/userError.ts";
 import { nativeModalOver, useFocusTrap } from "../lib/useFocusTrap.ts";
 import { useSheetSwipe } from "../lib/sheets.ts";
 import { passingFolder, recentDirectories } from "../lib/recent-directories.ts";
@@ -66,7 +67,7 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
   const [cwd, setCwd] = useState(defaultCwd ?? "");
   const [name, setName] = useState("");
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<UserError | null>(null);
   const [createdPaneId, setCreatedPaneId] = useState<string | null>(null);
   const [browsing, setBrowsing] = useState(false);
   const [recentFolders, setRecentFolders] = useState(() => recentDirectories.read(machineId));
@@ -102,7 +103,7 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
         if (stored && !next.some((agent) => agent.kind === stored)) setAgentKind(stored !== remembered && next.some((agent) => agent.kind === remembered) ? remembered : "");
       })
       .catch((reason: unknown) => {
-        if (!cancelled) setError(reason instanceof Error ? reason.message : String(reason));
+        if (!cancelled) setError(userErrorMessage(reason));
       });
     return () => {
       cancelled = true;
@@ -147,7 +148,7 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
         : await createWorkspace({ cwd: directory.trim() || null, label: name.trim() || null, agent });
       if (agentKind && !result.agent_started && result.error?.message) {
         setPending(false);
-        setError(result.error.message);
+        setError({ message: result.error.message, detail: null });
         setCreatedPaneId(result.pane_id);
         return;
       }
@@ -160,8 +161,8 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
       onCreated(result.pane_id, agentKind !== "" && result.agent_started !== false);
     } catch (reason: unknown) {
       setPending(false);
-      if (reason instanceof ApiError && reason.code === "invalid_cwd") setError(t("Directory not found"));
-      else setError(reason instanceof Error ? reason.message : String(reason));
+      if (reason instanceof ApiError && reason.code === "invalid_cwd") setError({ message: t("Directory not found"), detail: null });
+      else setError(userErrorMessage(reason));
     }
   };
 
@@ -196,7 +197,7 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
             <div className="field">
               <label className="field-label" htmlFor="new-session-cwd">{t("Directory")}</label>
               <div className="new-session-cwd">
-                <input id="new-session-cwd" className="input" value={cwd} disabled={fieldsDisabled} autoComplete="off" onChange={(event) => setCwd(event.target.value)} />
+                <input id="new-session-cwd" className="input" value={cwd} placeholder="~/projects/app" disabled={fieldsDisabled} autoComplete="off" onChange={(event) => setCwd(event.target.value)} />
                 <button type="button" className="btn" aria-expanded={browsing} disabled={fieldsDisabled} onClick={() => setBrowsing((open) => !open)}>
                   <FolderOpen aria-hidden="true" />
                   {t("Browse")}
@@ -228,7 +229,7 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
             <span className="field-hint">{t(tab ? "Tab name (optional)" : "Optional workspace label")}</span>
           </label>
           {pending && <p className="new-session-note" role="status">{pendingLabel}</p>}
-          {error && <p className="field-hint new-session-error" role="alert">{error}</p>}
+          {error && <p className="field-hint new-session-error" role="alert">{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</p>}
         </div>
         <footer className="modal-footer">
           <button type="button" className="btn btn-ghost" disabled={pending} onClick={onClose}>{t("Cancel")}</button>

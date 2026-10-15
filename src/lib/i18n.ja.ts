@@ -731,7 +731,17 @@ export const JA: Record<string, string> = {
   "Transcription failed": "文字起こしに失敗しました",
   "Voice input": "音声入力",
   "Voice input needs HTTPS": "音声入力には HTTPS が必要です",
+  // ---- errors (lib/userError.ts) ----
+  "This browser is not signed in to this PC any more. Pair it again in Settings → Phone & devices.": "このブラウザーはもうこの PC にサインインしていません。設定 → スマートフォンとデバイスでもう一度ペアリングしてください。",
+  "That item no longer exists on the PC. Refresh and try again.": "その項目は PC にもうありません。更新してからもう一度お試しください。",
+  "It changed on the PC while you were acting. Check it and try again.": "操作中に PC 側で変更されました。確認してからもう一度お試しください。",
+  "The PC took too long to answer. Try again.": "PC の応答に時間がかかりすぎました。もう一度お試しください。",
+  "The PC could not do that. Try again; if it keeps failing, restart herdr web ui on the PC.": "PC でその操作を実行できませんでした。もう一度お試しください。失敗が続く場合は PC で herdr web ui を再起動してください。",
+  "Can't reach the PC. Check your connection, then try again.": "PC に接続できません。接続を確認してからもう一度お試しください。",
+  "Something went wrong. Try again.": "問題が発生しました。もう一度お試しください。",
+
   // ---- sign-in ----
+  "Enter all 6 digits of the pairing code.": "ペアリングコードの 6 桁をすべて入力してください。",
   "That code is wrong, used up or expired. Start a new pairing on the PC.": "コードが間違っているか、使用済みか、期限切れです。PC で新しいペアリングを開始してください。",
   "Token does not match.": "トークンが一致しません。",
   "Tailscale says this device belongs to someone other than this PC's owner. The owner can still let it in with a pairing code.": "Tailscale によると、このデバイスはこの PC の所有者以外のユーザーのものです。所有者はペアリングコードでアクセスを許可できます。",
