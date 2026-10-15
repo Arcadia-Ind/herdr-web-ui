@@ -311,6 +311,16 @@ export async function checkSplitView(browser: Browser, origin: string): Promise<
       await unchanged();
       await page.emulateMedia({ reducedMotion: "no-preference" });
 
+      // The open pane's own row has no half to open beside itself: no guide, and the area refuses it.
+      await page.locator(`.pane-select[title^="${opened} —"]`).dispatchEvent("dragstart", { dataTransfer: data });
+      const accepted = await area.evaluate((element, [transfer, x, atY]) => !element.dispatchEvent(new DragEvent("dragover", {
+        dataTransfer: transfer as DataTransfer, clientX: x as number, clientY: atY as number, bubbles: true, cancelable: true,
+      })), [data, middle + 40, y] as const);
+      assert.equal(accepted, false, "the area does not take the open pane's own row");
+      await preview(false, null);
+      await source.dispatchEvent("dragend", { dataTransfer: data });
+      await unchanged();
+
       await start();
       await hover(middle - 40, "left");
       await hover(middle + 1, "left");
@@ -341,6 +351,17 @@ export async function checkSplitView(browser: Browser, origin: string): Promise<
       const tabs = page.locator(".tab-strip [role=tab]");
       await tabs.nth(1).waitFor();
       const box = (await area.boundingBox())!;
+      // the open tab dragged onto the area has no half to open beside itself: no guide, no split
+      const own = (await tabs.nth(0).boundingBox())!;
+      await page.mouse.move(own.x + own.width / 2, own.y + own.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2, { steps: 8 });
+      await settled(page);
+      assert.equal(await page.locator(".split-drop").evaluate((guide) => guide.classList.contains("is-visible") || guide.hasAttribute("data-side")), false,
+        "no guide for the open tab itself");
+      await page.mouse.up();
+      await settled(page);
+      assert.equal(await page.locator(".pane-slot").count(), 1, "the open tab dropped on itself opens no half");
       const tab = (await tabs.nth(1).boundingBox())!;
       await page.mouse.move(tab.x + tab.width / 2, tab.y + tab.height / 2);
       await page.mouse.down();

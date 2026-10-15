@@ -338,6 +338,8 @@ export function App() {
   }, []);
   // the guide appears as soon as a pane is picked up; a target is chosen only over the area
   const [paneDragging, setPaneDragging] = useState(false);
+  // the pane a sidebar row's native drag carries: its dragover cannot read the transfer's data
+  const nativeDragRef = useRef<SplitTarget | null>(null);
   const [dropAt, setDropAt] = useState<SplitSide | null>(null);
   const dropAtRef = useRef<SplitSide | null>(null);
   const showDropTarget = useCallback((side: SplitSide | null): void => {
@@ -345,6 +347,7 @@ export function App() {
     setDropAt(side);
   }, []);
   const clearDropPreview = useCallback((): void => {
+    nativeDragRef.current = null;
     setPaneDragging(false);
     showDropTarget(null);
   }, [showDropTarget]);
@@ -987,12 +990,17 @@ export function App() {
   };
   /** A pane dropped at a point: the half under it opens the pane. A pane of a tab a half already
    *  shows counts as that half's own pane, and is then picked in it. */
+  /** The open tab itself, with no split: no half would open beside it (dockPane), so the guide does
+   *  not show and the area takes no drop. */
+  const opensNothing = (dragged: SplitTarget | null): boolean =>
+    !splitOn && dragged !== null && selectedPaneId !== null && sameTab(dragged, { machineId: selectedMachineId, paneId: selectedPaneId });
+  const opensNothingRef = useRef(opensNothing); opensNothingRef.current = opensNothing;
   const dockAt = (dragged: SplitTarget, x: number, y: number): void => {
     const box = paneAreaRef.current?.getBoundingClientRect();
     const inside = !!box && x >= box.left && x < box.right && y >= box.top && y < box.bottom;
     const side = box && inside ? dropSide(x, box.left, box.width, dropAtRef.current) : null;
     clearDropPreview();
-    if (side === null || !wideScreen || selectedPaneId === null) return;
+    if (side === null || !wideScreen || selectedPaneId === null || opensNothing(dragged)) return;
     const current = { machineId: selectedMachineId, paneId: selectedPaneId };
     const shown = sameTab(dragged, current) ? current : splitOn && sameTab(dragged, split.other) ? split.other : dragged;
     const result = dockPane(splitOn ? split : null, current, shown, side, soloSlot);
@@ -1009,18 +1017,20 @@ export function App() {
   }, []);
   // a tab dragged out of its strip: the guide follows it as a sidebar row's drag does below
   const splitDragOn = wideScreen && selectedPaneId !== null;
+  const tabDragOpens = tabDrag !== null && !opensNothing(tabDrag.target);
   useEffect(() => {
-    if (!tabDrag || !splitDragOn) { if (!tabDrag) showDropTarget(null); return; }
+    if (!tabDrag || !tabDragOpens) { showDropTarget(null); return; }
+    if (!splitDragOn) return;
     const box = paneAreaRef.current?.getBoundingClientRect();
     const point = tabDrag.point;
     const inside = !!box && !!point && point.x >= box.left && point.x < box.right && point.y >= box.top && point.y < box.bottom;
     showDropTarget(box && point && inside ? dropSide(point.x, box.left, box.width, dropAtRef.current) : null);
-  }, [tabDrag, splitDragOn, showDropTarget]);
+  }, [tabDrag, tabDragOpens, splitDragOn, showDropTarget]);
   // dragenter too: a drop hit-tests once more, and when the node under the pointer was replaced since
   // the last dragover (xterm redraws its rows, a transcript renders again) the new node gets a
   // dragenter instead. Chromium refuses a drop whose last drag event nobody accepted.
   const paneDragOver = (event: DragEvent<HTMLDivElement>): void => {
-    if (!splitDragOn || !event.dataTransfer.types.includes(PANE_DRAG_TYPE)) return;
+    if (!splitDragOn || !event.dataTransfer.types.includes(PANE_DRAG_TYPE) || opensNothing(nativeDragRef.current)) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "move";
     setPaneDragging(true);
@@ -1049,8 +1059,11 @@ export function App() {
     if (!splitDragOn) { clearDropPreview(); return; }
     const start = (event: globalThis.DragEvent): void => {
       if (event.dataTransfer?.types.includes(PANE_DRAG_TYPE)) {
+        // dragstart is the one event whose transfer can be read
+        const dragged = draggedPane(event.dataTransfer.getData(PANE_DRAG_TYPE));
+        nativeDragRef.current = dragged;
         showDropTarget(null);
-        setPaneDragging(true);
+        if (!opensNothingRef.current(dragged)) setPaneDragging(true);
       }
     };
     const cancel = (event: KeyboardEvent): void => { if (event.key === "Escape") clearDropPreview(); };
@@ -1622,7 +1635,7 @@ export function App() {
               </MachineContext.Provider>
             );
           })}
-          <SplitDropPreview visible={splitDragOn && (paneDragging || tabDrag !== null)} side={dropAt} />
+          <SplitDropPreview visible={splitDragOn && (paneDragging || tabDragOpens)} side={dropAt} />
         </div>
         </div>
         </OpenFileContext.Provider>
