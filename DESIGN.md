@@ -523,9 +523,16 @@ One set for both themes: the card is island black wherever it shows.
   confirmed close, focus lands on the header's workspace-list toggle.
 - Tab and pane menus follow herdr's target scopes. A tab's menu contains New tab, Rename tab
   and Close tab, plus Move tab left/right when a neighbouring position exists and no move is pending.
-  The `⋯` that touch and narrow layouts draw beside the selected tab leaves New tab out (the
-  strip's `+` sits beside it) and also carries the open pane's actions, less Split and Zoom: a
-  phone shows one pane at a time. The pane's own context menu carries pane actions; it opens at the pointer
+  The `⋯` beside the selected tab leaves New tab out (the strip's `+` sits beside it) and also
+  carries the open pane's actions, less Split and Zoom where a phone shows one pane at a time.
+  Touch and narrow layouts keep that `⋯` in view; a desktop with a mouse (`hover: hover`,
+  `pointer: fine`, wider than 768px) draws it on the selected tab only, in its place at rest but
+  hidden (`opacity` 0, `visibility` hidden, so the strip never reflows), and fades it in
+  (`--dur-fast`, none under reduced motion) while the strip is hovered, while the tab or the `⋯`
+  itself has keyboard focus, or while its menu is open; it is named "Actions for {tab}" with
+  `aria-haspopup="menu"`. Right-click and the context-menu key open the full tab menu as before.
+  A lone pane beside such a `⋯` draws no second ellipsis (its actions are in the tab's menu), on a
+  desktop as on touch. The pane's own context menu carries pane actions; it opens at the pointer
   without changing which pane is focused. The pane header's ellipsis opens the same menu on touch.
 
 ### Badge (`.badge`)
