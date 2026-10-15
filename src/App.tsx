@@ -36,7 +36,7 @@ import { applyPaneStatus } from "./lib/snapshot.ts";
 import { rosterPanes } from "./lib/dagPane.ts";
 import { SnapshotRequests } from "./lib/snapshotRequests.ts";
 import { alertPrefs, useSettings } from "./lib/settings.ts";
-import { useShortcuts } from "./lib/shortcuts.ts";
+import { formatKeys, shortcutDisplayKeys, useShortcuts } from "./lib/shortcuts.ts";
 import { useMediaQuery } from "./lib/useMediaQuery.ts";
 import { PaneLenses } from "./lib/paneLens.ts";
 import { paneContextPress } from "./lib/paneCanvas.ts";
@@ -1280,7 +1280,7 @@ export function App() {
 
   // The header's More menu: what used to be three buttons of its own. Each item is there under
   // the condition its button had. At phone width the palette's button gives its room to the
-  // pane's title.
+  // pane's title, and the menu's first item opens the palette.
   // a link to a PC this app does not have lands on this PC instead, and says so: the roster lists
   // every configured PC, connected or not, so one missing from it is not set up here. So does a
   // selection of a PC removed since (a reload, a new window), here or on another device. Only a
@@ -1319,7 +1319,12 @@ export function App() {
   }, []);
   const closeNewSession = useCallback(() => { setNewSessionOpen(false); setNewPrefill(null); setNewFields(null); }, []);
 
+  // the palette's shortcut, said beside its item where a hardware keyboard is likely (a fine pointer)
+  const keyboardLikely = useMediaQuery("(hover: hover) and (pointer: fine)");
+  const paletteKeys = keyboardLikely ? formatKeys(shortcutDisplayKeys("palette", settings.shortcutOverrides)).join("+") : "";
   const moreItems: RowMenuItem[] = [
+    // first at every width: a phone's header has no palette button, and a touch screen no shortcut
+    { id: "palette", label: t("Search panes and actions"), icon: Search, ...(paletteKeys ? { hint: paletteKeys } : {}), run: () => openPalette() },
     ...(selectedPane && !selectedPane.restore_error ? [{ id: "find", label: t("Find in terminal"), icon: Search, run: actions.openFind }] : []),
     ...(selectedPane ? [{ id: "files", label: t("Browse files"), icon: FolderOpen, run: () => setFilesOpen(true) }] : []),
     // the address says where the app is (lib/deepLink.ts); a phone has no address bar to copy it from
@@ -1394,6 +1399,13 @@ export function App() {
           <div className="context">
             <span className="pill header-note" role="status" style={{ minWidth: 0 }}>
               <span className="context-title-text">{t(headerNote === "copied" ? "Link copied" : headerNote === "pane-closed" ? "That agent has closed: its workspace is open" : headerNote === "machine-missing" ? "That link's PC is not set up here" : "That link's workspace is closed")}</span>
+            </span>
+          </div>
+        ) : !linkLanded ? (
+          // a link waits for its PC's roster before it can open what it named
+          <div className="context">
+            <span className="pill header-note" role="status" style={{ minWidth: 0 }}>
+              <span className="context-title-text">{t("Opening link…")}</span>
             </span>
           </div>
         ) : selectedPane && crumb ? (

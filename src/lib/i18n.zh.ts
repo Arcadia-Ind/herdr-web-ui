@@ -146,6 +146,7 @@ export const ZH: Record<string, string> = {
   "Agent {status}": "Agent 状态：{status}",
 
   // ---- app header and shell ----
+  "Opening link…": "正在打开链接…",
   "Connecting to herdr web ui…": "正在连接 herdr web ui…",
   "Close workspace list": "关闭工作区列表",
   "Open workspace list": "打开工作区列表",
@@ -202,6 +203,7 @@ export const ZH: Record<string, string> = {
   "Alerts on while this tab is open (closed-app alerts need https, and on iPhone the home-screen app). Tap to turn them off": "此标签页打开期间会收到提醒（关闭应用后的提醒需要 https，在 iPhone 上还需使用主屏幕应用）。点按可关闭",
 
   // ---- sidebar ----
+  "Loading agents…": "正在加载代理…",
   "Herdr workspaces": "herdr 工作区",
   "Agents": "代理",
   "No agents running": "没有运行中的代理",
