@@ -556,6 +556,7 @@ export const JA: Record<string, string> = {
   "Custom answer": "カスタム回答",
   "Send {answer}?": "{answer} を送信しますか?",
   "Confirm": "確認",
+  "Sending your answer…": "回答を送信中…",
 
   // ---- markdown ----
   "Code copied": "コードをコピーしました",
@@ -626,6 +627,9 @@ export const JA: Record<string, string> = {
   "Type {range} to choose…": "{range} を入力して選択…",
   "Choose with the option numbers above, e.g. 1 3.": "上の選択肢の番号で選んでください (例: 1 3)。",
   "Choose one of the options above: type {range}.": "上の選択肢から 1 つ選んでください: {range} を入力。",
+  "Couldn't load suggestions": "候補を読み込めませんでした",
+  "{name} attached": "{name} を添付しました",
+  "{name} could not be attached: {reason}": "{name} を添付できませんでした: {reason}",
 
   // ---- chat view ----
   "Copied": "コピーしました",
@@ -671,6 +675,8 @@ export const JA: Record<string, string> = {
   "{m}m": "{m}分",
   "{m}m {s}s": "{m}分 {s}秒",
   "{h}h {m}m": "{h}時間 {m}分",
+  "Conversation": "会話",
+  "Image {n} from {tool}": "{tool} が読み込んだ画像 {n}",
 
   // ---- terminal ----
   "Codex has a question open in the terminal: answer it above, or close it there (alt+↓) to message Codex.": "Codex がターミナルで質問を表示しています。上で回答するか、ターミナルで閉じる (alt+↓) と Codex にメッセージを送れます。",

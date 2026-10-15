@@ -2882,6 +2882,7 @@ export function PaneTerminal({
             onPendingAnswerDone={clearPendingAnswer}
             promptDock={promptDock}
             onPromptAnswered={onPromptAnswered}
+            title={title}
           />
           </RenderBoundary>
         )}

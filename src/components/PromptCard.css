@@ -391,6 +391,20 @@
   font-size: var(--fs-xs);
 }
 
+/* an answer on its way: said under the actions, so a slow PC never looks like a dead button */
+.prompt-card-status {
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+/* the chips' and rows' colour changes snap instead of fading */
+@media (prefers-reduced-motion: reduce) {
+  .prompt-card-step,
+  .prompt-card-option {
+    transition: none;
+  }
+}
+
 /* a desktop always shows the tab strip (as herdr's TUI): the card's 60% is of what is under it,
    so the transcript keeps two lines at 800x600. A phone hides a lone tab and keeps the rule above */
 @media (min-width: 769px) {

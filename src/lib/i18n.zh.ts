@@ -558,6 +558,7 @@ export const ZH: Record<string, string> = {
   "Custom answer": "自定义回答",
   "Send {answer}?": "发送 {answer}？",
   "Confirm": "确认",
+  "Sending your answer…": "正在发送你的回答…",
 
   // ---- markdown ----
   "Code copied": "已复制代码",
@@ -628,6 +629,9 @@ export const ZH: Record<string, string> = {
   "Type {range} to choose…": "输入 {range} 进行选择…",
   "Choose with the option numbers above, e.g. 1 3.": "请使用上方的选项编号进行选择，例如 1 3。",
   "Choose one of the options above: type {range}.": "请从上方选项中选择一项：输入 {range}。",
+  "Couldn't load suggestions": "无法加载建议",
+  "{name} attached": "已附加 {name}",
+  "{name} could not be attached: {reason}": "无法附加 {name}：{reason}",
 
   // ---- chat view ----
   "Copied": "已复制",
@@ -673,6 +677,8 @@ export const ZH: Record<string, string> = {
   "{m}m": "{m} 分钟",
   "{m}m {s}s": "{m} 分 {s} 秒",
   "{h}h {m}m": "{h} 小时 {m} 分",
+  "Conversation": "对话",
+  "Image {n} from {tool}": "{tool} 读取的图片 {n}",
 
   // ---- terminal ----
   "Codex has a question open in the terminal: answer it above, or close it there (alt+↓) to message Codex.": "Codex 在终端中有一个未关闭的问题。请在上方回答，或在终端中关闭它 (alt+↓) 后再给 Codex 发消息。",
