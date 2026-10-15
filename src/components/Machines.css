@@ -124,6 +124,7 @@
 
   .machine-new {
     width: var(--touch-target);
+    height: var(--touch-target);
     margin-right: calc((var(--side-box) - var(--touch-target)) / 2);
   }
 }

@@ -921,6 +921,17 @@
   color: var(--text-strong);
 }
 
+/* a mouse's floor: the X keeps its --chip-h circle and takes a --pointer-target hit area through an
+   invisible expander around it, past its hairline edge (a finger's --touch-target size is set
+   below) */
+@media (pointer: fine) {
+  .composer-attachment button::before {
+    content: "";
+    position: absolute;
+    inset: calc((var(--chip-h) - var(--pointer-target)) / 2 - var(--hairline));
+  }
+}
+
 /* why the message did not go: a band on the box's top edge, the box's own width, so it reads as
    the box's; a note with its one way on (send over the terminal's draft) keeps the button at its
    end, or under the reason when the row is too short for both */
