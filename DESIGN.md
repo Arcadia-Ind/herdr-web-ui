@@ -24,6 +24,15 @@ Hover and selection are one neutral fill at two strengths. Brand marks are the o
 there that is not a state, and a ready row draws no state at all. Amber connects focus, the chosen
 lens glyph and the terminal cursor.
 
+Messages say only what the person needs now, not everything the app knows:
+- Something to do: one sentence and the control that does it ("Couldn't attach [Try again]").
+- Only waiting: one muted phrase, in one place ("Connecting…"); never the same state twice on screen.
+- Causes, internals and conditions stay folded away (a Details toggle) or appear only when they
+  apply. A known cause is the sentence ("PC disk is full"); a generic fallback never pushes it aside.
+- One situation, one message, one place.
+- The resting screen is calm: a destructive control looks neutral until it asks to confirm;
+  danger color is for the moment of risk.
+
 ## 2. Color
 
 ### Palette
