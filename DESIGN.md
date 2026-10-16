@@ -1646,11 +1646,13 @@ The values are the ones in `src/styles.css`.
   pane exposes `aria-current`; dialogs expose `role="dialog"` and `aria-modal`.
 - Status, loading and composer progress use `role="status"`; failures use `role="alert"`. A status
   line that may hold words the moment it mounts (Connecting…, the connection chip's word, a PC's state
-  word, Loading PCs… / workspaces… / agents…, Opening link…, Opening…, Sending your answer…, Waiting
-  for terminal input…) is one persistent container: in the document from its owner's first render,
-  clipped while empty (`.visually-hidden`, never `display: none`), its words set a frame after mount
-  through `useAnnouncedText` (`src/lib/useAnnouncedText.ts`) - a live region that appears together
-  with its content is not announced. Agent state
+  word, Loading PCs… / workspaces… / agents… / conversation…, the chat's Reconnecting…, Opening link…,
+  Opening…, Sending your answer…, Waiting for terminal input…) is one persistent container: in the
+  document from its owner's first render, clipped while empty (`.visually-hidden`, never
+  `display: none`), its words set a frame after mount through `useAnnouncedText`
+  (`src/lib/useAnnouncedText.ts`) - a live region that appears together with its content is not
+  announced. The container outlives what replaces its words (a PC's state line stays, empty, while
+  the PC's notice shows), and the terminal's wait is drawn only for a selected pane. Agent state
   has text plus color. Compact sidebar states add distinct glyphs and keep their text accessible;
   ready and unknown draw nothing there, and unknown uses a dashed badge edge elsewhere.
 - Touch targets grow to `--touch-target`; fields stay `--fs-input` where mobile zoom is a risk.

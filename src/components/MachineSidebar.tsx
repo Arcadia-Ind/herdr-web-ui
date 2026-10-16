@@ -61,9 +61,12 @@ function MachineGroup({ machine, ...props }: Props & { machine: Machine }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const online = machine.state === "connected";
-  // the state line under the name is a live region in the group from its first render; its word lands a frame
-  // after it (lib/useAnnouncedText.ts), and every later state change at once
-  const stateWord = useAnnouncedText(t(STATE_WORD[machine.state]));
+  // a PC that waits on the user, or is updating, shows its notice in the state line's place
+  const noticed = Boolean(machine.action_required || machine.updating);
+  // the state line under the name is a live region in the group from its first render, kept through the
+  // notice (clipped and empty while it shows): its word lands a frame after the line (lib/useAnnouncedText.ts),
+  // and every later state change, or the notice clearing, at once
+  const stateWord = useAnnouncedText(noticed ? null : t(STATE_WORD[machine.state]));
   // one request at a time: a double-clicked Disconnect/Connect can otherwise race and leave this
   // UI's idea of the state opposite the server's until the next refetch
   const [busy, setBusy] = useState(false);
@@ -103,10 +106,11 @@ function MachineGroup({ machine, ...props }: Props & { machine: Machine }) {
       <button className="sidebar-row-action machine-new" disabled={!online} aria-label={t("New workspace on {name}", { name: machine.name })} title={t("New workspace")} onClick={() => props.onNew(machine.id)}><Plus aria-hidden="true" /></button>
     </header>
     {/* connected is the norm and says nothing new; every other state is spelled out */}
-    {machine.action_required || machine.updating ? <MachineActionNotice machine={machine} onSetup={props.onSetup} /> : <p className={`machine-state is-${machine.state}${online ? " visually-hidden" : ""}`} role="status" title={machine.error ?? undefined}>
+    {noticed && <MachineActionNotice machine={machine} onSetup={props.onSetup} />}
+    <p className={`machine-state is-${machine.state}${online || stateWord === null ? " visually-hidden" : ""}`} role="status" title={noticed ? undefined : machine.error ?? undefined}>
       <span className="machine-state-word">{stateWord}</span>
-      {machine.error && <span className="machine-state-detail">{machine.error}</span>}
-    </p>}
+      {!noticed && machine.error && <span className="machine-state-detail">{machine.error}</span>}
+    </p>
     {editing && <div className="machine-controls">
       {machine.herdr_profile_id ? <p className="field-hint">{t("Managed by herdr. Rename, disable or remove it there.")}</p> : <form onSubmit={(e) => { e.preventDefault(); void mutate("PATCH", { name }); }}><label className="field"><span className="field-label">{t("PC name")}</span><input className="input" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} /></label><button className="btn" type="submit" disabled={busy}>{t("Rename")}</button></form>}
       {/* The first removal click only arms the action; the second is destructive. */}
