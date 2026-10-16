@@ -1305,9 +1305,11 @@ export function Composer({
                 {attachment.previewUrl ? <img src={attachment.previewUrl} alt={attachment.file.name} />
                   : <span className="composer-attachment-file" title={attachment.file.name}><FileText aria-hidden="true" /><span>{attachment.file.name}</span></span>}
                 <span className="composer-attachment-state">
-                  {attachment.state === "no-room"
-                    ? <><TriangleAlert aria-hidden="true" /><span className="visually-hidden">{t("No room")}</span></>
-                    : t(attachment.state === "uploading" ? "Uploading" : attachment.state === "error" ? "Failed" : "Attached")}
+                  {/* a tile that failed or has no room shows the glyph alone: the line above or below the box
+                      already says what happened, once */}
+                  {attachment.state === "no-room" || attachment.state === "error"
+                    ? <><TriangleAlert aria-hidden="true" /><span className="visually-hidden">{t(attachment.state === "error" ? "Failed" : "No room")}</span></>
+                    : t(attachment.state === "uploading" ? "Uploading" : "Attached")}
                 </span>
                 <button type="button" aria-label={t("Remove {file}", { file: attachment.file.name })} onClick={() => removeAttachment(attachment)}>
                   <X aria-hidden="true" />
