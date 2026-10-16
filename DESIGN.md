@@ -175,7 +175,9 @@ blue there instead of `--accent`, and Latte's colors are darkened to stay readab
   `#8a5710`.
 - The header's meta line (size, folder) is `--fs-xs`. A file that cannot be previewed says so in
   one sentence ("This file can't be previewed here. Download it to open it.") over its type and
-  size as a dim mono `--fs-xs` line; "Opening…" is a `role="status"` note.
+  size as a dim mono `--fs-xs` line; "Opening…" is a `role="status"` note that is in the document from
+  the viewer's first render, clipped and empty (`.visually-hidden`, never `display: none`), and gets its
+  words a frame later: a live region that appears together with its content is not announced.
 - `--line-number` colors the line numbers beside code: tertiary text, quieter than the code. It is
   `--text-dim`, except in Catppuccin, whose `--text-dim` (subtext1) is nearly `--text`: Mocha
   overlay2 `#9399b2` (5.8:1), Latte `#64677d` (subtext0 darkened to 4.9:1 on `--bg`).
@@ -381,6 +383,7 @@ Comfortable values are `:root`; the final column is the complete compact overrid
 | `--header-h-wide` | `46px` | — | App header from `769px`, in either density (`--header-h` takes this value there) |
 | `--sidebar-w` | `320px` | `300px` | Sidebar/drawer; the default while the user has not dragged the sidebar's edge |
 | `--control-h` | `34px` | `32px` | Buttons and fields |
+| `--segmented-inset` | `6px` | — | What the segmented track takes from `--control-h` above and below an option (its `2px` padding and the hairline, both sides): an option is `--control-h` less this, and its touch expander grows from that height to `--touch-target` |
 | `--touch-target` | `44px` | — | Coarse-pointer minimum: every control a finger can reach is at least this in both dimensions |
 | `--pointer-target` | `24px` | — | Fine-pointer minimum hit area: a glyph button under `--control-h` (the chat's copy and format buttons, an attachment tile's X) keeps its look and reaches it through an invisible `::before` expander |
 | `--keybar-h` | `48px` | — | Terminal key bar |
@@ -496,9 +499,10 @@ One set for both themes: the card is island black wherever it shows.
 - One `aria-pressed="true"` option receives hover fill and strong text; the group itself is an
   elevated, bordered `--radius-md` track.
 - Used for Chat/Terminal, theme and density. It is not a generic tab list.
-- On a coarse pointer the track keeps its height; each option is at least `--touch-target` wide,
-  so neighbours never share a tap, and reaches `--touch-target` tall through an invisible `::before`
-  expander, as the palette's filter chips do.
+- An option is `--control-h` less `--segmented-inset` tall, so the track is `--control-h`. On a coarse
+  pointer the track keeps its height; each option is at least `--touch-target` wide, so neighbours
+  never share a tap, and reaches `--touch-target` tall through an invisible `::before` expander sized
+  from that same difference, as the palette's filter chips do.
 
 ### Keyboard hint (`.kbd`)
 - An inline mono keycap: `18px` high, strong bottom edge, `--radius-sm`, `--fs-2xs`.
@@ -609,7 +613,7 @@ One set for both themes: the card is island black wherever it shows.
   A tab's mark follows the same choice, held still.
 
 ### Pill (`.pill`)
-- Mono metadata at `--chip-h`. Offline is the one header pill that stays, and uses danger tokens. A deep link waiting for its PC's roster says **Opening link…** in the same `.header-note` pill (`role="status"`) until it lands or its failure note replaces it. The `.header-note` pill carries a sentence, so it is set in the interface face (`--font-ui`), not the mono one. A deep link that could not open what it named, and Copy link, say so in a plain `.header-note` pill for a moment (8 s, 1.6 s for Link copied). The note takes the flexible context's place and ellipsizes when narrow, keeping the lens and More controls in view.
+- Mono metadata at `--chip-h`. Offline is the one header pill that stays, and uses danger tokens. A deep link waiting for its PC's roster says **Opening link…** in the same `.header-note` pill (`role="status"`) until it lands or its failure note replaces it. That status stays in the document while there is no note, clipped and empty (`.visually-hidden`, never `display: none`, as `.conn-live`), and the words of a page that opens with a link land a frame after it: a live region that appears together with its content is not announced. The `.header-note` pill carries a sentence, so it is set in the interface face (`--font-ui`), not the mono one. A deep link that could not open what it named, and Copy link, say so in a plain `.header-note` pill for a moment (8 s, 1.6 s for Link copied). The note takes the flexible context's place and ellipsizes when narrow, keeping the lens and More controls in view.
 
 ### Sidebar roster row and footer
 - No top bar. The sidebar opens with the plan panel (when Settings puts it there), the PC workspace groups and a separate **Agents** list spanning the connected PCs. A workspace starts from the `+` on its PC's header, or from the **New workspace**
@@ -784,7 +788,8 @@ One set for both themes: the card is island black wherever it shows.
   Tabs retain their names, status dots, active underline, keyboard navigation, rename field and
   close confirmation. A right-click opens tab actions at the pointer, including Move tab left/right
   when a neighbouring position exists. Tabs have no close buttons or chevrons. Touch and narrow layouts show a `⋯` beside
-  the selected tab for a trimmed menu; a desktop with a mouse draws the same `⋯` on the selected tab, hidden in its place
+  the selected tab for a trimmed menu, and there a tab is at least `--touch-target` tall and wide, so a one- or
+  two-character name (탭 1) is still a finger's target with the `⋯` a target of its own beside it; a desktop with a mouse draws the same `⋯` on the selected tab, hidden in its place
   until the strip is hovered or the tab has keyboard focus (Menu / popover). Shift+F10 or the menu key opens the full tab menu from a focused tab.
   Pane actions are not tab actions. Up to 768px, where a split tab shows one pane at a time, the
   tab's menu lists the tab's panes first, the open one marked current, over a hairline.
@@ -1133,7 +1138,7 @@ One set for both themes: the card is island black wherever it shows.
   then reads `Question 1 of 2`; the review after the last question keeps the chips, all checked.
 - Single options submit immediately; multi-select exposes checks plus Submit; supported custom input
   has its own labelled field. The prompt id names what the prompt says and which asking of it this is; an answer to another prompt, or to an earlier asking of the same one, is rejected with `prompt_changed`.
-- While an answer is on its way, a `--text-dim` `--fs-xs` line under the actions says `Sending your answer…` (`role="status"`), so a slow PC never looks like a dead button.
+- While an answer is on its way, a `--text-dim` `--fs-xs` line under the actions says `Sending your answer…` (`role="status"`), so a slow PC never looks like a dead button. The line is in the card from its first render, clipped and empty (`.visually-hidden`, never `display: none`) until the answer goes out: a live region that appears together with its content is not announced.
 - Options are flat full-width rows (`.prompt-card-option`), not boxes in the box: the menu's
   number as a keycap (mono, `--fs-2xs`, a `--border-strong` outline; the option's name keeps
   `1.`), the label, its description under it in `--text-dim`. All rows weigh the same: none is

@@ -148,6 +148,25 @@ function SlotSessions({ slot, machineIds, children }: { slot: SplitSlot; machine
   return slot === "b" ? <MachineSessionsProvider machineIds={machineIds}>{children}</MachineSessionsProvider> : <>{children}</>;
 }
 
+/** The header's note. Its status is in the header from the header's first render, clipped while empty
+    (never display: none, as the connection chip): a live region that appears together with its words
+    is not read. So the words land a frame after the box, even the ones a page opens with. */
+function HeaderNote({ note }: { note: string | null }) {
+  const [framed, setFramed] = useState(false);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setFramed(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+  const shown = framed ? note : null;
+  return (
+    <div className={shown === null ? "visually-hidden" : "context"}>
+      <span className={shown === null ? undefined : "pill header-note"} role="status" style={{ minWidth: 0 }}>
+        <span className="context-title-text">{shown}</span>
+      </span>
+    </div>
+  );
+}
+
 function Brand() {
   return (
     <h1 className="brand">
@@ -283,6 +302,11 @@ export function App() {
     const timer = window.setTimeout(() => setHeaderNote(null), headerNote === "copied" ? 1600 : 8000);
     return () => window.clearTimeout(timer);
   }, [headerNote]);
+  // the note that stands where the title does: a link that could not open what it named or was
+  // copied, or a link waiting for its PC's roster before it can open what it named (HeaderNote)
+  const note = headerNote
+    ? t(headerNote === "copied" ? "Link copied" : headerNote === "pane-closed" ? "That agent has closed: its workspace is open" : headerNote === "machine-missing" ? "That link's PC is not set up here" : "That link's workspace is closed")
+    : !linkLanded ? t("Opening link…") : null;
   // App picked the selected pane itself because the one selected closed: it must not raise a
   // phone's keyboard (over the drawer the close was tapped in) until the user picks a pane or lens
   const [autoSelected, setAutoSelected] = useState(false);
@@ -1395,20 +1419,8 @@ export function App() {
             <Search />
           </button>
         </div>
-        {headerNote ? (
-          <div className="context">
-            <span className="pill header-note" role="status" style={{ minWidth: 0 }}>
-              <span className="context-title-text">{t(headerNote === "copied" ? "Link copied" : headerNote === "pane-closed" ? "That agent has closed: its workspace is open" : headerNote === "machine-missing" ? "That link's PC is not set up here" : "That link's workspace is closed")}</span>
-            </span>
-          </div>
-        ) : !linkLanded ? (
-          // a link waits for its PC's roster before it can open what it named
-          <div className="context">
-            <span className="pill header-note" role="status" style={{ minWidth: 0 }}>
-              <span className="context-title-text">{t("Opening link…")}</span>
-            </span>
-          </div>
-        ) : selectedPane && crumb ? (
+        <HeaderNote note={note} />
+        {note !== null ? null : selectedPane && crumb ? (
           <div className="context" title={crumb.tooltip}>
             <div className="context-title">
               {selectedAgent && <AgentMark agent={selectedAgent} size={18} />}
