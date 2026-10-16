@@ -157,7 +157,7 @@ export function isolate(base: Record<string, string | undefined>, kept: string |
   // not what names the herdr this was started from (a pane of the user's): its socket, its pane
   for (const [name, value] of Object.entries(base)) if (value !== undefined && !LIVE_HERDR.includes(name)) env[name] = value;
   Object.assign(env, {
-    ...testShellEnv,
+    ...testShellEnv(dir),
     XDG_CONFIG_HOME: config,
     [DISPOSABLE_CONFIG_ENV]: config,
     XDG_STATE_HOME: join(dir, "state"),

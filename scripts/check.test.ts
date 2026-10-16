@@ -45,8 +45,26 @@ describe("plan", () => {
 
 describe("isolate", () => {
   it("replaces the user's login shell for Unix test panes, but keeps the native Windows environment", () => {
-    const { env } = isolate({ SHELL: "/bin/zsh" }, scratch());
-    expect(env["SHELL"]).toBe(process.platform === "win32" ? "/bin/zsh" : existsSync("/bin/bash") ? "/bin/bash" : "/bin/sh");
+    const dir = scratch();
+    const home = join(dir, "home");
+    mkdirSync(home);
+    for (const name of [".bashrc", ".bash_profile", ".profile", "bash-env"]) {
+      writeFileSync(join(home, name), "export TEST_STARTUP_READ=yes\n");
+    }
+    const { env } = isolate({ SHELL: "/bin/zsh", HOME: home, BASH_ENV: join(home, "bash-env") }, dir);
+    if (process.platform === "win32") {
+      expect(env["SHELL"]).toBe("/bin/zsh");
+    } else if (!existsSync("/bin/bash")) {
+      expect(env["SHELL"]).toBe("/bin/sh");
+    } else {
+      const shell = env["SHELL"];
+      if (!shell) throw new Error("Missing test shell");
+      for (const args of [["-i"], ["-l", "-i"], []]) {
+        const result = spawnSync(shell, [...args, "-c", 'printf "%s|%s" "${TEST_STARTUP_READ-unread}" "$1"', "test", "argument with spaces"], { env, encoding: "utf8" });
+        expect(result.status).toBe(0);
+        expect(result.stdout).toBe("unread|argument with spaces");
+      }
+    }
   });
 
   it("points herdr, its plugins and the web UI at one directory of the run's own, under its own session name", () => {
