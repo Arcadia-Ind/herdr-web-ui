@@ -86,6 +86,8 @@ describe("isolate", () => {
       // one integration file at a time unless asked otherwise
       expect(first.env["HERDR_TEST_SHARDS"]).toBe("1");
       expect(isolate({ HERDR_TEST_SHARDS: "4" }, scratch()).env["HERDR_TEST_SHARDS"]).toBe("4");
+      // the browsers of a run draw the English copy the scripts assert, whatever the desktop's language
+      expect(isolate({ LANGUAGE: "ko:en_AU:en" }, scratch()).env["LANGUAGE"]).toBe("en_US:en");
     } finally {
       const dir = join(first.env["XDG_CONFIG_HOME"]!, "..");
       first.remove();

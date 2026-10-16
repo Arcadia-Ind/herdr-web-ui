@@ -158,6 +158,9 @@ export function isolate(base: Record<string, string | undefined>, kept: string |
   for (const [name, value] of Object.entries(base)) if (value !== undefined && !LIVE_HERDR.includes(name)) env[name] = value;
   Object.assign(env, {
     ...testShellEnv(dir),
+    // the browser scripts assert the English copy, and headless Chromium takes its locale from
+    // LANGUAGE first: a desktop set to another language would draw the app in that one
+    LANGUAGE: "en_US:en",
     XDG_CONFIG_HOME: config,
     [DISPOSABLE_CONFIG_ENV]: config,
     XDG_STATE_HOME: join(dir, "state"),
