@@ -74,6 +74,7 @@ import { chatIsBlank, type ChatRead } from "../lib/greeting.ts";
 import { TurnTime } from "./TurnTime.tsx";
 import { useT } from "../lib/i18n.ts";
 import { userErrorMessage, type UserError } from "../lib/userError.ts";
+import { useAnnouncedText } from "../lib/useAnnouncedText.ts";
 
 // No row is this object, so the list finds nothing to scroll to.
 const NO_ROW = Object.freeze({});
@@ -1373,10 +1374,14 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       )}
       {state.source === "conversation" && olderCursor === null && older.length > 0 && <p className="chat-endcap">{t("beginning of conversation")}</p>}
   </>;
+  // the chat's own waits are live regions in the footer from the view's first render, clipped while
+  // empty (never display: none); their words land a frame after it (lib/useAnnouncedText.ts)
+  const reconnectingWords = useAnnouncedText(!ended && !connected ? t("Reconnecting…") : null);
+  const loadingWords = useAnnouncedText(!loaded && error === null ? t("Loading conversation…") : null);
   const footer = <>
-      {!ended && !connected && <p className="chat-inline-state" role="status">{t("Reconnecting…")}</p>}
+      <p className={reconnectingWords === null ? "visually-hidden" : "chat-inline-state"} role="status">{reconnectingWords}</p>
       {error !== null && <p className="chat-inline-state chat-inline-error" role="alert">{errorStatus === 401 ? t("locked — the token gate is asking again") : <>{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</>}</p>}
-      {!loaded && error === null && <p className="chat-inline-state" role="status">{t("Loading conversation…")}</p>}
+      <p className={loadingWords === null ? "visually-hidden" : "chat-inline-state"} role="status">{loadingWords}</p>
       {loaded && error === null && agent === "grok" && state.source !== "conversation" && <p className="chat-inline-state" role="status">{t("Grok chat is unavailable. Open Terminal to see activity and tool calls.")}</p>}
       {loaded && error === null && agent === "agy" && state.source !== "conversation" && <p className="chat-inline-state" role="status">{t("Antigravity chat is unavailable. Open Terminal to see activity and tool calls.")}</p>}
       {/* A native turn's activity, where no open work block says it: before the turn has an assistant

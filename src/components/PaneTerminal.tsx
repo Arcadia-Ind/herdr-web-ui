@@ -2730,8 +2730,9 @@ export function PaneTerminal({
   }, [inputSlot]);
 
   // the wait for input is a live region in the banner column from the stack's first render, clipped while
-  // empty (never display: none); its words land a frame after it (lib/useAnnouncedText.ts)
-  const waitingWords = useAnnouncedText(!chatView && !observing && connected && !inputReady && !held && !ended && !released ? t("Waiting for terminal input…") : null);
+  // empty (never display: none); its words land a frame after it (lib/useAnnouncedText.ts). Only a
+  // selected pane waits: with none there is no terminal whose input could become ready
+  const waitingWords = useAnnouncedText(paneId !== null && !chatView && !observing && connected && !inputReady && !held && !ended && !released ? t("Waiting for terminal input…") : null);
 
   return (
     // data-direct-typing: xterm's own field raises the soft keyboard here (lib/viewport.ts)
