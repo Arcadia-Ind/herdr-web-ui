@@ -2568,8 +2568,8 @@ export function PaneTerminal({
         {draft.truncated && <> {t("Some input was too long to hold and was left out.")}</>}
       </>,
       actions: <>
-        {/* the chat's own Send: the same round amber button and glyph as the composer's (Composer.css) */}
-        <button type="button" className="composer-action composer-send" aria-label={t("Send held input")} title={t("Send held input")} disabled={draft.text.length === 0 || observing || secretActive || held} onClick={sendDraft}><ArrowUp aria-hidden="true" /></button>
+        {/* the composer's send glyph (an up arrow) on the row's plain icon button, beside its Discard */}
+        <button type="button" className="icon-button" aria-label={t("Send held input")} title={t("Send held input")} disabled={draft.text.length === 0 || observing || secretActive || held} onClick={sendDraft}><ArrowUp aria-hidden="true" /></button>
         <button type="button" className="icon-button" aria-label={t("Discard held input")} title={t("Discard held input")} onClick={discardDraft}><Trash2 aria-hidden="true" /></button>
       </>,
     });
