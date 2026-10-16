@@ -170,6 +170,7 @@ export const JA: Record<string, string> = {
   "live": "接続中",
   "disconnected": "切断",
   "reconnecting": "再接続中",
+  "connecting": "接続しています",
   "herdr offline": "herdr オフライン",
   "Browse files": "ファイルを参照",
   "Copy link": "リンクをコピー",

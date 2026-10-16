@@ -172,6 +172,7 @@ export const ZH: Record<string, string> = {
   "live": "已连接",
   "disconnected": "已断开",
   "reconnecting": "正在重连",
+  "connecting": "正在连接",
   "herdr offline": "herdr 离线",
   "Browse files": "浏览文件",
   "Copy link": "复制链接",

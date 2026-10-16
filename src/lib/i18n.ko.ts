@@ -168,6 +168,7 @@ export const KO: Record<string, string> = {
   "live": "연결됨",
   "disconnected": "끊김",
   "reconnecting": "재연결 중",
+  "connecting": "연결 중",
   "herdr offline": "herdr 꺼짐",
   "Browse files": "파일 찾아보기",
   "Copy link": "링크 복사",

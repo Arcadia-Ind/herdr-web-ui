@@ -940,7 +940,8 @@ One set for both themes: the card is island black wherever it shows.
   marks the state that needs a look, never "on".
 - The segmented Chat/Terminal view switch lives in the header. There is no floating view-toggle pill.
 - Connection is one quiet chip, drawn only while the bridge is not live: a pulsing dot plus the
-  written reconnecting/disconnected state. Below `900px` it keeps only its dot; the word stays as
+  written state - connecting until this page's first connection to the PC's socket, reconnecting
+  after a drop, disconnected once output stopped. Below `900px` it keeps only its dot; the word stays as
   its accessible text and in its tooltip. While live the chip takes no room and stays in the
   document as a `role="status"` a screen reader can read (`.conn-live`; never `display: none`).
 
