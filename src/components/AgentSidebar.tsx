@@ -165,6 +165,15 @@ export function AgentSidebar({ machines, selectedMachineId, selectedPaneId, stat
 
   // no PCs yet (the roster is still on its way), or a connected PC whose panes have not come in: not "none running"
   const loading = machines.length === 0 || machines.some((machine) => machine.state === "connected" && machine.snapshot === null);
+  // the empty list's line is a live region that is in the list from its first render, clipped while empty (never
+  // display: none): a status that appears together with its words is not read, so they land a frame after it (App HeaderNote)
+  const [framed, setFramed] = useState(false);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setFramed(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+  const emptyWords = rows.length === 0 ? (loading ? t("Loading agents…") : t("No agents running")) : null;
+  const shownEmpty = framed ? emptyWords : null;
   const menuPinned = menu !== null && pinned.includes(menu.key);
   const runPin = (state: PinMenu): void => {
     // where the menu hands the focus back (lib RowMenu): the ⋯ itself unless the right-click said otherwise
@@ -180,7 +189,8 @@ export function AgentSidebar({ machines, selectedMachineId, selectedPaneId, stat
       {collapsed && rows.length > 0 && <span className="agent-section-count">{rows.length}</span>}
     </button>
     <div className="agent-list-contents" id={listId} hidden={collapsed}>
-      {rows.length === 0 ? <p className="agent-empty" role="status">{loading ? t("Loading agents…") : t("No agents running")}</p> : <>
+      <p className={shownEmpty === null ? "visually-hidden" : "agent-empty"} role="status">{shownEmpty}</p>
+      {rows.length > 0 && <>
         {split.pinned.length > 0 && <ul className="agent-list agent-list-pinned sidebar-pinned" aria-label={t("Pinned")}>{split.pinned.map(agentItem)}</ul>}
         {split.rest.length > 0 && <ul className="agent-list">{split.rest.map(agentItem)}</ul>}
       </>}

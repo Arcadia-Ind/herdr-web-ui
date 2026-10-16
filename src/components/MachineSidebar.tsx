@@ -30,11 +30,19 @@ export function MachineSidebar(props: Props) {
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
   // both lists draw from it: live counters per PC (lib/sidebarActivity.tsx)
   const activity = useSidebarActivityState(props.machines);
+  // the roster's wait is a live region that is in the list from its first render, clipped while empty (never
+  // display: none): a status that appears together with its words is not read, so they land a frame after it (App HeaderNote)
+  const [framed, setFramed] = useState(false);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setFramed(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+  const loadingPCs = framed && props.machines.length === 0;
   // no top bar: a workspace starts from its PC's header, and Add PC lives in Settings → Remote PCs
   return <SidebarActivityProvider value={activity}><div className="sidebar-shell">
     <div className="machine-list" aria-label={t("PCs and workspaces")}>
       {props.machines.map((machine) => <MachineGroup key={machine.id} {...props} machine={machine} />)}
-      {!props.machines.length && <p className="tree-state" role="status">{t("Loading PCs…")}</p>}
+      <p className={loadingPCs ? "tree-state" : "visually-hidden"} role="status">{loadingPCs ? t("Loading PCs…") : null}</p>
     </div>
     <AgentSidebar machines={props.machines} selectedMachineId={props.selectedMachineId} selectedPaneId={props.selectedPaneId} stateWord={(machine) => t(STATE_WORD[machine.state])} onSelect={props.onSelect} />
     <footer className="sidebar-footer">

@@ -234,13 +234,14 @@
   color: var(--accent);
 }
 
-/* while an answer is on its way every option waits, the checkbox rows included */
-.prompt-card[aria-busy="true"] .prompt-card-option {
+/* while an answer is on its way every option waits, the checkbox rows included (the busy state is
+   the options group's own, so the card's status line stays outside it) */
+.prompt-card-options[aria-busy="true"] .prompt-card-option {
   opacity: 0.55;
   cursor: default;
 }
 
-.prompt-card[aria-busy="true"] .prompt-card-option:hover {
+.prompt-card-options[aria-busy="true"] .prompt-card-option:hover {
   background: transparent;
 }
 
