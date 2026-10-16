@@ -575,6 +575,7 @@ export const JA: Record<string, string> = {
 
   // ---- composer ----
   "Reconnecting… message held here, never queued": "再接続しています… メッセージはここに保持され、キューには入りません",
+  "Connecting… message held here, never queued": "接続しています… メッセージはここに保持され、キューには入りません",
   "Message {agent}…": "{agent} へのメッセージ…",
   "Sent as it was. Your changes made while it was sending stayed here and were not sent.": "元の内容で送信しました。送信中に加えた変更はここに残っており、送信されていません。",
   "Message composer": "メッセージ入力欄",

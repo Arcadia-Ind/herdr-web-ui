@@ -3017,6 +3017,7 @@ export function PaneTerminal({
           backgroundWait={backgroundWait}
           metadata={chatMetadata?.pane === paneId ? chatMetadata.value : null}
           connected={connected && !held}
+          connectedBefore={connectedBefore}
           answerHint={answering === null ? null
             : pendingAnswer?.promptId === answering.id ? t("Confirm your answer in the card above, or type another…") : answerHint(answering)}
           // no suggestion under any card, a fallback or queued one included

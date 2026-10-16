@@ -1284,7 +1284,8 @@ One set for both themes: the card is island black wherever it shows.
   Enter delivery removes the pending row and refreshes the transcript. Next-turn delivery and
   an explicit Send now action claim the same server ID; connection loss never resumes automatic input.
   Previously held browser messages retain their explicit Send now/Discard recovery.
-- Not connected, the sentence `Reconnecting… message held here, never queued` is said once and
+- Not connected, the sentence `Reconnecting… message held here, never queued` (`Connecting… message
+  held here, never queued` before this page's first connection to the PC's socket) is said once and
   whole: it is the placeholder while the box is empty and moves into the status content once
   there is a draft (`composerStatusHint`), on a phone too. A sentence there (this one, or
   `Uploading file…`) is never ellipsized: where it does not fit beside the model it takes a line

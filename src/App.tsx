@@ -165,7 +165,8 @@ function HeaderNote({ note }: { note: string | null }) {
 
 /** The connecting shell's one sidebar line: the same announced status as every other (lib/useAnnouncedText.ts). */
 function ConnectingNote() {
-  const shown = useAnnouncedText("Connecting…");
+  const t = useT();
+  const shown = useAnnouncedText(t("Connecting…"));
   return <p className={shown === null ? "visually-hidden" : "tree-state"} role="status">{shown}</p>;
 }
 

@@ -61,6 +61,9 @@ import { modalOpen } from "../lib/focus.ts";
 
 export interface ComposerProps {
   connected: boolean;
+  /** the socket has been connected on this page before: not connected, the offline sentence says Reconnecting
+   *  (`connectedBefore`), else Connecting (omitted, as the fixtures do, a wait reads as the first connection) */
+  connectedBefore?: boolean;
   paneId: string;
   /** false: appearing must not take the keyboard (App switched to this pane on its own) */
   autoFocus?: boolean;
@@ -240,6 +243,7 @@ function useMediaQuery(query: string): boolean {
 /** Chat-style input surface with pane-local drafts, command/file completion, and image mentions. */
 export function Composer({
   connected,
+  connectedBefore = false,
   paneId,
   autoFocus = true,
   active = true,
@@ -347,8 +351,9 @@ export function Composer({
   const agentLabel = agentDisplayLabel(agent);
   // the agent's suggestion stands in the empty box as it does in its own input, until anything is typed
   const offered = connected && answerHint === null && suggestion !== null ? suggestion : null;
+  const offlineSentence = t(connectedBefore ? "Reconnecting… message held here, never queued" : "Connecting… message held here, never queued");
   const placeholder = !connected
-    ? t("Reconnecting… message held here, never queued")
+    ? offlineSentence
     : answerHint ?? offered ?? t("Message {agent}…", { agent: agentLabel });
 
   // A cancelled send the agent put back in its input box fills an empty box again — without
@@ -1102,7 +1107,7 @@ export function Composer({
   const hintText = hint === null ? null
     : hint === "no-room" ? t("No room for {file}: remove {count} characters", { file: roomless?.file.name ?? "", count: roomless?.missing ?? 0 })
     : hint === "near-limit" ? t("{count} characters left", { count: MAX_COMPOSER_CHARS - text.length })
-    : t(hint === "uploading" ? "Uploading file…" : "Reconnecting… message held here, never queued");
+    : hint === "uploading" ? t("Uploading file…") : offlineSentence;
   /** the strip under the card: the folder and the branch the caller knows; none, or a phone's screen, no strip */
   const strip = mobile ? null : composerStrip({ cwd, branch, repo: worktreeRepo });
   const worktree = worktreeRepo !== null;

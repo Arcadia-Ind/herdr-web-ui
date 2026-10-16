@@ -573,6 +573,7 @@ export const KO: Record<string, string> = {
 
   // ---- composer ----
   "Reconnecting… message held here, never queued": "재연결 중… 메시지는 여기에 보관되고 대기열에 넣지 않습니다",
+  "Connecting… message held here, never queued": "연결 중… 메시지는 여기에 보관되고 대기열에 넣지 않습니다",
   "Message {agent}…": "{agent}에게 메시지…",
   "Sent as it was. Your changes made while it was sending stayed here and were not sent.": "원래 내용대로 보냈습니다. 보내는 동안 고친 부분은 여기 남아 있고 전송되지 않았습니다.",
   "Message composer": "메시지 입력창",
