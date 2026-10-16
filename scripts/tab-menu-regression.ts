@@ -166,6 +166,30 @@ async function checkDesktop(browser: Browser, origin: string, first: string, sec
     await page.keyboard.press("Escape");
     await tabMenu.waitFor({ state: "detached" });
     assert.equal(await tab.evaluate((node) => node === document.activeElement), true, "Escape returns focus to the tab");
+    // Reduced motion takes the fade away, and with it the delay that kept the button in view while
+    // the focus crossed from the tab to it: the same keyboard route must hold without any transition.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    try {
+      await frame(page, first).locator(".xterm-helper-textarea").focus();
+      await pointerOffStrip();
+      await stripMenu.waitFor({ state: "hidden" });
+      assert.equal(await stripMenu.evaluate((node) => getComputedStyle(node).transitionDuration), "0s", "reduced motion leaves the menu button no transition");
+      await page.locator(".tab-strip-add").focus();
+      await page.keyboard.press("Shift+Tab");
+      assert.equal(await tab.evaluate((node) => node === document.activeElement), true, "reduced motion: Shift+Tab from the + lands on the selected tab");
+      await stripMenu.waitFor({ state: "visible" });
+      await page.keyboard.press("Tab");
+      assert.equal(await stripMenu.evaluate((node) => node === document.activeElement), true, "reduced motion: Tab reaches the menu button");
+      assert.equal(await opacity(stripMenu), "1", "reduced motion: the focused menu button is in view");
+      await screenshot(page, "desktop-keyboard-button-reduced");
+      await page.keyboard.press("Enter");
+      await tabMenu.waitFor();
+      await tabMenuFocused();
+      await tabMenu.getByRole("menuitem", { name: "Rename tab", exact: true }).waitFor();
+      await page.keyboard.press("Escape");
+      await tabMenu.waitFor({ state: "detached" });
+      assert.equal(await tab.evaluate((node) => node === document.activeElement), true, "reduced motion: Escape returns focus to the tab");
+    } finally { await page.emulateMedia({ reducedMotion: null }); }
     await frame(page, first).locator(".xterm-helper-textarea").focus();
     await pointerOffStrip();
     await stripMenu.waitFor({ state: "hidden" });
