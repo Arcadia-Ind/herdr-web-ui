@@ -2791,7 +2791,7 @@ export function PaneTerminal({
         {paneId !== null && !ended && connected && !draftIsEmpty(draft) && !noticesDocked && (
           <div className="terminal-banner terminal-banner-draft" role="status">
             <span className="draft-label">{t("Input held until the terminal is ready:")}</span>
-            {draft.text.length > 0 && <code className="draft-text">{draft.text}</code>}
+            {draft.text.length > 0 && <code className="draft-text" title={draft.text}>{draft.text}</code>}
             {/* the preview shows the start of the text: without this, a draft that lost its end looks whole */}
             {draft.truncated && <span className="draft-truncated">{t("Some input could not be held and was left out.")}</span>}
             {/* Enter is never held: without this, two commands look like one line and a paste looks whole */}

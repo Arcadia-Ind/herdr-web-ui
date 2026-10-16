@@ -1534,9 +1534,9 @@ One set for both themes: the card is island black wherever it shows.
   instead (Composer: Notices).
   Banners wrap inside their pane at any width (a phone, or a narrow split on a desktop): text breaks
   between words, and what does not fit beside the text (held input, actions) moves to the next line
-  with button labels kept whole; wrapped lines start at the left. The reconnecting banner's held-input
-  preview (`Input held: “…”`, the text in mono) stays on one line, cut with an ellipsis, with the whole
-  text as its title: a command is never broken inside a word.
+  with button labels kept whole; wrapped lines start at the left. Held input, in the reconnecting
+  banner's preview (`Input held: “…”`) and in the review banner, stays on one line in mono, cut with
+  an ellipsis, with the whole text as its title: a command is never broken inside a word.
 - The mobile key bar starts with Esc, Tab and `^C`, then sticky Ctrl/Alt/Shift, Enter and arrows;
   it never steals typing focus. Modifiers remain highlighted until toggled off,
   leaving the pane/lens or disconnecting; each exposes `aria-pressed`.

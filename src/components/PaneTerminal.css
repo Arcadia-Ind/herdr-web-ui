@@ -184,8 +184,8 @@
   background: var(--bg-elevated);
   font-size: var(--fs-xs);
   color: var(--text-dim);
-  /* a narrow pane (a phone, or a split on a desktop) wraps a banner instead of letting it run past
-     the pane's edge; held input with no space in it breaks anywhere */
+  /* a narrow pane (a phone, or a split on a desktop) wraps a banner's sentences instead of letting
+     it run past the pane's edge; held input (.draft-held, .draft-text) stays on one line instead */
   white-space: normal;
   overflow-wrap: anywhere;
   /* what does not fit beside the text (held input, actions) goes to the next line */
@@ -294,8 +294,12 @@
   color: var(--status-working);
 }
 
+/* the review banner's held text: one line, cut with an ellipsis (its title holds the whole text),
+   never broken inside a word as the wrapping banner around it would break a command at its hyphens */
 .terminal-banner-draft .draft-text {
-  max-width: 32ch;
+  max-width: min(32ch, 100%);
+  white-space: nowrap;
+  overflow-wrap: normal;
   overflow: hidden;
   text-overflow: ellipsis;
   font-family: var(--font-mono);
