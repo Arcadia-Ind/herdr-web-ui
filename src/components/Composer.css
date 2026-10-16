@@ -438,6 +438,11 @@
   white-space: normal;
 }
 
+/* over the cap by an attachment's path: the one line that says so takes the notice colour, Send waits */
+.composer-status-hint.is-over {
+  color: var(--notice);
+}
+
 /* on a line of its own (Composer.tsx marks it): the whole line, and no dot to lead it */
 .composer-status[data-hint-alone] > .composer-status-hint {
   flex-basis: 100%;
@@ -905,6 +910,20 @@
   border-color: var(--status-blocked);
 }
 
+/* a path with no room: the badge is a warning glyph alone (its words are for assistive tech); the
+   status line under the box says the limit and the count */
+.composer-attachment.is-no-room .composer-attachment-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--notice);
+}
+
+.composer-attachment.is-no-room .composer-attachment-state svg {
+  width: var(--fs-xs);
+  height: var(--fs-xs);
+}
+
 .composer-attachment button {
   position: absolute;
   top: calc(-1 * var(--space-2));
@@ -962,6 +981,38 @@
   flex: 1 1 12rem;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+/* what the line leaves out (the advice, the PC's own words) folds under it: a dim Details toggle */
+.composer-note-details {
+  margin-top: var(--space-1);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.composer-note-details > summary {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.composer-note-details > p {
+  margin: var(--space-1) 0 0;
+}
+
+.composer-note-details > code {
+  display: block;
+  margin-top: var(--space-1);
+}
+
+/* a finger's floor: the toggle keeps its one line and takes a --touch-target hit area through an
+   invisible expander around it */
+@media (pointer: coarse) {
+  .composer-note-details > summary::before {
+    content: "";
+    position: absolute;
+    inset: calc((1lh - var(--touch-target)) / 2) 0;
+  }
 }
 
 .composer-note-offer .composer-note-action {

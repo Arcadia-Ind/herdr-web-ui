@@ -578,8 +578,6 @@ export const ZH: Record<string, string> = {
   "File source": "文件源码",
 
   // ---- composer ----
-  "Reconnecting… message held here, never queued": "正在重连… 消息保留在此处，不会加入队列",
-  "Connecting… message held here, never queued": "正在连接… 消息保留在此处，不会加入队列",
   "Message {agent}…": "给 {agent} 发消息…",
   "Sent as it was. Your changes made while it was sending stayed here and were not sent.": "已按原内容发送。发送期间所做的修改保留在此处，未被发送。",
   "Message composer": "消息输入框",
@@ -590,7 +588,8 @@ export const ZH: Record<string, string> = {
   "Reasoning effort not available": "推理强度信息不可用",
   "Reasoning {effort}": "推理 {effort}",
   "Uploading file…": "正在上传文件…",
-  "No room for {file}: remove {count} characters": "放不下 {file}：请删掉 {count} 个字符",
+  "{max}-character limit · {count} over": "{max} 字上限 · 超出 {count} 字",
+  "{max}-character limit": "{max} 字上限",
   "{count} characters left": "还剩 {count} 个字符",
   "Resize message box": "调整输入框大小",
   "Drag to resize · double-click to reset": "拖动以调整大小 · 双击重置",
@@ -637,6 +636,8 @@ export const ZH: Record<string, string> = {
   "Couldn't load suggestions. Keep typing to try again.": "无法加载建议。继续输入即可重试。",
   "{name} attached": "已附加 {name}",
   "{name} could not be attached: {reason}": "无法附加 {name}：{reason}",
+  "{name} could not be attached": "无法附加 {name}",
+  "Couldn't attach": "无法附加",
 
   // ---- chat view ----
   "Copied": "已复制",
@@ -696,7 +697,6 @@ export const ZH: Record<string, string> = {
   "Another app has this pane open. It connects here as soon as that app lets go.": "另一个应用正打开此窗格。它一松开，这里就会立即连接。",
   "Open here": "在此打开",
   "Take this pane from another web app or terminal attach. That connection will close.": "从另一个网页应用或 terminal attach 接管此窗格。那边的连接将关闭。",
-  "Input held until the terminal is ready:": "终端就绪前保留的输入：",
   "Some input was too long to hold and was left out.": "部分输入过长，未能保留，已被略去。",
   "Some input could not be held and was left out.": "部分输入未能保留，已被略去。",
   "An Enter or line break was left out: Send never presses Enter.": "回车和换行未保留：发送不会按下回车。",
@@ -771,6 +771,18 @@ export const ZH: Record<string, string> = {
   "The PC could not do that. Try again; if it keeps failing, restart herdr web ui on the PC.": "电脑无法完成该操作。请重试；如果一直失败，请在电脑上重启 herdr web ui。",
   "Can't reach the PC. Check your connection, then try again.": "无法连接到电脑。请检查网络连接后重试。",
   "Something went wrong. Try again.": "出了点问题。请重试。",
+  "Not signed in to this PC": "未登录此电脑",
+  "It no longer exists on the PC": "电脑上已不存在",
+  "It changed on the PC": "电脑上的内容已更改",
+  "The PC took too long": "电脑响应太慢",
+  "Can't reach the PC": "无法连接到电脑",
+  "PC disk is full": "电脑磁盘已满",
+  "No permission on the PC": "电脑上没有权限",
+  "Pair it again in Settings → Phone & devices.": "请在设置 → 手机和设备中重新配对。",
+  "Refresh and try again.": "请刷新后重试。",
+  "Check it and try again.": "请检查后重试。",
+  "Check your connection, then try again.": "请检查网络连接后重试。",
+  "Try again; if it keeps failing, restart herdr web ui on the PC.": "请重试；如果一直失败，请在电脑上重启 herdr web ui。",
 
   // ---- sign-in ----
   "Enter all 6 digits of the pairing code.": "请输入配对码的全部 6 位数字。",
@@ -900,6 +912,10 @@ export const ZH: Record<string, string> = {
   "Error": "错误",
   "{n} failed": "{n} 个失败",
   "Loading conversation…": "正在加载对话…",
+  "Waiting for the PC…": "正在等待电脑响应…",
+  "The PC isn't responding": "电脑没有响应",
+  "Couldn't load the conversation": "无法加载对话",
+  "Couldn't load the terminal output": "无法加载终端输出",
   "Jump to latest": "跳转到最新",
   "Open image": "打开图片",
   "Attached image": "附加的图片",
@@ -1150,7 +1166,6 @@ export const ZH: Record<string, string> = {
   // t3code ports (a)
   "yesterday at {time}": "昨天 {time}",
   "{count} characters of the paste did not fit: a message holds {max}.": "粘贴的内容中有 {count} 个字符放不下：一条消息最多 {max} 个字符。",
-  "Message limit reached: {max} characters. Nothing more can be added.": "已达到消息长度上限：{max} 个字符。无法再添加。",
   "Compact context": "压缩上下文",
   "Quote in message": "引用到消息",
   "Added to the message draft": "已添加到消息草稿",

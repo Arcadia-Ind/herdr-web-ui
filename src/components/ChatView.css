@@ -962,6 +962,52 @@
 
 .chat-inline-error { color: var(--status-blocked); }
 
+/* a read that failed (ChatView.tsx FailureLine): the one line, Try again beside it where it is the
+   way on, and a dim Details toggle under them for the advice and the PC's own words */
+.chat-failure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  font-size: var(--fs-xs);
+}
+
+.chat-failure-line {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.chat-failure-details {
+  flex-basis: 100%;
+  color: var(--text-dim);
+}
+
+.chat-failure-details > summary {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.chat-failure-details > p {
+  margin: var(--space-1) 0 0;
+}
+
+.chat-failure-details > code {
+  display: block;
+  margin-top: var(--space-1);
+}
+
+/* a finger's floor (the button is a .btn and grows to it in styles.css): the toggle keeps its line
+   and takes the hit area through an invisible expander around it */
+@media (pointer: coarse) {
+  .chat-failure-details > summary::before {
+    content: "";
+    position: absolute;
+    inset: calc((1lh - var(--touch-target)) / 2) 0;
+  }
+}
+
 .chat-activity {
   display: flex;
   align-items: center;

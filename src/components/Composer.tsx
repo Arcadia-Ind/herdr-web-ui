@@ -55,7 +55,7 @@ import { BackgroundTasks } from "./BackgroundTasks.tsx";
 import { MicButton, VoiceRecordingPill, useDictation } from "./VoiceInput.tsx";
 import { cachedPaneCommands } from "../lib/paneCommandCache.ts";
 import { useT } from "../lib/i18n.ts";
-import { userErrorMessage } from "../lib/userError.ts";
+import { offersRetry, userFailure, type UserFailure } from "../lib/userError.ts";
 import { AttachmentTooLargeError } from "../lib/api.ts";
 import { modalOpen } from "../lib/focus.ts";
 
@@ -143,6 +143,9 @@ type Attachment = {
   /** what the pick this file came in with left out, repeated beside an upload error of the batch */
   leftOut: string | null;
 };
+
+/** an upload that failed: its tile, and the failure's parts for the note over the box */
+type UploadFailure = { attachment: Attachment; failure: UserFailure };
 
 function readSlashUsage(): Record<string, number> {
   try {
@@ -322,9 +325,7 @@ export function Composer({
   const [menuDismissed, setMenuDismissed] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [note, setNote] = useState<string | DraftRefusal | null>(null);
-  /** what the PC or the browser said about a failed upload, shown under its note while that note is up */
-  const [noteDetail, setNoteDetail] = useState<{ note: string; detail: string } | null>(null);
+  const [note, setNote] = useState<string | DraftRefusal | UploadFailure | null>(null);
   // shown only when chosen in Settings → Quick replies: a button beside the box was one more thing to read
   const quickOpen = settings.showQuickReplies;
   const quickReplies = quickReplyButtons(settings);
@@ -351,7 +352,7 @@ export function Composer({
   const agentLabel = agentDisplayLabel(agent);
   // the agent's suggestion stands in the empty box as it does in its own input, until anything is typed
   const offered = connected && answerHint === null && suggestion !== null ? suggestion : null;
-  const offlineSentence = t(connectedBefore ? "Reconnecting… message held here, never queued" : "Connecting… message held here, never queued");
+  const offlineSentence = t(connectedBefore ? "Reconnecting…" : "Connecting…");
   const placeholder = !connected
     ? offlineSentence
     : answerHint ?? offered ?? t("Message {agent}…", { agent: agentLabel });
@@ -698,6 +699,15 @@ export function Composer({
   /** the note for a paste the box cut, held across the change event that follows it */
   const pasteCutNote = useRef<string | null>(null);
 
+  // the box clamps at its cap without a word: the cap is said once, as it is reached, through the
+  // polite region (the status line shows it; a line that appears with its words is not announced)
+  const wasFull = useRef(false);
+  useEffect(() => {
+    const full = composerFull(text.length, MAX_COMPOSER_CHARS);
+    if (full && !wasFull.current) announce(t("{max}-character limit", { max: formatChars(MAX_COMPOSER_CHARS) }));
+    wasFull.current = full;
+  }, [announce, t, text]);
+
   const setTextAndCaret = useCallback((nextText: string, nextCaret: number) => {
     const limitedText = nextText.slice(0, MAX_COMPOSER_CHARS);
     const clampedCaret = Math.min(nextCaret, MAX_COMPOSER_CHARS);
@@ -821,12 +831,16 @@ export function Composer({
             setAttachments((current) =>
               current.map((item) => (item.id === attachment.id ? { ...item, state: "error" } : item)),
             );
-            // the size limit's own sentence is already plain; anything else is said plainly, its words kept beneath
-            const failure = error instanceof AttachmentTooLargeError ? { message: error.message, detail: null } : userErrorMessage(error);
-            const shown = attachment.leftOut ? `${failure.message} ${attachment.leftOut}` : failure.message;
-            setNote(shown);
-            setNoteDetail(failure.detail === null ? null : { note: shown, detail: failure.detail });
-            announce(t("{name} could not be attached: {reason}", { name: attachment.file.name, reason: failure.message }));
+            // the size limit's own sentence is already plain and is the note; anything else is one line
+            // naming what failed and the cause it knows, the rest behind Details
+            if (error instanceof AttachmentTooLargeError) {
+              setNote(attachment.leftOut ? `${error.message} ${attachment.leftOut}` : error.message);
+              announce(t("{name} could not be attached: {reason}", { name: attachment.file.name, reason: error.message }));
+              return;
+            }
+            const failure = userFailure(error);
+            setNote({ attachment, failure });
+            announce(failure.cause === null ? t("{name} could not be attached", { name: attachment.file.name }) : t("{name} could not be attached: {reason}", { name: attachment.file.name, reason: failure.cause }));
           },
         )
         .finally(() => {
@@ -866,11 +880,21 @@ export function Composer({
     [pumpUploads, t],
   );
 
+  /** Try again on a failed upload: the tile uploads once more, its note gone */
+  const retryUpload = useCallback((attachment: Attachment) => {
+    setNote(null);
+    setAttachments((current) => current.map((item) => (item.id === attachment.id ? { ...item, state: "uploading" } : item)));
+    uploadQueue.current.push(attachment);
+    pumpUploads();
+  }, [pumpUploads]);
+
   const removeAttachment = useCallback((attachment: Attachment) => {
     removedAttachments.current.add(attachment.id);
     placedMentions.current.delete(attachment.id);
     URL.revokeObjectURL(attachment.previewUrl);
     setAttachments((current) => current.filter((item) => item.id !== attachment.id));
+    // the note about this tile's failed upload goes with the tile
+    setNote((current) => typeof current === "object" && current !== null && "failure" in current && current.attachment.id === attachment.id ? null : current);
     if (attachment.path) {
       const mention = imageMention(attachment.path);
       setText((current) => {
@@ -1105,9 +1129,13 @@ export function Composer({
   const usageCaption = usageLimit === undefined ? "" : `${usageLimit.kind === "session" ? "5h" : windowLabel(usageLimit)} ${formatPercent(meterPercent(usageLimit, settings.usageCount))}`;
   const usageAccessible = usage === undefined ? "" : `${t("Subscription usage")}: ${usageName(usage)}, ${usageDetail.replaceAll("\n", ", ")}`;
   const hintText = hint === null ? null
-    : hint === "no-room" ? t("No room for {file}: remove {count} characters", { file: roomless?.file.name ?? "", count: roomless?.missing ?? 0 })
-    : hint === "near-limit" ? t("{count} characters left", { count: MAX_COMPOSER_CHARS - text.length })
+    : hint === "no-room" ? t("{max}-character limit · {count} over", { max: formatChars(MAX_COMPOSER_CHARS), count: formatChars(roomless?.missing ?? 0) })
+    : hint === "near-limit" ? composerFull(text.length, MAX_COMPOSER_CHARS) ? t("{max}-character limit", { max: formatChars(MAX_COMPOSER_CHARS) }) : t("{count} characters left", { count: MAX_COMPOSER_CHARS - text.length })
     : hint === "uploading" ? t("Uploading file…") : offlineSentence;
+  /** an upload's failure as one line: what failed and the cause it knows, then what the pick left out */
+  const noteLine = note === null ? null : typeof note === "string" ? note : "failure" in note
+    ? [note.failure.cause === null ? t("Couldn't attach") : `${t("Couldn't attach")} · ${note.failure.cause}`, note.attachment.leftOut].filter((part) => part !== null).join(" ")
+    : note.note;
   /** the strip under the card: the folder and the branch the caller knows; none, or a phone's screen, no strip */
   const strip = mobile ? null : composerStrip({ cwd, branch, repo: worktreeRepo });
   const worktree = worktreeRepo !== null;
@@ -1154,14 +1182,23 @@ export function Composer({
       )}
 
       {/* why the message in the box did not go: on the box's top edge, read with it, its one way on beside it */}
-      {note !== null && (
-        <div className={`composer-note${typeof note === "object" ? " composer-note-offer" : ""}`} role="alert">
+      {note !== null && noteLine !== null && (
+        <div className={`composer-note${typeof note === "object" && !("failure" in note) ? " composer-note-offer" : ""}`} role="alert">
           <TriangleAlert className="composer-note-icon" aria-hidden="true" />
-          <span className="composer-note-text">{typeof note === "string" ? note : note.note}{typeof note === "string" && noteDetail?.note === note && <><br /><code>{noteDetail.detail}</code></>}</span>
+          <div className="composer-note-text">
+            {noteLine}
+            {typeof note === "object" && "failure" in note && (note.failure.advice !== null || note.failure.detail !== null) && <details className="composer-note-details">
+              <summary>{t("Details")}</summary>
+              {note.failure.advice !== null && <p>{note.failure.advice}</p>}
+              {note.failure.detail !== null && <code>{note.failure.detail}</code>}
+            </details>}
+          </div>
           {/* the draft named above, never what has replaced it since: the server checks; a box it could
               not tell empty, sent over only in the same Claude terminal the refusal was for */}
-          {typeof note === "object" && <button type="button" className="composer-note-action" disabled={!connected || uploading || roomless !== undefined || sending || text.trim().length === 0}
-            onClick={() => "draft" in note ? send(note.draft) : send(undefined, true)}>{"draft" in note ? t("Clear it and send") : t("Send anyway")}</button>}
+          {typeof note === "object" && ("failure" in note
+            ? offersRetry(note.failure) && <button type="button" className="composer-note-action" disabled={!connected} onClick={() => retryUpload(note.attachment)}>{t("Try again")}</button>
+            : <button type="button" className="composer-note-action" disabled={!connected || uploading || roomless !== undefined || sending || text.trim().length === 0}
+              onClick={() => "draft" in note ? send(note.draft) : send(undefined, true)}>{"draft" in note ? t("Clear it and send") : t("Send anyway")}</button>)}
         </div>
       )}
 
@@ -1268,7 +1305,9 @@ export function Composer({
                 {attachment.previewUrl ? <img src={attachment.previewUrl} alt={attachment.file.name} />
                   : <span className="composer-attachment-file" title={attachment.file.name}><FileText aria-hidden="true" /><span>{attachment.file.name}</span></span>}
                 <span className="composer-attachment-state">
-                  {t(attachment.state === "uploading" ? "Uploading" : attachment.state === "error" ? "Failed" : attachment.state === "no-room" ? "No room" : "Attached")}
+                  {attachment.state === "no-room"
+                    ? <><TriangleAlert aria-hidden="true" /><span className="visually-hidden">{t("No room")}</span></>
+                    : t(attachment.state === "uploading" ? "Uploading" : attachment.state === "error" ? "Failed" : "Attached")}
                 </span>
                 <button type="button" aria-label={t("Remove {file}", { file: attachment.file.name })} onClick={() => removeAttachment(attachment)}>
                   <X aria-hidden="true" />
@@ -1394,7 +1433,7 @@ export function Composer({
             {backgroundTasks > 0 && <span className="composer-task-count visually-hidden">{t(backgroundTasks === 1 ? "{n} background task" : "{n} background tasks", { n: backgroundTasks })}</span>}
           </span>
           {hintText !== null && (
-            <span ref={hintRef} className="composer-status-hint" title={hintText}>
+            <span ref={hintRef} className={`composer-status-hint${hint === "no-room" ? " is-over" : ""}`} title={hintText}>
               <span className="composer-status-hint-dot" aria-hidden="true">· </span>{hintText}
             </span>
           )}
@@ -1449,10 +1488,6 @@ export function Composer({
       {/* said while typing, before the send: after it the browser is already open and the reader is
           already in the state the words describe. Not a block — the text still goes, and pi runs the
           command in the terminal the way its own palette would */}
-      {/* why typing stopped: the box clamps at its cap without a word, so the box says it */}
-      {!note && composerFull(text.length, MAX_COMPOSER_CHARS) && (
-        <div className="composer-hint composer-limit" role="status">{t("Message limit reached: {max} characters. Nothing more can be added.", { max: formatChars(MAX_COMPOSER_CHARS) })}</div>
-      )}
       {!note && terminalOnly !== null && (
         <div className="composer-hint" role="status">{t("{command} opens a tree the chat cannot show. It runs in the terminal — tap the terminal button at the top of the screen to choose a branch.", { command: `/${terminalOnly}` })}</div>
       )}

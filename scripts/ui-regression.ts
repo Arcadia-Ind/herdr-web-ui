@@ -1352,9 +1352,9 @@ try {
   await composer.fill("");
   console.log("PASS paths wait for a /command, typed or dictated, or an IME composition to finish, and selections keep their direction");
 
-  // A path that does not fit whole is never cut: it waits, its chip and the status line say how many
-  // characters to remove, Send is off, and the path goes in once there is room. The count of
-  // characters left shows only near the limit.
+  // A path that does not fit whole is never cut: it waits, its chip shows a warning glyph (its words
+  // for assistive tech) and the status line says the limit and how many characters over, Send is
+  // off, and the path goes in once there is room. The count of characters left shows only near the limit.
   const MAX_COMPOSER_CHARS = 20_000; // src/lib/compose.ts; importing it would load the app's modules here
   const statusHint = page.locator(".composer-status-hint");
   const sendButton = page.getByRole("button", { name: "Send message", exact: true });
@@ -1368,9 +1368,10 @@ try {
   await finish("fourteenth.txt");
   const roomless = page.locator(".composer-attachment.is-no-room");
   await roomless.waitFor();
-  assert.match(await roomless.innerText(), /No room/);
-  await until(async () => /No room for fourteenth\.txt: remove \d+ characters/.test(await statusHint.textContent() ?? ""), "the status line says how much to cut");
-  const short = Number(/remove (\d+) characters/.exec(await statusHint.textContent() ?? "")![1]);
+  assert.equal(await roomless.locator(".composer-attachment-state svg").count(), 1, "the tile's badge is a glyph");
+  assert.equal(await roomless.locator(".composer-attachment-state .visually-hidden").innerText(), "No room", "its words are for assistive tech");
+  await until(async () => /20,000-character limit · \d+ over/.test(await statusHint.textContent() ?? ""), "the status line says the limit and how much over");
+  const short = Number(/· (\d+) over/.exec(await statusHint.textContent() ?? "")![1]);
   assert.equal(await sendButton.isDisabled(), true, "Send waits for the path");
   assert.equal(await composer.inputValue(), "x".repeat(MAX_COMPOSER_CHARS - 5), "no part of the path went in");
   await composer.fill("x".repeat(MAX_COMPOSER_CHARS - 200));
@@ -1386,7 +1387,7 @@ try {
   await finish(long);
   await roomless.waitFor();
   await finish("sixteenth.txt");
-  assert.match(await roomless.innerText(), /No room/);
+  assert.equal(await roomless.locator(".composer-attachment-state svg").count(), 1, "the long path's tile shows the glyph");
   assert.equal(await sendButton.isDisabled(), true, "the short path waits behind the long one");
   assert.doesNotMatch(await composer.inputValue(), /sixteenth/u);
   await page.getByRole("button", { name: `Remove ${long}`, exact: true }).click();

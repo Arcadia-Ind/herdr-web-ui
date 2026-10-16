@@ -1042,9 +1042,16 @@ One set for both themes: the card is island black wherever it shows.
 - An empty chat is greeted from the composer (`.composer-greeting`, below), only where the agent's
   conversation was read and holds no turn. A chat still loading, one whose read failed, an agent
   whose transcript could not be read and a pane with no recognized agent keep their own lines
-  (`Loading conversation…`, the error, the terminal-output fallback, `No conversation yet — say
+  (`Loading conversation…`, the failure line, the terminal-output fallback, `No conversation yet — say
   something below`), as does an agent that is working or asking. A history read again after it
-  changed is loading, not empty. The server answers the terminal-output fallback for an agent
+  changed is loading, not empty. A read that failed while the chat retries on its own is one line
+  (`FailureLine`): a slow PC (a timeout, 408, 504) is waited for quietly, `Waiting for the PC…` in
+  the same persistent `role="status"` container as `Loading conversation…`, and alarms only after
+  three slow reads in a row, `The PC isn't responding` with Try again (`role="alert"`, a read now);
+  any other failure is `Couldn't load the conversation · <cause>` when the cause is known, else
+  `Couldn't load the conversation` with Try again. The advice and the PC's own words (the
+  `Chat read timed out.` classification among them) fold behind a dim Details toggle, never on the
+  line. The terminal-output fallback's failure is the same line, `Couldn't load the terminal output`. The server answers the terminal-output fallback for an agent
   that has not written its transcript yet (a new Claude Code or Codex pane before its first
   message), so those are not greeted; an omo session not yet written answers an empty
   conversation and is.
@@ -1296,11 +1303,11 @@ One set for both themes: the card is island black wherever it shows.
   Enter delivery removes the pending row and refreshes the transcript. Next-turn delivery and
   an explicit Send now action claim the same server ID; connection loss never resumes automatic input.
   Previously held browser messages retain their explicit Send now/Discard recovery.
-- Not connected, the sentence `Reconnecting… message held here, never queued` (`Connecting… message
-  held here, never queued` before this page's first connection to the PC's socket) is said once and
-  whole: it is the placeholder while the box is empty and moves into the status content once
-  there is a draft (`composerStatusHint`), on a phone too. A sentence there (this one, or
-  `Uploading file…`) is never ellipsized: where it does not fit beside the model it takes a line
+- Not connected, the one word `Reconnecting…` (`Connecting…` before this page's first connection to
+  the PC's socket) is the placeholder while the box is empty and moves into the status content once
+  there is a draft (`composerStatusHint`), on a phone too; it says no more (nothing is queued, and
+  the disabled Send says so), and the chat body draws no connection line of its own: the header
+  chip's word is the one place. A sentence there (`Uploading file…`, or the word) is never ellipsized: where it does not fit beside the model it takes a line
   of its own under it, without its leading dot, and wraps there; its `title` repeats it. Only
   the sentence takes a line: the mark, the model, the level and the ring stay one row over it
   (`.composer-status-meta`), where the label gives way exactly as it does with no sentence. The
@@ -1327,8 +1334,11 @@ One set for both themes: the card is island black wherever it shows.
   anatomy: one `--border` hairline above the group, then a row per notice (`role="status"`), no
   tint and no box, every line of text `--space-3` in. A row is its lucide mark and its sentence in
   `--text-dim` at `--fs-xs` (`--status-working` for the two warnings: another app holds the pane,
-  the stream failed), its own way on at its end (`Open here`, `Reconnect`, the held input's `Send`
-  and quiet `Discard`, in the held rows' buttons) and an X named `Dismiss notice`. Top to bottom
+  the stream failed), its own way on at its end (`Open here`, `Reconnect`, in the held rows' buttons)
+  and an X named `Dismiss notice`. The held input's row has no sentence on screen: the held text
+  (mono, one line, an ellipsis, the whole text as its title) and two `.icon-button` controls named
+  `Send held input` and `Discard held input`, as the terminal lens's held-input row; a clipped
+  `Input held:` stays in the row for its `role="status"` words. Top to bottom
   the rows are the plain notice, then the urgent ones, then the activity (the held input) nearest
   the card, as t3code's composer banner stack orders them (`src/lib/composerNotices.ts`). A
   dismissal lasts while the notice stands and says the same thing; it is forgotten once the
@@ -1367,9 +1377,20 @@ One set for both themes: the card is island black wherever it shows.
   across all picks, and puts a removable editable `@path` mention at the start of the message (after
   a leading `/command`), in the order the files were picked. A path waits while the box holds only a
   `/command` still being typed or an IME composition, and a path that does not fit whole under the
-  length cap waits on a "No room" tile, with Send off and the status line saying how many characters
-  to remove; within 200 characters of the cap the status line counts what is left. The caret and selection move only with the
+  length cap waits on a tile whose badge is a warning glyph in `--notice` (`No room` for assistive
+  tech only), with Send off and one status line, in `--notice`, saying the limit and how many
+  characters over (`20,000-character limit · 41 over`); nothing else says it. Within 200 characters
+  of the cap the status line counts what is left, and at the cap it names the limit
+  (`20,000-character limit`), said once through the composer's polite region as the cap is reached;
+  no line under the card repeats it. The caret and selection move only with the
   text they sit in, so typing while files upload is not disturbed.
+- An upload that failed is one note on the box's top edge (`.composer-note`, `role="alert"`): what
+  failed and the cause when it is known (`Couldn't attach · PC disk is full`, from the status or the
+  server's own words, `lib/userError.ts` `userFailure`); with no known cause the line is
+  `Couldn't attach` and Try again beside it uploads the file again (`offersRetry`: no cause, or the
+  PC was only slow). The advice and the server's words fold behind a dim Details toggle under the
+  line, never on it; the size limit's own sentence is the whole note. Removing the tile removes its
+  note.
 - While a phone's keyboard is up, a tap on the transcript or a drag down it (`32px`) puts the
   keyboard away. Each only blurs the field, so the draft stays. The prompt card, which can stand
   where the transcript was on a short screen, does the same: a tap on its text (never on an
@@ -1675,7 +1696,7 @@ The values are the ones in `src/styles.css`.
   pane exposes `aria-current`; dialogs expose `role="dialog"` and `aria-modal`.
 - Status, loading and composer progress use `role="status"`; failures use `role="alert"`. A status
   line that may hold words the moment it mounts (Connecting…, the connection chip's word, a PC's state
-  word, Loading PCs… / workspaces… / agents… / conversation…, the chat's Reconnecting…, Opening link…,
+  word, Loading PCs… / workspaces… / agents… / conversation…, the chat's Waiting for the PC…, Opening link…,
   Opening…, Sending your answer…, Waiting for terminal input…) is one persistent container: in the
   document from its owner's first render, clipped while empty (`.visually-hidden`, never
   `display: none`), its words set a frame after mount through `useAnnouncedText`
