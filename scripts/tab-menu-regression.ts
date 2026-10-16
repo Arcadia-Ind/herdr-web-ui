@@ -143,7 +143,7 @@ async function checkDesktop(browser: Browser, origin: string, first: string, sec
     await tabMenu.waitFor();
     await tabMenuFocused();
     assert.deepEqual((await tabMenu.getByRole("menuitem").allTextContents()).filter((item) => item !== "Clear pane name"),
-      ["Rename pane", "Split right", "Split down", "Zoom pane", "Close pane", "Rename tab", "Close tab"], "the button's menu carries the open pane's actions and the tab's, without New tab");
+      ["Rename pane", "Split right", "Split down", "Zoom pane", "Close pane", "New tab with agent…", "Rename tab", "Close tab"], "the button's menu carries the open pane's actions and the tab's (the + is a shell tab, so the agent's dialog stays here)");
     await page.keyboard.press("Escape");
     await tabMenu.waitFor({ state: "detached" });
     assert.equal(await tab.evaluate((node) => node === document.activeElement), true, "the button's menu returns focus to the tab");

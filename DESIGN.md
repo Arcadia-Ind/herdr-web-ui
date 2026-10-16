@@ -599,8 +599,8 @@ One set for both themes: the card is island black wherever it shows.
   confirmed close, focus lands on the header's workspace-list toggle.
 - Tab and pane menus follow herdr's target scopes. A tab's menu contains New tab with agent…, Rename
   tab and Close tab, plus Move tab left/right when a neighbouring position exists and no move is pending.
-  The `⋯` beside the selected tab leaves New tab with agent… out (the strip's `+` sits beside it) and also
-  carries the open pane's actions, less Split and Zoom where a phone shows one pane at a time.
+  The `⋯` beside the selected tab holds the same tab actions (the strip's `+` opens a shell tab, so
+  New tab with agent… stays here) and also carries the open pane's actions, less Split and Zoom where a phone shows one pane at a time.
   Touch and narrow layouts keep that `⋯` in view; a desktop with a mouse (`hover: hover`,
   `pointer: fine`, wider than 768px) draws it on the selected tab only, in its place at rest but
   hidden (`opacity` 0, `visibility` hidden, so the strip never reflows), and fades it in
