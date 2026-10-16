@@ -829,11 +829,13 @@ function DevicesPage({ auth, onSignOut }: { auth: HealthAuth | null; onSignOut: 
   // where a phone can open this app now, for the pairing QR code: the served address, else this one when it is not loopback
   const pairUrl = plan.kind === "here" || plan.kind === "served" ? plan.url : isLoopbackHost(window.location.hostname) ? null : window.location.origin;
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  // what keeps the switch from working here, only while it does (lib/wakeLock.ts asks for the same two)
+  const wakeLockProblem = !window.isSecureContext ? t("Needs HTTPS or localhost.") : !("wakeLock" in navigator) ? t("This browser can't keep the screen on.") : null;
   return (
     <>
       <SettingsGroup title={t("Phone")} section="phone">
         <div className="settings-item"><PhonePanel plan={plan} loading={access === undefined} onRefresh={loadAccess} /></div>
-        <SettingsRow label={t("Keep screen on")} description={t("While a terminal or chat pane is open. Requires HTTPS or localhost and a supported browser.")}>
+        <SettingsRow label={t("Keep screen on")} description={<>{t("While a terminal or chat pane is open.")}{wakeLockProblem !== null && <span className="settings-condition">{wakeLockProblem}</span>}</>}>
           <Toggle label={t("Keep screen on")} checked={settings.keepScreenOn} onChange={(keepScreenOn) => update({ keepScreenOn })} />
         </SettingsRow>
         <SettingsRow label={t("Install")} description={installPrompt.installed ? t("Installed") : installPrompt.canInstall ? undefined : installPrompt.help}>

@@ -252,6 +252,35 @@
   overflow-wrap: anywhere;
 }
 
+/* the host-key question: the fingerprint to compare, one sentence, ssh's own words folded */
+.machine-fingerprint-label {
+  margin: 0 0 var(--space-1);
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.machine-fingerprint {
+  margin: 0;
+  color: var(--text-strong);
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  overflow-wrap: anywhere;
+}
+
+.machine-challenge > .field-hint {
+  margin: var(--space-3) 0 0;
+}
+
+.machine-ssh-fold > summary {
+  width: fit-content;
+  color: var(--text-dim);
+  font-size: var(--fs-xs);
+}
+
+.machine-ssh-fold pre {
+  margin: var(--space-1) 0 0;
+}
+
 .machine-progress {
   padding: var(--space-3);
   background: var(--bg-hover);
