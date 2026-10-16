@@ -190,6 +190,10 @@
   overflow-wrap: anywhere;
   /* what does not fit beside the text (held input, actions) goes to the next line */
   flex-wrap: wrap;
+  /* never wider than the column, which the pane caps: while the column measures its content, the
+     held preview's percentage cap cannot act and its unbreakable command would size the banner, and
+     a right-anchored banner wider than a narrow split runs out of the pane's left edge */
+  max-width: 100%;
 }
 
 /* a button's label stays whole: it moves to the next line instead of breaking letter by letter */
