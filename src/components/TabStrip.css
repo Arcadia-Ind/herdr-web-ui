@@ -173,7 +173,10 @@
    plain sight. It holds its place at rest, hidden, so the strip never reflows under the pointer:
    the pointer over the strip, the tab's keyboard focus, its own, or its open menu fade it in.
    Hidden with visibility too: a Shift+Tab from the + lands on the tab, not on something unseen,
-   and nothing invisible takes a press. */
+   and nothing invisible takes a press. Between the tab's focus and the button's there is an
+   instant in which neither has it while the item still has it within, and a hidden button cannot
+   take the focus then: the fade's delay used to carry it over, reduced motion has no fade, so the
+   item's :focus-within without a focused child keeps the button in view through the handoff. */
 @media (hover: hover) and (pointer: fine) and (min-width: 769px) {
   .tab-strip-menu {
     display: inline-flex;
@@ -186,6 +189,7 @@
 
   .tab-strip:hover .tab-strip-menu,
   .tab-strip-item:has(> .tab-strip-tab:focus-visible) .tab-strip-menu,
+  .tab-strip-item:focus-within:not(:has(:focus)) .tab-strip-menu,
   .tab-strip-menu:focus-visible,
   .tab-strip-menu[aria-expanded="true"] {
     opacity: 1;
