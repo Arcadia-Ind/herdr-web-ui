@@ -73,8 +73,31 @@ import type { AgentStatus, ConversationMetadata, ConversationPart, ConversationR
 import { chatIsBlank, type ChatRead } from "../lib/greeting.ts";
 import { TurnTime } from "./TurnTime.tsx";
 import { useT } from "../lib/i18n.ts";
-import { userErrorMessage, type UserError } from "../lib/userError.ts";
+import { offersRetry, userFailure, type UserFailure } from "../lib/userError.ts";
 import { useAnnouncedText } from "../lib/useAnnouncedText.ts";
+
+/** Slow reads in a row the chat waits through quietly before it alarms: about 50 s at the local 15 s deadline. */
+const SLOW_READS_BEFORE_ALARM = 3;
+
+/**
+ * A read that failed, as one line (DESIGN.md, Messages say only what the person needs now): the
+ * action and the known cause, or the action alone with Try again; the advice and the server's words
+ * behind Details. A PC that stays slow is its own line, with Try again whatever else is known.
+ */
+function FailureLine({ action, failure, onRetry }: { action: string; failure: UserFailure; onRetry: () => void }) {
+  const t = useT();
+  const slow = failure.kind === "slow";
+  const line = slow ? t("The PC isn't responding") : failure.cause === null ? action : `${action} · ${failure.cause}`;
+  return <div className="chat-inline-error chat-failure" role="alert">
+    <span className="chat-failure-line">{line}</span>
+    {offersRetry(failure) && <button type="button" className="btn chat-failure-retry" onClick={onRetry}>{t("Try again")}</button>}
+    {(failure.advice !== null || failure.detail !== null) && <details className="chat-failure-details">
+      <summary>{t("Details")}</summary>
+      {failure.advice !== null && <p>{failure.advice}</p>}
+      {failure.detail !== null && <code>{failure.detail}</code>}
+    </details>}
+  </div>;
+}
 
 // No row is this object, so the list finds nothing to scroll to.
 const NO_ROW = Object.freeze({});
@@ -112,9 +135,6 @@ export interface ChatViewProps {
   /** bumped when a composer message goes out, before the transcript holds it */
   sentKey?: number;
   connected: boolean;
-  /** the socket has been connected on this page before: not connected, the footer says Reconnecting…, else
-   *  Connecting… (omitted, as the fixtures do, a wait reads as the first connection) */
-  connectedBefore?: boolean;
   ended: boolean;
   agent: string | null;
   agentStatus?: AgentStatus;
@@ -691,7 +711,8 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
   const t = useT();
   const [open, setOpen] = useState(false);
   const [text, setText] = useState<string | null>(null);
-  const [error, setError] = useState<UserError | null>(null);
+  const [error, setError] = useState<UserFailure | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   useEffect(() => {
     if (!open || !visible) return;
     let cancelled = false;
@@ -703,24 +724,24 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
         setText(toTranscriptMessages(result.text).filter((message) => message.role !== "status").map((message) => message.text).join("\n\n"));
         setError(null);
       } catch (cause) {
-        if (!cancelled) setError(userErrorMessage(cause));
+        if (!cancelled) setError(userFailure(cause));
       } finally {
         if (!cancelled) timer = window.setTimeout(() => void read(), PROMPT_POLL_MS);
       }
     };
     void read();
     return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [paneId, open, visible, fetchPaneTranscript]);
+  }, [paneId, open, visible, fetchPaneTranscript, retryKey]);
   return <details className="chat-terminal-fallback" open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
     <summary>{t("Conversation unavailable — show terminal output")}</summary>
     {text !== null && <pre>{text}</pre>}
     {text === null && error === null && <p className="chat-inline-state" role="status">{t("Loading…")}</p>}
-    {error !== null && <p className="chat-inline-state chat-inline-error" role="alert">{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</p>}
+    {error !== null && <FailureLine action={t("Couldn't load the terminal output")} failure={error} onRetry={() => setRetryKey((key) => key + 1)} />}
   </details>;
 }
 
 // the app re-renders on every pane-status and poll; an unchanged transcript sits those out
-export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, connectedBefore = false, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
+export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
   const t = useT();
   const { fetchPaneConversation, peekPaneConversation, fetchPanePromptState, fetchPaneTranscript } = useMachineApi();
   const { settings } = useSettings();
@@ -741,8 +762,10 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
   const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const smoothFollow = followGlides({ working: activity !== "idle" && agentStatus !== "blocked", reducedMotion });
   const workStatus = state.activity !== undefined && agentStatus !== "blocked" ? activity === "idle" ? "idle" : "working" : agentStatus;
-  const [error, setError] = useState<UserError | null>(null);
+  const [error, setError] = useState<UserFailure | null>(null);
   const [errorStatus, setErrorStatus] = useState<number | null>(null);
+  /** reads failed in a row: a slow PC is waited for this many times before the chat alarms */
+  const [failures, setFailures] = useState(0);
   const [newMessages, setNewMessages] = useState(false);
   /** scrolled up from the end: the way back is offered even when nothing new came */
   const [away, setAway] = useState(false);
@@ -850,7 +873,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       signature.current = nextSignature;
       setState(next);
     }
-    setError(null); setErrorStatus(null); setLoaded(true);
+    setError(null); setErrorStatus(null); setFailures(0); setLoaded(true);
     // only an answer laid out in full is skipped when it comes back unchanged: a read
     // cancelled mid-way (a pane switch, the page hidden during a gap fill) is redone
     lastAnswer.current = conversation;
@@ -861,7 +884,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
     stopRestore.current?.();
     restoring.current = readChatPosition(paneStorageId(machineId, paneId)) ?? null;
     history.current = undefined; setHistoryId(undefined);
-    pagingAway.current = false; stickToBottom.current = true; signature.current = ""; setState(EMPTY_STATE); setNewMessages(false); setAway(false); setLoaded(false); setError(null); setErrorStatus(null); setPrompt(null); setAbandoned(null); setRestored(null);
+    pagingAway.current = false; stickToBottom.current = true; signature.current = ""; setState(EMPTY_STATE); setNewMessages(false); setAway(false); setLoaded(false); setError(null); setErrorStatus(null); setFailures(0); setPrompt(null); setAbandoned(null); setRestored(null);
     dropOlder();
     lastAnswer.current = null;
     setSentOver(null);
@@ -944,7 +967,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
           pagingAway.current = false; stickToBottom.current = true; setNewMessages(false); setAway(false);
         }
         // a 304 hands back the answer already shown: nothing to compare or lay out again
-        if (conversation === lastAnswer.current) { setError(null); setErrorStatus(null); return; }
+        if (conversation === lastAnswer.current) { setError(null); setErrorStatus(null); setFailures(0); return; }
         // The newest page moved past the held start: the turns in between join the older
         // pages and the newest page is held from its new start, so no poll reads more than a page.
         const previous = lastAnswer.current;
@@ -983,8 +1006,9 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       } catch (cause) {
         if (cancelled || generation !== olderGeneration.current) return;
         setLoaded(true);
-        setError(userErrorMessage(cause));
+        setError(userFailure(cause));
         setErrorStatus(cause instanceof ApiError ? cause.status : null);
+        setFailures((count) => count + 1);
       }
     };
     conversationRefresh.setRead(read);
@@ -1377,14 +1401,17 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       )}
       {state.source === "conversation" && olderCursor === null && older.length > 0 && <p className="chat-endcap">{t("beginning of conversation")}</p>}
   </>;
-  // the chat's own waits are live regions in the footer from the view's first render, clipped while
-  // empty (never display: none); their words land a frame after it (lib/useAnnouncedText.ts)
-  const connectionWords = useAnnouncedText(!ended && !connected ? t(connectedBefore ? "Reconnecting…" : "Connecting…") : null);
-  const loadingWords = useAnnouncedText(!loaded && error === null ? t("Loading conversation…") : null);
+  // the chat's one wait is a live region in the footer from the view's first render, clipped while
+  // empty (never display: none); its words land a frame after it (lib/useAnnouncedText.ts). The
+  // connection's word is the header chip's alone; a slow PC is waited for quietly before it alarms
+  const waiting = error !== null && error.kind === "slow" && failures < SLOW_READS_BEFORE_ALARM;
+  const waitWords = useAnnouncedText(!loaded && error === null ? t("Loading conversation…") : waiting ? t("Waiting for the PC…") : null);
+  const retryRead = useCallback(() => { setFailures(0); conversationRefresh.refresh(); }, [conversationRefresh]);
   const footer = <>
-      <p className={connectionWords === null ? "visually-hidden" : "chat-inline-state"} role="status">{connectionWords}</p>
-      {error !== null && <p className="chat-inline-state chat-inline-error" role="alert">{errorStatus === 401 ? t("locked — the token gate is asking again") : <>{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</>}</p>}
-      <p className={loadingWords === null ? "visually-hidden" : "chat-inline-state"} role="status">{loadingWords}</p>
+      <p className={waitWords === null ? "visually-hidden" : "chat-inline-state"} role="status">{waitWords}</p>
+      {error !== null && !waiting && (errorStatus === 401
+        ? <p className="chat-inline-state chat-inline-error" role="alert">{t("locked — the token gate is asking again")}</p>
+        : <FailureLine action={t("Couldn't load the conversation")} failure={error} onRetry={retryRead} />)}
       {loaded && error === null && agent === "grok" && state.source !== "conversation" && <p className="chat-inline-state" role="status">{t("Grok chat is unavailable. Open Terminal to see activity and tool calls.")}</p>}
       {loaded && error === null && agent === "agy" && state.source !== "conversation" && <p className="chat-inline-state" role="status">{t("Antigravity chat is unavailable. Open Terminal to see activity and tool calls.")}</p>}
       {/* A native turn's activity, where no open work block says it: before the turn has an assistant

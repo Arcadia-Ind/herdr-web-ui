@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { ApiError } from "./api.ts";
 import { withChatReadDeadline } from "./chatReadDeadline.ts";
 import { setCurrentLanguage, translate } from "./i18n.ts";
-import { userErrorMessage } from "./userError.ts";
+import { userErrorMessage, userFailure } from "./userError.ts";
 
 const api = (status: number, detail = "herdr said no") => new ApiError("/api/x", status, detail, null);
 
@@ -61,5 +61,42 @@ describe("userErrorMessage", () => {
     setCurrentLanguage("ko");
     expect(userErrorMessage(new TypeError("Failed to fetch")).message).toBe(translate("ko", "Can't reach the PC. Check your connection, then try again."));
     expect(userErrorMessage(new TypeError("Failed to fetch")).message).not.toBe("Can't reach the PC. Check your connection, then try again.");
+  });
+});
+
+describe("userFailure", () => {
+  afterEach(() => setCurrentLanguage("en"));
+
+  it("names the cause the status gives, with the advice beyond trying again folded beside it", () => {
+    expect(userFailure(api(401))).toEqual({ kind: "signed-out", cause: "Not signed in to this PC", advice: "Pair it again in Settings → Phone & devices.", detail: "herdr said no" });
+    expect(userFailure(api(404))).toEqual({ kind: "gone", cause: "It no longer exists on the PC", advice: "Refresh and try again.", detail: "herdr said no" });
+    expect(userFailure(api(409))).toEqual({ kind: "changed", cause: "It changed on the PC", advice: "Check it and try again.", detail: "herdr said no" });
+    expect(userFailure(new TypeError("Failed to fetch"))).toEqual({ kind: "unreachable", cause: "Can't reach the PC", advice: "Check your connection, then try again.", detail: "Failed to fetch" });
+  });
+
+  it("reads a timeout as slow, with trying again as the only advice", async () => {
+    for (const cause of [api(408), api(504), new DOMException("signal timed out", "TimeoutError")]) expect(userFailure(cause)).toMatchObject({ kind: "slow", cause: "The PC took too long", advice: null });
+    const missed = await withChatReadDeadline(() => new Promise<never>(() => {}), 0).then(() => null, (cause: unknown) => cause);
+    expect(userFailure(missed)).toEqual({ kind: "slow", cause: "The PC took too long", advice: null, detail: "Chat read timed out." });
+  });
+
+  it("takes the cause from the server's own words when they name one, keeping the words", () => {
+    expect(userFailure(api(500, "disk full"))).toEqual({ kind: "refused", cause: "PC disk is full", advice: "Try again; if it keeps failing, restart herdr web ui on the PC.", detail: "disk full" });
+    expect(userFailure(api(500, "ENOSPC: no space left on device, write")).cause).toBe("PC disk is full");
+    expect(userFailure(api(500, "EACCES: permission denied, open '/x'")).cause).toBe("No permission on the PC");
+    expect(userFailure(new Error("EPERM: operation not permitted")).cause).toBe("No permission on the PC");
+  });
+
+  it("knows no cause for any other 5xx or anything else, so the surface offers Try again", () => {
+    expect(userFailure(api(500))).toEqual({ kind: "refused", cause: null, advice: "Try again; if it keeps failing, restart herdr web ui on the PC.", detail: "herdr said no" });
+    expect(userFailure(api(400, "label too long"))).toEqual({ kind: "unknown", cause: null, advice: null, detail: "label too long" });
+    expect(userFailure("plain string")).toEqual({ kind: "unknown", cause: null, advice: null, detail: "plain string" });
+    expect(userFailure(new Error("  ")).detail).toBeNull();
+  });
+
+  it("answers in the UI language", () => {
+    setCurrentLanguage("ko");
+    expect(userFailure(api(500, "disk full")).cause).toBe(translate("ko", "PC disk is full"));
+    expect(userFailure(api(500, "disk full")).cause).not.toBe("PC disk is full");
   });
 });

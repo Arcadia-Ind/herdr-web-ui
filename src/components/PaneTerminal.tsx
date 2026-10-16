@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReduce
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { ChevronRight, ClipboardCheck, Clock, Quote, TriangleAlert, Unplug, X } from "lucide-react";
+import { ChevronRight, ClipboardCheck, Clock, Quote, SendHorizontal, Trash2, TriangleAlert, Unplug, X } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 import "./PaneTerminal.css";
 
@@ -2549,14 +2549,16 @@ export function PaneTerminal({
     });
     if (!ended && connected && !draftIsEmpty(draft)) noticeItems.push({
       id: `${owner}:draft`, priority: "activity", revision: `${draft.truncated ? "…" : ""}${draft.text}`, warning: false, mark: <Clock />,
+      // on screen the row is its parts, the held text and its two controls, as the terminal lens's
+      // held-input row; the words are for the live region
       text: <>
-        {t("Input held until the terminal is ready:")}
-        {draft.text.length > 0 && <> <code>{draft.text}</code></>}
+        <span className="visually-hidden">{t("Input held:")}</span>
+        {draft.text.length > 0 && <code title={draft.text}>{draft.text}</code>}
         {draft.truncated && <> {t("Some input was too long to hold and was left out.")}</>}
       </>,
       actions: <>
-        <button type="button" className="composer-notice-action" disabled={draft.text.length === 0 || observing || secretActive || held} onClick={sendDraft}>{t("Send")}</button>
-        <button type="button" className="composer-notice-action is-quiet" onClick={discardDraft}>{t("Discard")}</button>
+        <button type="button" className="icon-button" aria-label={t("Send held input")} title={t("Send held input")} disabled={draft.text.length === 0 || observing || secretActive || held} onClick={sendDraft}><SendHorizontal aria-hidden="true" /></button>
+        <button type="button" className="icon-button" aria-label={t("Discard held input")} title={t("Discard held input")} onClick={discardDraft}><Trash2 aria-hidden="true" /></button>
       </>,
     });
     if (clipboardNote) noticeItems.push({ id: `${owner}:clipboard`, priority: "notice", revision: clipboardNote, warning: false, mark: <ClipboardCheck />, text: clipboardNote });
@@ -2892,7 +2894,6 @@ export function PaneTerminal({
             onTerminalOutput={onTerminalOutput}
             sentKey={chatSent}
             connected={connected}
-            connectedBefore={connectedBefore}
             ended={ended}
             agent={agent}
             agentStatus={agentStatus}

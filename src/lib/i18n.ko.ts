@@ -572,8 +572,6 @@ export const KO: Record<string, string> = {
   "File source": "파일 소스",
 
   // ---- composer ----
-  "Reconnecting… message held here, never queued": "재연결 중… 메시지는 여기에 보관되고 대기열에 넣지 않습니다",
-  "Connecting… message held here, never queued": "연결 중… 메시지는 여기에 보관되고 대기열에 넣지 않습니다",
   "Message {agent}…": "{agent}에게 메시지…",
   "Sent as it was. Your changes made while it was sending stayed here and were not sent.": "원래 내용대로 보냈습니다. 보내는 동안 고친 부분은 여기 남아 있고 전송되지 않았습니다.",
   "Message composer": "메시지 입력창",
@@ -584,7 +582,8 @@ export const KO: Record<string, string> = {
   "Reasoning effort not available": "추론 강도 정보 없음",
   "Reasoning {effort}": "추론 {effort}",
   "Uploading file…": "파일 올리는 중…",
-  "No room for {file}: remove {count} characters": "{file} 파일을 넣을 공간이 없습니다: {count}자를 지우세요",
+  "{max}-character limit · {count} over": "{max}자 한도 · {count}자 넘침",
+  "{max}-character limit": "{max}자 한도",
   "{count} characters left": "{count}자 남음",
   "Resize message box": "입력창 크기 조절",
   "Drag to resize · double-click to reset": "끌어서 크기 조절 · 두 번 클릭하면 초기화",
@@ -631,6 +630,8 @@ export const KO: Record<string, string> = {
   "Couldn't load suggestions. Keep typing to try again.": "제안을 불러오지 못했습니다. 계속 입력하면 다시 시도합니다.",
   "{name} attached": "{name} 첨부됨",
   "{name} could not be attached: {reason}": "{name} 파일을 첨부하지 못했습니다: {reason}",
+  "{name} could not be attached": "{name} 파일을 첨부하지 못했습니다",
+  "Couldn't attach": "첨부하지 못했습니다",
 
   // ---- chat view ----
   "Copied": "복사됨",
@@ -704,6 +705,8 @@ export const KO: Record<string, string> = {
   "Held input discarded": "보관한 입력은 버렸습니다",
   "Reconnecting to herdr web ui…": "herdr web ui에 다시 연결하는 중…",
   "Input held:": "보관한 입력:",
+  "Send held input": "보관한 입력 보내기",
+  "Discard held input": "보관한 입력 버리기",
   "View only — the operator’s screen size is untouched": "보기 전용 — 조작하는 사람의 화면 크기는 그대로입니다",
   "Terminal text size {px} px": "터미널 글자 크기 {px}px",
 
@@ -763,6 +766,18 @@ export const KO: Record<string, string> = {
   "The PC could not do that. Try again; if it keeps failing, restart herdr web ui on the PC.": "PC에서 그 작업을 할 수 없었습니다. 다시 시도하고, 계속 실패하면 PC에서 herdr web ui를 다시 시작하세요.",
   "Can't reach the PC. Check your connection, then try again.": "PC에 연결할 수 없습니다. 연결을 확인한 뒤 다시 시도하세요.",
   "Something went wrong. Try again.": "문제가 생겼습니다. 다시 시도하세요.",
+  "Not signed in to this PC": "이 PC에 로그인되어 있지 않음",
+  "It no longer exists on the PC": "PC에 더 이상 없음",
+  "It changed on the PC": "PC에서 내용이 바뀜",
+  "The PC took too long": "PC 응답이 너무 늦음",
+  "Can't reach the PC": "PC에 연결할 수 없음",
+  "PC disk is full": "PC 디스크가 가득 참",
+  "No permission on the PC": "PC에서 권한 없음",
+  "Pair it again in Settings → Phone & devices.": "설정 → 폰 및 기기에서 다시 페어링하세요.",
+  "Refresh and try again.": "새로 고친 뒤 다시 시도하세요.",
+  "Check it and try again.": "확인한 뒤 다시 시도하세요.",
+  "Check your connection, then try again.": "연결을 확인한 뒤 다시 시도하세요.",
+  "Try again; if it keeps failing, restart herdr web ui on the PC.": "다시 시도하고, 계속 실패하면 PC에서 herdr web ui를 다시 시작하세요.",
 
   // ---- sign-in ----
   "Enter all 6 digits of the pairing code.": "페어링 코드 6자리를 모두 입력하세요.",
@@ -888,6 +903,10 @@ export const KO: Record<string, string> = {
   "Error": "오류",
   "{n} failed": "실패 {n}개",
   "Loading conversation…": "대화를 불러오는 중…",
+  "Waiting for the PC…": "PC 응답 기다리는 중…",
+  "The PC isn't responding": "PC가 응답하지 않습니다",
+  "Couldn't load the conversation": "대화를 불러오지 못했습니다",
+  "Couldn't load the terminal output": "터미널 출력을 불러오지 못했습니다",
   "Jump to latest": "최신 메시지로 이동",
   "Open image": "이미지 열기",
   "Attached image": "첨부한 이미지",
@@ -1138,7 +1157,6 @@ export const KO: Record<string, string> = {
   // t3code ports (a)
   "yesterday at {time}": "어제 {time}",
   "{count} characters of the paste did not fit: a message holds {max}.": "붙여넣은 내용 중 {count}자가 들어가지 않았습니다. 메시지는 {max}자까지 담을 수 있습니다.",
-  "Message limit reached: {max} characters. Nothing more can be added.": "메시지 길이 한도에 도달했습니다: {max}자. 더 추가할 수 없습니다.",
   "Compact context": "컨텍스트 압축",
   "Quote in message": "메시지에 인용",
   "Added to the message draft": "메시지 초안에 추가했습니다",

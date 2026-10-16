@@ -559,10 +559,10 @@ html:lang(ko) :is(.composer-text, .terminal-input-text)::placeholder {
   word-break: keep-all;
 }
 
-/* A failure's second line quotes what the PC or the browser said (lib/userError.ts): a sentence,
+/* A failure's folded line quotes what the PC or the browser said (lib/userError.ts): a sentence,
    often a translated one, so it takes the interface face. The mono stack has no Hangul: Korean set
    in it gets a letter-wide space between words and a period set off from its word. */
-:is([role="alert"], .composer-note-text) > code {
+:is([role="alert"], .composer-note-text, .composer-note-details, .chat-failure-details) > code {
   font-family: var(--font-ui);
 }
 

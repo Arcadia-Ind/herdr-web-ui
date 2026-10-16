@@ -574,8 +574,6 @@ export const JA: Record<string, string> = {
   "File source": "ファイルのソース",
 
   // ---- composer ----
-  "Reconnecting… message held here, never queued": "再接続しています… メッセージはここに保持され、キューには入りません",
-  "Connecting… message held here, never queued": "接続しています… メッセージはここに保持され、キューには入りません",
   "Message {agent}…": "{agent} へのメッセージ…",
   "Sent as it was. Your changes made while it was sending stayed here and were not sent.": "元の内容で送信しました。送信中に加えた変更はここに残っており、送信されていません。",
   "Message composer": "メッセージ入力欄",
@@ -586,7 +584,8 @@ export const JA: Record<string, string> = {
   "Reasoning effort not available": "推論レベル情報なし",
   "Reasoning {effort}": "推論 {effort}",
   "Uploading file…": "ファイルをアップロードしています…",
-  "No room for {file}: remove {count} characters": "{file} を入れる余地がありません。{count} 文字削ってください",
+  "{max}-character limit · {count} over": "{max} 文字の上限 · {count} 文字超過",
+  "{max}-character limit": "{max} 文字の上限",
   "{count} characters left": "残り {count} 文字",
   "Resize message box": "入力欄のサイズを変更",
   "Drag to resize · double-click to reset": "ドラッグでサイズ変更 · ダブルクリックでリセット",
@@ -633,6 +632,8 @@ export const JA: Record<string, string> = {
   "Couldn't load suggestions. Keep typing to try again.": "候補を読み込めませんでした。入力を続けると再試行します。",
   "{name} attached": "{name} を添付しました",
   "{name} could not be attached: {reason}": "{name} を添付できませんでした: {reason}",
+  "{name} could not be attached": "{name} を添付できませんでした",
+  "Couldn't attach": "添付できませんでした",
 
   // ---- chat view ----
   "Copied": "コピーしました",
@@ -706,6 +707,8 @@ export const JA: Record<string, string> = {
   "Held input discarded": "保持した入力は破棄しました",
   "Reconnecting to herdr web ui…": "herdr web ui に再接続しています…",
   "Input held:": "保持した入力:",
+  "Send held input": "保持した入力を送信",
+  "Discard held input": "保持した入力を破棄",
   "View only — the operator’s screen size is untouched": "表示のみ — 操作している人の画面サイズは変わりません",
   "Terminal text size {px} px": "ターミナルの文字サイズ {px} px",
 
@@ -765,6 +768,18 @@ export const JA: Record<string, string> = {
   "The PC could not do that. Try again; if it keeps failing, restart herdr web ui on the PC.": "PC でその操作を実行できませんでした。もう一度お試しください。失敗が続く場合は PC で herdr web ui を再起動してください。",
   "Can't reach the PC. Check your connection, then try again.": "PC に接続できません。接続を確認してからもう一度お試しください。",
   "Something went wrong. Try again.": "問題が発生しました。もう一度お試しください。",
+  "Not signed in to this PC": "この PC にサインインしていません",
+  "It no longer exists on the PC": "PC にはもうありません",
+  "It changed on the PC": "PC 側で変更されました",
+  "The PC took too long": "PC の応答が遅すぎました",
+  "Can't reach the PC": "PC に接続できません",
+  "PC disk is full": "PC のディスクがいっぱいです",
+  "No permission on the PC": "PC で権限がありません",
+  "Pair it again in Settings → Phone & devices.": "設定 → スマートフォンとデバイスでもう一度ペアリングしてください。",
+  "Refresh and try again.": "更新してからもう一度お試しください。",
+  "Check it and try again.": "確認してからもう一度お試しください。",
+  "Check your connection, then try again.": "接続を確認してからもう一度お試しください。",
+  "Try again; if it keeps failing, restart herdr web ui on the PC.": "もう一度お試しください。失敗が続く場合は PC で herdr web ui を再起動してください。",
 
   // ---- sign-in ----
   "Enter all 6 digits of the pairing code.": "ペアリングコードの 6 桁をすべて入力してください。",
@@ -890,6 +905,10 @@ export const JA: Record<string, string> = {
   "Error": "エラー",
   "{n} failed": "失敗 {n} 件",
   "Loading conversation…": "会話を読み込んでいます…",
+  "Waiting for the PC…": "PC の応答を待っています…",
+  "The PC isn't responding": "PC が応答しません",
+  "Couldn't load the conversation": "会話を読み込めませんでした",
+  "Couldn't load the terminal output": "ターミナル出力を読み込めませんでした",
   "Jump to latest": "最新に移動",
   "Open image": "画像を開く",
   "Attached image": "添付画像",
@@ -1140,7 +1159,6 @@ export const JA: Record<string, string> = {
   // t3code ports (a)
   "yesterday at {time}": "昨日 {time}",
   "{count} characters of the paste did not fit: a message holds {max}.": "貼り付けた内容のうち {count} 文字が収まりませんでした。メッセージは {max} 文字までです。",
-  "Message limit reached: {max} characters. Nothing more can be added.": "メッセージの文字数上限に達しました({max} 文字)。これ以上追加できません。",
   "Compact context": "コンテキストを圧縮",
   "Quote in message": "メッセージに引用",
   "Added to the message draft": "メッセージの下書きに追加しました",
