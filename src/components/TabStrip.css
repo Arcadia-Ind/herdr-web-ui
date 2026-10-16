@@ -164,7 +164,11 @@
     height: var(--touch-target);
   }
 
-  .tab-strip-tab { min-height: var(--touch-target); }
+  /* a one- or two-character name (탭 1) is still a finger's width; the ⋯ beside it is its own */
+  .tab-strip-tab {
+    min-width: var(--touch-target);
+    min-height: var(--touch-target);
+  }
   .tab-strip-menu { display: inline-flex; }
   .tab-strip-item.is-active .tab-strip-tab { padding-right: var(--space-1); }
 }

@@ -153,6 +153,9 @@
   --header-h-wide: 46px;
   --sidebar-w: 320px;
   --control-h: 34px;
+  /* what the segmented track takes from --control-h above and below an option: its padding and
+     hairline, both sides. An option is --control-h less this, and its touch expander grows from that */
+  --segmented-inset: 6px;
   --touch-target: 44px;
   /* the smallest hit area a mouse gets: a glyph button under --control-h keeps its look and reaches
      it through an invisible ::before expander (ChatView.css, Composer.css), never by growing */
@@ -445,7 +448,7 @@
   --shadow-card: 0 4px 16px rgba(76, 79, 105, 0.07);
   --term-bg: #eff1f5;
   --term-fg: #4c4f69;
-  --term-cursor: #dc8a78;
+  --term-cursor: #e64553;
   --term-selection: #d2d4dc;
   --syntax-keyword: #712fc6;
   --syntax-string: #2f7620;
@@ -1165,7 +1168,7 @@ button {
   .segmented > button::before {
     content: "";
     position: absolute;
-    inset: calc((var(--control-h) - 6px - var(--touch-target)) / 2) 0;
+    inset: calc((var(--control-h) - var(--segmented-inset) - var(--touch-target)) / 2) 0;
   }
 }
 
@@ -1280,7 +1283,7 @@ button {
   align-items: center;
   gap: var(--space-1);
   white-space: nowrap; /* Hangul/CJK may break between any two syllables: keep a label on one line */
-  height: calc(var(--control-h) - 6px);
+  height: calc(var(--control-h) - var(--segmented-inset));
   padding: 0 var(--space-3);
   background: transparent;
   border: 0;

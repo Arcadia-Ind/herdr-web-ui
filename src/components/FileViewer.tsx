@@ -277,6 +277,18 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
   const imagePreview = useCallback((src: string) => markdownImagePreview(
     src, shownPath, (target) => fetchFileInfo(target, paneId), (target, download) => fileUrl(target, paneId, download),
   ), [shownPath, paneId, fetchFileInfo, fileUrl]);
+  // "Opening…" while the file's info, or a text's content or preview, is on its way. The note is in the
+  // viewer from its first render, clipped while empty (never display: none), and its words land a frame
+  // after it: a live region that appears together with its content is not announced
+  const opening = directory === null && error === null && candidates === null
+    && (info === null || (info.kind === "text" && (!htmlPage || source) && (loaded === null || (view === "markdown" && preview.status !== "ready"))));
+  const [framed, setFramed] = useState(false);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setFramed(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+  const openingShown = framed && opening;
+  const openingNote = <p className={openingShown ? "file-viewer-note" : "visually-hidden"} role="status">{openingShown ? t("Opening…") : null}</p>;
   const body = (() => {
     if (directory !== null) return <DirectoryBrowser key={directory} start={directory} onOpenFile={onOpen ?? setPath} />;
     if (error !== null) return <p className="file-viewer-note" role="alert">{error === "missing" ? t("No readable file at this path.") : t("The file could not be opened.")}</p>;
@@ -284,7 +296,7 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
       <p className="file-viewer-note">{t("Several files are named {name}:", { name: target.path.split("/").pop() ?? target.path })}</p>
       <ul>{candidates.map((candidate) => <li key={candidate}><button type="button" className="btn btn-ghost" onClick={() => setPath(candidate + path.slice(target.path.length))}>{candidate}</button></li>)}</ul>
     </div>;
-    if (info === null) return <p className="file-viewer-note" role="status">{t("Opening…")}</p>;
+    if (info === null) return null;
     switch (info.kind) {
       case "image":
         return info.size > MAX_INLINE_IMAGE_BYTES
@@ -304,7 +316,7 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
         return <>
           {htmlPage && modes}
           {loaded === null || (view === "markdown" && preview.status !== "ready")
-          ? <p className="file-viewer-note" role="status">{t("Opening…")}</p>
+          ? null
           // a text the renderer cannot draw fails here, not the app: the header (Show source, Open raw file,
           // Close) stays, and a Preview that fails offers its source
           : <RenderBoundary key={view} resetKey={loaded} fallback={() => view === "markdown"
@@ -364,7 +376,7 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
   if (page) return (
     <main ref={surface} className="file-reader">
       {header}
-      <div className={`${bodyClass} file-reader-body`}>{body}</div>
+      <div className={`${bodyClass} file-reader-body`}>{body}{openingNote}</div>
     </main>
   );
 
@@ -372,7 +384,7 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
     <div className="modal-scrim file-viewer-scrim" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className={virtual !== null && view === "code" ? "modal file-viewer file-viewer-virtual" : "modal file-viewer"} role="dialog" aria-modal="true" aria-label={info?.name ?? path} ref={surface} tabIndex={-1}>
         {header}
-        <div className={bodyClass}>{body}</div>
+        <div className={bodyClass}>{body}{openingNote}</div>
       </section>
     </div>
   );

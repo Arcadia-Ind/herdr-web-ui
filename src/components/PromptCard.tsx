@@ -222,7 +222,9 @@ export function PromptCard({ paneId, prompt, onPromptChanged, onAnswered, typedA
           </span>
         </div>
       )}
-      {pending && <p className="prompt-card-status" role="status">{t("Sending your answer…")}</p>}
+      {/* in the card from its first render, clipped while empty (never display: none): a live region that
+          appears together with its words is not read; one that is there and gets them is */}
+      <p className={pending ? "prompt-card-status" : "visually-hidden"} role="status">{pending ? t("Sending your answer…") : null}</p>
       {error !== null && <p className="prompt-card-error" role="alert">{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</p>}
     </section>
   );

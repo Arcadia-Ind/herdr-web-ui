@@ -75,9 +75,12 @@ try {
   await page.evaluate(() => window.chatFallbackQA.pane("error"));
   await summary.waitFor();
   await summary.click();
-  const fallbackError = page.getByText("Terminal output unavailable");
+  // the failure is a plain sentence with the server's words kept beside it in a <code> (lib/userError.ts)
+  const fallbackError = page.getByRole("alert").filter({ hasText: "Terminal output unavailable" });
   await fallbackError.waitFor();
-  assert.equal(await fallbackError.getAttribute("role"), "alert", "terminal-read failures are announced as errors");
+  assert.equal(await fallbackError.count(), 1, "terminal-read failures are announced as errors");
+  assert.ok((await fallbackError.innerText()).includes("The PC could not do that. Try again; if it keeps failing, restart herdr web ui on the PC."), "the alert says what happened and what to do next");
+  assert.equal(await fallbackError.locator("code").innerText(), "Terminal output unavailable", "the server's words stay in the alert, selectable beside the sentence");
   assert.equal(await page.locator(".chat-empty").count(), 0, "a fallback failure is not an empty structured conversation");
   await page.evaluate(() => window.chatFallbackQA.pane("empty"));
   await page.getByText("No conversation yet — say something below", { exact: true }).waitFor();

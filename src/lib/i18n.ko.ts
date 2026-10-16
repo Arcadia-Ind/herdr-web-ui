@@ -368,7 +368,7 @@ export const KO: Record<string, string> = {
   "Cancel": "취소",
   "Starting…": "시작 중…",
   "Open": "열기",
-  "The workspace opened, but {agent} did not start. Check that it is installed on the PC, then open it again.": "워크스페이스는 열렸지만 {agent}이(가) 시작되지 않았습니다. PC에 설치되어 있는지 확인한 뒤 다시 여세요.",
+  "The workspace opened, but {agent} did not start. Check that it is installed on the PC, then open it again.": "워크스페이스는 열렸지만 {agent} 에이전트는 시작되지 않았습니다. PC에 설치되어 있는지 확인한 뒤 다시 여세요.",
   "Start": "시작",
   "Starting {agent}… up to 60s": "{agent} 시작 중… 최대 60초",
   "Starting shell…": "셸 시작 중…",
@@ -675,7 +675,7 @@ export const KO: Record<string, string> = {
   "{m}m {s}s": "{m}분 {s}초",
   "{h}h {m}m": "{h}시간 {m}분",
   "Conversation": "대화",
-  "Image {n} from {tool}": "{tool}이(가) 가져온 이미지 {n}",
+  "Image {n} from {tool}": "{tool}에서 가져온 이미지 {n}",
 
   // ---- terminal ----
   "Codex has a question open in the terminal: answer it above, or close it there (alt+↓) to message Codex.": "Codex가 터미널에 질문을 열어 두었습니다. 위에서 답하거나, 터미널에서 닫으면(alt+↓) Codex에게 메시지를 보낼 수 있습니다.",
@@ -964,7 +964,7 @@ export const KO: Record<string, string> = {
   "Resets in {time}": "{time} 후 초기화",
   "No limits reported": "보고된 한도 없음",
   "Sign-in expired. Open {name} to renew it.": "로그인이 만료되었습니다. {name}을(를) 열어 갱신하세요.",
-  "{name} asked to slow down. These are the last numbers.": "{name}이(가) 요청 속도 제한을 걸었습니다. 마지막으로 읽은 값입니다.",
+  "{name} asked to slow down. These are the last numbers.": "{name}에서 요청 속도 제한을 걸었습니다. 마지막으로 읽은 값입니다.",
   "{name} could not be reached.": "{name}에 연결하지 못했습니다.",
   "The server cannot open the keychain holding this sign-in.": "서버가 이 로그인 정보가 든 키체인을 열 수 없습니다.",
   "running": "실행 중",
