@@ -839,7 +839,10 @@ button {
   letter-spacing: var(--tracking-tight);
 }
 
-.context-title-text {
+/* the header note's sentence (.header-note-text, App.tsx) is cut like the title it stands in for; its
+   own class keeps .context-title-text on the pane title alone (the browser checks measure it) */
+.context-title-text,
+.header-note-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;

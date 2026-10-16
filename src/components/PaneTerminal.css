@@ -173,6 +173,16 @@
   pointer-events: none;
 }
 
+/* the wait-for-input live region (PaneTerminal.tsx) stays in the column while empty, clipped by the
+   shared primitive (.visually-hidden, styles.css): its 1px box is anchored at the column's top-left
+   corner, not left at its static place at the end of the column, where its negative margin stood it
+   one pixel past the column's edge and widened it (the T14 probe measures scrollWidth against
+   clientWidth). Nothing is drawn either way */
+.terminal-banners > .visually-hidden {
+  top: 0;
+  left: 0;
+}
+
 .terminal-banner {
   display: inline-flex;
   align-items: center;
