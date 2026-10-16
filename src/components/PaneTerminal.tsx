@@ -2,7 +2,7 @@ import { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useReduce
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { ChevronRight, ClipboardCheck, Clock, Quote, TriangleAlert, Unplug, X } from "lucide-react";
+import { ChevronRight, ClipboardCheck, Clock, Eye, Quote, SendHorizontal, Trash2, TriangleAlert, Unplug, X } from "lucide-react";
 import "@xterm/xterm/css/xterm.css";
 import "./PaneTerminal.css";
 
@@ -256,6 +256,8 @@ export function PaneTerminal({
   const pendingEpochRef = useRef(0);
   const [outputReady, setOutputReady] = useState(false);
   const [ended, setEnded] = useState(false);
+  /** the pane's process ended while input was held for it: that input was let go, and the ended notice says so */
+  const [heldDiscarded, setHeldDiscarded] = useState(false);
   const [inputError, setInputError] = useState<string | null>(null);
   const [inputReady, setInputReady] = useState(false);
   const [outputError, setOutputError] = useState<string | null>(null);
@@ -1182,7 +1184,15 @@ export function PaneTerminal({
         }
       } else if (message.type === "pty-exit") {
         // an ended pane takes no input: a file dropped on it must not upload and paste either
-        if (message.pane_id === paneRef.current) { setEnded(true); term.options.disableStdin = true; }
+        if (message.pane_id === paneRef.current) {
+          // input held for the ended process has nowhere to go: it is let go here, and only then does
+          // the ended notice say so
+          const discarding = draftHeldForRef.current === message.pane_id;
+          if (discarding) setDraft(EMPTY_DRAFT);
+          setHeldDiscarded(discarding);
+          setEnded(true);
+          term.options.disableStdin = true;
+        }
       } else if (message.type === "role-ack") {
         // the server is the authority on the role; only after this ack may an
         // interact client reclaim the shared grid it stopped owning (a tab out of use
@@ -2154,6 +2164,7 @@ export function PaneTerminal({
     const fit = fitRef.current;
     if (!socket || !term) return;
     setEnded(false);
+    setHeldDiscarded(false);
     setInputReady(false);
     setInputError(null);
     setComposing(false);
@@ -2797,7 +2808,7 @@ export function PaneTerminal({
         {/* the chat lens says these itself (ChatView), inline; the pills are the grid's */}
         {paneId !== null && !chatView && ended && !outputError && (
           <div className="terminal-banner" role="status">
-            {t("Terminal ended")}{!draftIsEmpty(draft) ? ` · ${t("Held input discarded")}` : ""}
+            {t("Terminal ended")}{heldDiscarded ? ` · ${t("Held input discarded")}` : ""}
           </div>
         )}
         {paneId !== null && !chatView && !ended && !connected && (
@@ -2809,25 +2820,28 @@ export function PaneTerminal({
         )}
         {paneId !== null && !ended && connected && !draftIsEmpty(draft) && !noticesDocked && (
           <div className="terminal-banner terminal-banner-draft" role="status">
-            <span className="draft-label">{t("Input held until the terminal is ready:")}</span>
+            {/* on screen the row is its parts, the command and its two controls; the words are for the live region */}
+            <span className="visually-hidden">{t("Input held:")}</span>
             {draft.text.length > 0 && <code className="draft-text" title={draft.text}>{draft.text}</code>}
-            {/* the preview shows the start of the text: without this, a draft that lost its end looks whole */}
+            <span className="draft-actions">
+              <button type="button" className="icon-button draft-send" aria-label={t("Send held input")} title={t("Send held input")} disabled={draft.text.length === 0 || observing || secretActive || held} onClick={sendDraft}>
+                <SendHorizontal aria-hidden="true" />
+              </button>
+              <button type="button" className="icon-button draft-discard" aria-label={t("Discard held input")} title={t("Discard held input")} onClick={discardDraft}>
+                <Trash2 aria-hidden="true" />
+              </button>
+            </span>
+            {/* said only when it applies, on a line under the row. The preview shows the start of the
+                text: without this, a draft that lost its end looks whole */}
             {draft.truncated && <span className="draft-truncated">{t("Some input could not be held and was left out.")}</span>}
             {/* Enter is never held: without this, two commands look like one line and a paste looks whole */}
             {draft.leftOut && <span className="draft-truncated">{t("An Enter or line break was left out: Send never presses Enter.")}</span>}
-            <span className="draft-actions">
-              <button type="button" className="draft-send" disabled={draft.text.length === 0 || observing || secretActive || held} onClick={sendDraft}>
-                {t("Send")}
-              </button>
-              <button type="button" className="draft-discard" onClick={discardDraft}>
-                {t("Discard")}
-              </button>
-            </span>
           </div>
         )}
         {paneId !== null && !ended && observing && (
           <div className="terminal-banner terminal-banner-observe" role="status">
-            {t("View only — the operator’s screen size is untouched")}
+            <Eye aria-hidden="true" />
+            {t("View only")}
           </div>
         )}
         {paneId !== null && !chatView && selectionQuote?.pane === paneId && (

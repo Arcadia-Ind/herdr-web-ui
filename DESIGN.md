@@ -1546,15 +1546,24 @@ One set for both themes: the card is island black wherever it shows.
   paging is disabled until that search ends, so an older page cannot overwrite its result.
 - xterm has `scrollback: 0`; wheel/touch gestures reach herdr's alternate-screen scrollback. The
   mount hides the unused xterm scrollbar.
-- Terminal banners stack top-right for ended, reconnecting, observe and held-draft review states.
+- Terminal banners stack top-right for ended, reconnecting, view-only and held-input states, and
+  say only what the person needs now (section 1). Ended reads **Terminal ended**; **Held input
+  discarded** follows it only when the pane ended with input held, which is let go at that moment.
+  View only is the neutral pill with an eye glyph and the words **View only**: no accent, no
+  sentence about the operator's grid. Held input, once the socket is back, is one row on the
+  neutral elevated surface with the `--border` hairline: the command in mono (one line, cut with an
+  ellipsis, the whole text as its title) and two `.icon-button` controls named **Send held input**
+  and **Discard held input**, `--touch-target` square on a coarse pointer; no label and no chip on
+  screen (the live region keeps a clipped "Input held:" for its words). What the row has to tell
+  only when it applies (text or an Enter left out) sits on a line under it.
   Under the chat lens, while the input card shows, the ones it shares with the composer (another
   app holds the pane, a failed output stream, the held draft, a copy note) stand over the card
   instead (Composer: Notices).
   Banners wrap inside their pane at any width (a phone, or a narrow split on a desktop): text breaks
-  between words, and what does not fit beside the text (held input, actions) moves to the next line
-  with button labels kept whole; wrapped lines start at the left. Held input, in the reconnecting
-  banner's preview (`Input held: “…”`) and in the review banner, stays on one line in mono, cut with
-  an ellipsis, with the whole text as its title: a command is never broken inside a word.
+  between words, and what does not fit beside the text (actions) moves to the next line with button
+  labels kept whole; wrapped lines start at the left. The reconnecting banner's held preview
+  (`Input held: “…”`) stays on one line in mono, cut with an ellipsis, with the whole text as its
+  title: a command is never broken inside a word.
 - The mobile key bar starts with Esc, Tab and `^C`, then sticky Ctrl/Alt/Shift, Enter and arrows;
   it never steals typing focus. Modifiers remain highlighted until toggled off,
   leaving the pane/lens or disconnecting; each exposes `aria-pressed`.

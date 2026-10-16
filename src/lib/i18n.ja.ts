@@ -706,7 +706,9 @@ export const JA: Record<string, string> = {
   "Held input discarded": "保持した入力は破棄しました",
   "Reconnecting to herdr web ui…": "herdr web ui に再接続しています…",
   "Input held:": "保持した入力:",
-  "View only — the operator’s screen size is untouched": "表示のみ — 操作している人の画面サイズは変わりません",
+  "Send held input": "保持した入力を送信",
+  "Discard held input": "保持した入力を破棄",
+  "View only": "表示のみ",
   "Terminal text size {px} px": "ターミナルの文字サイズ {px} px",
 
   // ---- install help ----
