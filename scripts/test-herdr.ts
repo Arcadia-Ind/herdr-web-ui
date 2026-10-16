@@ -84,7 +84,7 @@ export async function useTestHerdr(): Promise<string | null> {
       // run from inside a herdr pane, this process carries that pane's HERDR_* variables; run by
       // an agent, it carries the agent's too (OMO_CODING_AGENT_DIR moves where a pane's omo is
       // read from), and every pane of this server would inherit them
-      env: { ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^(HERDR|OMO|SENPI|PI)_/.test(name))), ...testShellEnv, ZDOTDIR: zdotdir },
+      env: { ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !/^(HERDR|OMO|SENPI|PI)_/.test(name))), ...testShellEnv(dirname(socket)), ZDOTDIR: zdotdir },
     }).unref();
     const deadline = Date.now() + 15_000;
     while (!(existsSync(socket) && await answers(socket))) {
