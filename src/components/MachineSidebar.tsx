@@ -13,6 +13,7 @@ import { SidebarActivityProvider, useSidebarActivityState } from "../lib/sidebar
 import { UsageMeters } from "./UsageMeters.tsx";
 import "./Machines.css";
 import { useT } from "../lib/i18n.ts";
+import { useAnnouncedText } from "../lib/useAnnouncedText.ts";
 
 /** The PC header's state word; "connected" is the quiet default and shows as a dot alone, every other state also writes its word under the name. */
 export const STATE_WORD: Readonly<Record<MachineState, string>> = {
@@ -31,18 +32,13 @@ export function MachineSidebar(props: Props) {
   // both lists draw from it: live counters per PC (lib/sidebarActivity.tsx)
   const activity = useSidebarActivityState(props.machines);
   // the roster's wait is a live region that is in the list from its first render, clipped while empty (never
-  // display: none): a status that appears together with its words is not read, so they land a frame after it (App HeaderNote)
-  const [framed, setFramed] = useState(false);
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setFramed(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-  const loadingPCs = framed && props.machines.length === 0;
+  // display: none), and its words land a frame after it (lib/useAnnouncedText.ts)
+  const loadingWords = useAnnouncedText(props.machines.length === 0 ? t("Loading PCs…") : null);
   // no top bar: a workspace starts from its PC's header, and Add PC lives in Settings → Remote PCs
   return <SidebarActivityProvider value={activity}><div className="sidebar-shell">
     <div className="machine-list" aria-label={t("PCs and workspaces")}>
       {props.machines.map((machine) => <MachineGroup key={machine.id} {...props} machine={machine} />)}
-      <p className={loadingPCs ? "tree-state" : "visually-hidden"} role="status">{loadingPCs ? t("Loading PCs…") : null}</p>
+      <p className={loadingWords === null ? "visually-hidden" : "tree-state"} role="status">{loadingWords}</p>
     </div>
     <AgentSidebar machines={props.machines} selectedMachineId={props.selectedMachineId} selectedPaneId={props.selectedPaneId} stateWord={(machine) => t(STATE_WORD[machine.state])} onSelect={props.onSelect} />
     <footer className="sidebar-footer">
@@ -65,6 +61,9 @@ function MachineGroup({ machine, ...props }: Props & { machine: Machine }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const online = machine.state === "connected";
+  // the state line under the name is a live region in the group from its first render; its word lands a frame
+  // after it (lib/useAnnouncedText.ts), and every later state change at once
+  const stateWord = useAnnouncedText(t(STATE_WORD[machine.state]));
   // one request at a time: a double-clicked Disconnect/Connect can otherwise race and leave this
   // UI's idea of the state opposite the server's until the next refetch
   const [busy, setBusy] = useState(false);
@@ -105,7 +104,7 @@ function MachineGroup({ machine, ...props }: Props & { machine: Machine }) {
     </header>
     {/* connected is the norm and says nothing new; every other state is spelled out */}
     {machine.action_required || machine.updating ? <MachineActionNotice machine={machine} onSetup={props.onSetup} /> : <p className={`machine-state is-${machine.state}${online ? " visually-hidden" : ""}`} role="status" title={machine.error ?? undefined}>
-      <span className="machine-state-word">{t(STATE_WORD[machine.state])}</span>
+      <span className="machine-state-word">{stateWord}</span>
       {machine.error && <span className="machine-state-detail">{machine.error}</span>}
     </p>}
     {editing && <div className="machine-controls">

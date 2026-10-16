@@ -19,6 +19,7 @@ import { fileLineTarget, pathParts } from "../lib/filePaths.ts";
 import { lineRequest, readBudget, shownSource, sourceLayout, virtualHighlightable } from "../lib/sourcePreview.ts";
 import { canHighlight, countLines, languageForPath, normalizeCode } from "../lib/highlight.ts";
 import { useLocale, useT } from "../lib/i18n.ts";
+import { useAnnouncedText } from "../lib/useAnnouncedText.ts";
 import { MAX_INLINE_IMAGE_BYTES, markdownImagePreview } from "../lib/markdownImages.ts";
 import { nativeModalOver, useFocusTrap } from "../lib/useFocusTrap.ts";
 import type { MarkdownBlock } from "../lib/markdown.ts";
@@ -279,16 +280,11 @@ export function FileViewer({ path: asked, paneId, onClose, onOpen, keyboardActiv
   ), [shownPath, paneId, fetchFileInfo, fileUrl]);
   // "Opening…" while the file's info, or a text's content or preview, is on its way. The note is in the
   // viewer from its first render, clipped while empty (never display: none), and its words land a frame
-  // after it: a live region that appears together with its content is not announced
+  // after it (lib/useAnnouncedText.ts)
   const opening = directory === null && error === null && candidates === null
     && (info === null || (info.kind === "text" && (!htmlPage || source) && (loaded === null || (view === "markdown" && preview.status !== "ready"))));
-  const [framed, setFramed] = useState(false);
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setFramed(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-  const openingShown = framed && opening;
-  const openingNote = <p className={openingShown ? "file-viewer-note" : "visually-hidden"} role="status">{openingShown ? t("Opening…") : null}</p>;
+  const openingWords = useAnnouncedText(opening ? t("Opening…") : null);
+  const openingNote = <p className={openingWords === null ? "visually-hidden" : "file-viewer-note"} role="status">{openingWords}</p>;
   const body = (() => {
     if (directory !== null) return <DirectoryBrowser key={directory} start={directory} onOpenFile={onOpen ?? setPath} />;
     if (error !== null) return <p className="file-viewer-note" role="alert">{error === "missing" ? t("No readable file at this path.") : t("The file could not be opened.")}</p>;

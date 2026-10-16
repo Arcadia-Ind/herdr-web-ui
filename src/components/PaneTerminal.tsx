@@ -57,6 +57,7 @@ import { fileUriPath, hyperlinkFilter, isWebLink, terminalFileLinkProvider } fro
 import { adjustTerminalGlyphs } from "../lib/terminalGlyphs.ts";
 import { terminalLabel } from "../lib/terminalLabel.ts";
 import { useMediaQuery } from "../lib/useMediaQuery.ts";
+import { useAnnouncedText } from "../lib/useAnnouncedText.ts";
 import { modalOpen } from "../lib/focus.ts";
 import { pinchFontSize } from "../lib/pinchFontSize.ts";
 import { narrowPaneFontSize } from "../lib/narrowPaneFont.ts";
@@ -2728,6 +2729,10 @@ export function PaneTerminal({
     return () => observer.disconnect();
   }, [inputSlot]);
 
+  // the wait for input is a live region in the banner column from the stack's first render, clipped while
+  // empty (never display: none); its words land a frame after it (lib/useAnnouncedText.ts)
+  const waitingWords = useAnnouncedText(!chatView && !observing && connected && !inputReady && !held && !ended && !released ? t("Waiting for terminal input…") : null);
+
   return (
     // data-direct-typing: xterm's own field raises the soft keyboard here (lib/viewport.ts)
     <div ref={stackRef} className={`terminal-stack${chatView ? " is-chat" : ""}${greeted ? " is-greeted" : ""}`} data-pane-owner={paneId === null ? undefined : paneStorageId(machineId, paneId)} data-direct-typing={coarse && directTyping && !chatView ? "" : undefined}>
@@ -2773,7 +2778,7 @@ export function PaneTerminal({
           </div>
         )}
         {!chatView && inputError && <div className="terminal-banner" role="status">{inputError}<button type="button" className="btn terminal-banner-action" onClick={() => setInputError(null)}>{t("Dismiss")}</button></div>}
-        {!chatView && !observing && connected && !inputReady && !held && !ended && !released && <div className="terminal-banner" role="status">{t("Waiting for terminal input…")}</div>}
+        <div className={waitingWords === null ? "visually-hidden" : "terminal-banner"} role="status">{waitingWords}</div>
         {paneId !== null && !chatView && released && <div className="terminal-banner" role="status">{t(watching ? "View only while you use another window · click to type" : "Paused while you use another window")}</div>}
         {/* the chat lens says these itself (ChatView), inline; the pills are the grid's */}
         {paneId !== null && !chatView && ended && !outputError && (

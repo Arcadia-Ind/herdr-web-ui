@@ -5,6 +5,7 @@ import type { Machine } from "../../shared/machines.ts";
 import { paneStorageId } from "../../shared/machines.ts";
 import type { AgentStatus, PlanSummary } from "../../shared/protocol.ts";
 import { useT } from "../lib/i18n.ts";
+import { useAnnouncedText } from "../lib/useAnnouncedText.ts";
 import { agentContext, agentTabName, paneMark, sidebarAgents, type SidebarAgent } from "../lib/sidebarAgents.ts";
 import { useSettings } from "../lib/settings.ts";
 import { useSidebarActivity } from "../lib/sidebarActivity.tsx";
@@ -166,14 +167,8 @@ export function AgentSidebar({ machines, selectedMachineId, selectedPaneId, stat
   // no PCs yet (the roster is still on its way), or a connected PC whose panes have not come in: not "none running"
   const loading = machines.length === 0 || machines.some((machine) => machine.state === "connected" && machine.snapshot === null);
   // the empty list's line is a live region that is in the list from its first render, clipped while empty (never
-  // display: none): a status that appears together with its words is not read, so they land a frame after it (App HeaderNote)
-  const [framed, setFramed] = useState(false);
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setFramed(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-  const emptyWords = rows.length === 0 ? (loading ? t("Loading agents…") : t("No agents running")) : null;
-  const shownEmpty = framed ? emptyWords : null;
+  // display: none), and its words land a frame after it (lib/useAnnouncedText.ts)
+  const shownEmpty = useAnnouncedText(rows.length === 0 ? (loading ? t("Loading agents…") : t("No agents running")) : null);
   const menuPinned = menu !== null && pinned.includes(menu.key);
   const runPin = (state: PinMenu): void => {
     // where the menu hands the focus back (lib RowMenu): the ⋯ itself unless the right-click said otherwise

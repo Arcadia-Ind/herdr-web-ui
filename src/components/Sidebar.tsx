@@ -23,6 +23,7 @@ import { rosterPanes } from "../lib/dagPane.ts";
 import { useSidebarActivity } from "../lib/sidebarActivity.tsx";
 import { useSettings } from "../lib/settings.ts";
 import { useMediaQuery } from "../lib/useMediaQuery.ts";
+import { useAnnouncedText } from "../lib/useAnnouncedText.ts";
 import { useWorktreeBranches } from "../lib/useWorktreeBranches.ts";
 import { watchTouchReorder } from "../lib/touchReorder.ts";
 import { placeBlock, workspaceMoves } from "../lib/workspaceOrder.ts";
@@ -188,6 +189,9 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
   const activity = useSidebarActivity();
   const { branches, rememberOpened } = useWorktreeBranches(snapshot, online, true);
   const { closeWorkspace, listWorktrees, moveWorkspace, removeWorktree, renameWorkspace } = useMachineApi();
+  // the roster's wait is a live region in the list from its first render, clipped while empty (never
+  // display: none); its words land a frame after it (lib/useAnnouncedText.ts)
+  const loadingWords = useAnnouncedText(snapshot ? null : t("Loading workspaces…"));
   // herdr marks only a workspace it opened as a worktree. One made on a repository's folder has no
   // `worktree`, and it is where the first worktree starts: each is asked once whether git answers
   // for it. A refusal (4xx) is an answer and is kept; a failure to ask is not, so that workspace
@@ -724,7 +728,7 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
     <div className={`machine-workspaces${twoLine ? " is-two-line" : ""}`} ref={workspaceRoot}>
       <nav className="sidebar-list" aria-label={t("Herdr workspaces")}>
         <>
-          {!snapshot && <p className="tree-state" role="status">{t("Loading workspaces…")}</p>}
+          <p className={loadingWords === null ? "visually-hidden" : "tree-state"} role="status">{loadingWords}</p>
           {snapshot && snapshot.workspaces.length === 0 && (
             <div className="tree-state-empty">
               <p className="tree-state" role="status">{t("No workspaces yet")}</p>
