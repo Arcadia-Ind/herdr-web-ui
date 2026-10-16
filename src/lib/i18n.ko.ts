@@ -626,7 +626,7 @@ export const KO: Record<string, string> = {
   "Type {range} to choose…": "{range} 중 하나를 입력…",
   "Choose with the option numbers above, e.g. 1 3.": "위 선택지 번호로 고르세요 (예: 1 3).",
   "Choose one of the options above: type {range}.": "위 선택지 중 하나를 고르세요: {range} 입력.",
-  "Couldn't load suggestions": "제안을 불러오지 못했습니다",
+  "Couldn't load suggestions. Keep typing to try again.": "제안을 불러오지 못했습니다. 계속 입력하면 다시 시도합니다.",
   "{name} attached": "{name} 첨부됨",
   "{name} could not be attached: {reason}": "{name}을(를) 첨부하지 못했습니다: {reason}",
 

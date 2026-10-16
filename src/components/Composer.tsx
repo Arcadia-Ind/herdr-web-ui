@@ -1248,7 +1248,7 @@ export function Composer({
           <div className="menu composer-menu">
             <div className="composer-menu-group">
               <div className="menu-heading">{t("Files")}</div>
-              <p className="chat-inline-state chat-inline-error" role="status">{t("Couldn't load suggestions")}</p>
+              <p className="chat-inline-state chat-inline-error" role="status">{t("Couldn't load suggestions. Keep typing to try again.")}</p>
             </div>
           </div>
         )}

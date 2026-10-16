@@ -6,7 +6,7 @@ import { FONT_FAMILY_MAX_CHARS } from "./fontFamily.ts";
 import { DEFAULT_KEY_BAR_ITEMS, migrateKeyBarItems } from "./keyBar.ts";
 import { SHARED_SETTING_KEYS } from "../../shared/preferences.ts";
 import { NOTICE_VERSION, TELEMETRY_SETTINGS_KEYS, telemetrySettings } from "../../shared/telemetry.ts";
-import { SETTING_SCOPE, telemetrySettingsSnapshot, alertPrefs, CHAT_FONT_MAX, CHAT_FONT_MIN, CHAT_LANE_MAX_REM, CHAT_LANE_MIN, CHAT_WIDTHS, chatFontSize, chatLaneLength, chatLaneWidth, DEFAULT_SETTINGS, MARKDOWN_WIDTHS, QUICK_REPLIES_MAX, QUICK_REPLY_MAX_CHARS, quickReplyButtons, sanitizeSettings, terminalTheme, forgetPaneViews, DICTATION_LANGUAGES, VOICE_BUTTONS, wantsVoiceInput } from "./settings.ts";
+import { ANSI_NAMES, SETTING_SCOPE, telemetrySettingsSnapshot, alertPrefs, CHAT_FONT_MAX, CHAT_FONT_MIN, CHAT_LANE_MAX_REM, CHAT_LANE_MIN, CHAT_WIDTHS, chatFontSize, chatLaneLength, chatLaneWidth, DEFAULT_SETTINGS, MARKDOWN_WIDTHS, QUICK_REPLIES_MAX, QUICK_REPLY_MAX_CHARS, quickReplyButtons, sanitizeSettings, terminalMinimumContrast, terminalTheme, forgetPaneViews, DICTATION_LANGUAGES, VOICE_BUTTONS, wantsVoiceInput } from "./settings.ts";
 
 it("keeps a tab's pane while out of use until this device turns the pause on", () => {
   expect(DEFAULT_SETTINGS.releasePaneAway).toBe(false);
@@ -575,34 +575,69 @@ describe("palette", () => {
   it("mirrors each palette's --term-* tokens of styles.css for xterm", () => {
     for (const { theme, palette, layers } of cases) {
       const read = tokens(layers);
-      expect(terminalTheme(theme, palette)).toEqual({ background: read("term-bg"), foreground: read("term-fg"), cursor: read("term-cursor"), selectionBackground: read("term-selection") });
+      const { background, foreground, cursor, selectionBackground } = terminalTheme(theme, palette);
+      expect({ background, foreground, cursor, selectionBackground }).toEqual({ background: read("term-bg"), foreground: read("term-fg"), cursor: read("term-cursor"), selectionBackground: read("term-selection") });
+    }
+  });
+
+  type Rgb = [number, number, number];
+  const rgba = (value: string): [Rgb, number] => {
+    const hex = value.match(/^#([0-9a-f]{6})$/);
+    if (hex) return [[0, 2, 4].map((i) => parseInt(hex[1]!.slice(i, i + 2), 16)) as Rgb, 1];
+    const parts = value.match(/^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/)!;
+    return [[Number(parts[1]), Number(parts[2]), Number(parts[3])], Number(parts[4])];
+  };
+  const over = (top: string, under: Rgb): Rgb => {
+    const [rgb, alpha] = rgba(top);
+    return rgb.map((c, i) => c * alpha + under[i]! * (1 - alpha)) as Rgb;
+  };
+  const luminance = (rgb: Rgb): number => {
+    const [r, g, b] = rgb.map((c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4)) as Rgb;
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const ratio = (a: Rgb, b: Rgb): number => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
+    return (hi + 0.05) / (lo + 0.05);
+  };
+
+  it("gives a light terminal sixteen ANSI colours readable (4.5:1) on its background, and a dark one xterm's defaults", () => {
+    const failures: string[] = [];
+    for (const { theme, palette } of cases) {
+      const colors = terminalTheme(theme, palette);
+      const named = ANSI_NAMES.filter((name) => colors[name] !== undefined);
+      if (theme === "dark") { if (named.length !== 0) failures.push(`${theme}/${palette} sets ${named.join(", ")}`); continue; }
+      if (named.length !== ANSI_NAMES.length) failures.push(`${theme}/${palette} lacks ${ANSI_NAMES.filter((name) => colors[name] === undefined).join(", ")}`);
+      for (const name of named) if (ratio(rgba(colors[name]!)[0], rgba(colors.background)[0]) < 4.5) failures.push(`${theme}/${palette} ${name} ${colors[name]} on ${colors.background}`);
+    }
+    expect(failures).toEqual([]);
+    expect(terminalMinimumContrast("light")).toBe(4.5);
+    expect(terminalMinimumContrast("dark")).toBe(1);
+  });
+
+  it("lists the light ANSI colours in DESIGN.md as terminalTheme() draws them", () => {
+    const design = readFileSync(join(import.meta.dir, "..", "..", "DESIGN.md"), "utf8");
+    const table = design.slice(design.indexOf("| ANSI | xterm key |"));
+    const documented: Record<string, Record<string, string>> = { amber: {}, charcoal: {}, catppuccin: {} };
+    for (const line of table.split("\n")) {
+      if (!line.startsWith("|")) break;
+      const cells = line.split("|").slice(1, -1).map((cell) => cell.trim());
+      const key = cells[1]?.match(/^`(\w+)`$/)?.[1];
+      if (key === undefined) continue;
+      for (const [index, palette] of ["amber", "charcoal", "catppuccin"].entries()) documented[palette]![key] = cells[2 + index]!.replace(/`/g, "");
+    }
+    for (const palette of ["amber", "charcoal", "catppuccin"] as const) {
+      const colors = terminalTheme("light", palette);
+      expect(documented[palette]).toEqual(Object.fromEntries(ANSI_NAMES.map((name) => [name, colors[name] ?? "missing"])));
     }
   });
 
   it("keeps text and agent states readable (WCAG AA 4.5:1) on every surface of every palette", () => {
-    type Rgb = [number, number, number];
-    const rgba = (value: string): [Rgb, number] => {
-      const hex = value.match(/^#([0-9a-f]{6})$/);
-      if (hex) return [[0, 2, 4].map((i) => parseInt(hex[1]!.slice(i, i + 2), 16)) as Rgb, 1];
-      const parts = value.match(/^rgba\((\d+), (\d+), (\d+), ([\d.]+)\)$/)!;
-      return [[Number(parts[1]), Number(parts[2]), Number(parts[3])], Number(parts[4])];
-    };
-    const over = (top: string, under: Rgb): Rgb => {
-      const [rgb, alpha] = rgba(top);
-      return rgb.map((c, i) => c * alpha + under[i]! * (1 - alpha)) as Rgb;
-    };
-    const luminance = (rgb: Rgb): number => {
-      const [r, g, b] = rgb.map((c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : ((c / 255 + 0.055) / 1.055) ** 2.4)) as Rgb;
-      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    };
-    const ratio = (a: Rgb, b: Rgb): number => {
-      const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
-      return (hi + 0.05) / (lo + 0.05);
-    };
     const failures: string[] = [];
     for (const { theme, palette, layers } of cases) {
       const read = tokens(layers);
       const color = (name: string): Rgb => rgba(read(name))[0];
+      // a field's placeholder is --text-dim on --bg-input (src/styles.css ::placeholder)
+      if (ratio(color("text-dim"), color("bg-input")) < 4.5) failures.push(`${theme}/${palette} placeholder (text-dim) on bg-input`);
       for (const surface of ["bg", "bg-panel", "bg-elevated", "bg-hover"]) {
         for (const text of ["text", "text-dim"]) {
           if (ratio(color(text), color(surface)) < 4.5) failures.push(`${theme}/${palette} ${text} on ${surface}`);
