@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import { FolderOpen, X } from "lucide-react";
 
 import "./NewSessionDialog.css";
@@ -74,6 +74,17 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
   // folders kept before worktrees and temporary folders were left out are left out here too
   const shownFolders = recentFolders.filter((path) => !passingFolder(path, worktrees)).slice(0, RECENT_FOLDERS_SHOWN);
   const firstFieldRef = useRef<HTMLButtonElement>(null);
+  // a path longer than its field is shown from its end, where the folder's name is, whenever it is
+  // set for the user (the last folder, a pick from Browse or a recent chip) and when the field is
+  // left; typing keeps the caret in view by itself
+  const cwdField = useRef<HTMLInputElement>(null);
+  const showPathEnd = (): void => {
+    const field = cwdField.current;
+    if (field !== null) field.scrollLeft = field.scrollWidth;
+  };
+  useLayoutEffect(() => {
+    if (open && document.activeElement !== cwdField.current) showPathEnd();
+  }, [open, cwd]);
   const surface = useFocusTrap<HTMLFormElement>(open, { initialFocus: firstFieldRef });
   useSheetSwipe(surface, pending ? null : onClose);
   const defaultCwdRef = useRef(defaultCwd);
@@ -198,7 +209,7 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
             <div className="field">
               <label className="field-label" htmlFor="new-session-cwd">{t("Directory")}</label>
               <div className="new-session-cwd">
-                <input id="new-session-cwd" className="input" value={cwd} placeholder="~/projects/app" disabled={fieldsDisabled} autoComplete="off" onChange={(event) => setCwd(event.target.value)} />
+                <input ref={cwdField} id="new-session-cwd" className="input" value={cwd} placeholder="~/projects/app" disabled={fieldsDisabled} autoComplete="off" onChange={(event) => setCwd(event.target.value)} onBlur={showPathEnd} />
                 <button type="button" className="btn" aria-expanded={browsing} disabled={fieldsDisabled} onClick={() => setBrowsing((open) => !open)}>
                   <FolderOpen aria-hidden="true" />
                   {t("Browse")}

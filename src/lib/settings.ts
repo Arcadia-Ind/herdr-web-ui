@@ -511,7 +511,7 @@ const TERMINAL_THEMES: Record<Palette, Record<ResolvedTheme, TerminalColors>> = 
     dark: { background: "#171717", foreground: "#cbc7c0", cursor: "#cbc7c0", selectionBackground: "#49443d" },
   },
   catppuccin: {
-    light: { background: "#eff1f5", foreground: "#4c4f69", cursor: "#dc8a78", selectionBackground: "#d2d4dc" },
+    light: { background: "#eff1f5", foreground: "#4c4f69", cursor: "#e64553", selectionBackground: "#d2d4dc" },
     dark: { background: "#1e1e2e", foreground: "#cdd6f4", cursor: "#f5e0dc", selectionBackground: "#3b3d4f" },
   },
 };

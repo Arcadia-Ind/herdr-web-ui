@@ -97,13 +97,15 @@ all palettes) and dark Catppuccin, whose elevated surface is darker than its can
 - **Catppuccin** follows [catppuccin.com/palette](https://catppuccin.com/palette/), its style guide
   and its Zed port: Mocha in dark, Latte in light. In both the content (chat canvas `--bg`,
   terminal) is Base, the chrome (`--bg-panel`: sidebar, the header over it and on a phone, tabs) and elevated surfaces Mantle,
-  dimmed text Subtext1, cursor Rosewater, selection Overlay2 at 25% over Base. Dark uses palette
+  dimmed text Subtext1, selection Overlay2 at 25% over Base. Dark uses palette
   colors (only the primary hover `#d3b3f8`, Mauve lightened, and the tints are derived): Base
   `#1e1e2e`, Mantle `#181825`, input Crust, hover Surface0, text Text `#cdd6f4` / Subtext1 `#bac2de`,
   accent and primary Mauve `#cba6f7` with Crust text, states Blue / Maroon / Green, idle Subtext0
   (Maroon, not Red, keeps input AA on a hovered row), cursor `#f5e0dc`, selection `#3b3d4f`. Light
   keeps Latte's surfaces and text: Base `#eff1f5` (also input), Mantle `#e6e9ef`, hover Crust
-  `#dce0e8` (the darkest surface Subtext1 stays AA on), idle Subtext1, cursor `#dc8a78`, selection
+  `#dce0e8` (the darkest surface Subtext1 stays AA on), idle Subtext1, cursor Maroon `#e64553`
+  (Rosewater, the dark cursor, reads 2.3:1 on Base; a cursor block is a shape, so it keeps 3:1 -
+  `settings.test.ts` checks every palette's), selection
   `#d2d4dc`. Latte's accents are under 4.5:1 on these surfaces, so each keeps its hue and is darkened
   until it passes AA: Mauve `#712fc6` (primary hover is plain Latte Mauve `#8839ef`), Blue `#1750bf`,
   Red `#ac0c2f`, Green `#28651b`. It keeps amber's rounded corners.

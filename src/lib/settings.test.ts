@@ -614,6 +614,17 @@ describe("palette", () => {
     expect(terminalMinimumContrast("dark")).toBe(1);
   });
 
+  // the cursor block is a shape, not text: the 3:1 of a non-text indicator, on every palette's background
+  it("draws every terminal cursor at least 3:1 on its background", () => {
+    const failures: string[] = [];
+    for (const { theme, palette } of cases) {
+      const colors = terminalTheme(theme, palette);
+      const contrast = ratio(rgba(colors.cursor)[0], rgba(colors.background)[0]);
+      if (contrast < 3) failures.push(`${theme}/${palette} cursor ${colors.cursor} on ${colors.background} is ${contrast.toFixed(2)}:1`);
+    }
+    expect(failures).toEqual([]);
+  });
+
   it("lists the light ANSI colours in DESIGN.md as terminalTheme() draws them", () => {
     const design = readFileSync(join(import.meta.dir, "..", "..", "DESIGN.md"), "utf8");
     const table = design.slice(design.indexOf("| ANSI | xterm key |"));
