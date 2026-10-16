@@ -44,6 +44,11 @@ describe("plan", () => {
 });
 
 describe("isolate", () => {
+  it("replaces the user's login shell for Unix test panes, but keeps the native Windows environment", () => {
+    const { env } = isolate({ SHELL: "/bin/zsh" }, scratch());
+    expect(env["SHELL"]).toBe(process.platform === "win32" ? "/bin/zsh" : existsSync("/bin/bash") ? "/bin/bash" : "/bin/sh");
+  });
+
   it("points herdr, its plugins and the web UI at one directory of the run's own, under its own session name", () => {
     const first = isolate({ PATH: "/bin", XDG_CONFIG_HOME: "/home/someone/.config" });
     const second = isolate({ PATH: "/bin" });
