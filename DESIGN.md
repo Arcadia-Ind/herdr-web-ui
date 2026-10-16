@@ -120,6 +120,32 @@ CSS tokens verbatim for each resolved theme and palette (`settings.test.ts` chec
 | Cursor | `--term-cursor` | `#f0a830` | `#8c5000` | `cursor` |
 | Selection | `--term-selection` | `#4a3d26` | `#f0d9ae` | `selectionBackground` |
 
+xterm's sixteen ANSI colours are tuned for a dark background (its yellow reads 2.4:1 on paper), so a
+light terminal names its own, each at least 4.5:1 on its palette's `--term-bg` and taken from that
+palette's light tokens (`terminalTheme()`, checked by `settings.test.ts`; dark terminals keep xterm's
+defaults). A light terminal also sets xterm's `minimumContrastRatio` to `4.5`
+(`terminalMinimumContrast()`): a colour a program picks itself, a 256-colour or true-colour prompt, is
+lifted to AA on the background instead of drawn as sent. A dark terminal leaves it at `1`.
+
+| ANSI | xterm key | amber | charcoal | catppuccin |
+|------|-----------|-------|----------|------------|
+| 0 | `black` | `#2a251f` | `#242424` | `#4c4f69` |
+| 1 | `red` | `#a82323` | `#b3261e` | `#ac0c2f` |
+| 2 | `green` | `#2f6317` | `#22743a` | `#28651b` |
+| 3 | `yellow` | `#8c5000` | `#8a5300` | `#8a5710` |
+| 4 | `blue` | `#155a72` | `#0b6e8a` | `#1750bf` |
+| 5 | `magenta` | `#8a3f7a` | `#6f42c1` | `#712fc6` |
+| 6 | `cyan` | `#0f6b6f` | `#0f6f74` | `#0e6b70` |
+| 7 | `white` | `#685e52` | `#5f5b56` | `#5c5f77` |
+| 8 | `brightBlack` | `#5a5045` | `#4e4b47` | `#64677d` |
+| 9 | `brightRed` | `#c42b2b` | `#c92d24` | `#c41545` |
+| 10 | `brightGreen` | `#3b741c` | `#277d3f` | `#2f7620` |
+| 11 | `brightYellow` | `#9d5a00` | `#9f6100` | `#905c13` |
+| 12 | `brightBlue` | `#1d6f8c` | `#1a7391` | `#0b59f4` |
+| 13 | `brightMagenta` | `#a24b90` | `#7f52d1` | `#8839ef` |
+| 14 | `brightCyan` | `#117676` | `#13767e` | `#13737a` |
+| 15 | `brightWhite` | `#16120d` | `#111111` | `#4c4f69` |
+
 ### Syntax highlighting
 
 Code in the chat and in the file viewer is colored by `--syntax-*` tokens. Four follow the
@@ -505,7 +531,12 @@ One set for both themes: the card is island black wherever it shows.
 ### Field (`.field`, `.input`, `.select`)
 - Stacked uppercase label, optional hint and `--bg-input` field. Desktop fields use `--fs-sm`;
   small-screen fields retain `--fs-input` to avoid focus zoom.
-- Focus names the edge with accent; errors use blocked/danger tokens and `role="alert"`.
+- Focus names the edge with accent; errors use blocked/danger tokens and `role="alert"`. A failure
+  leads with a plain sentence (`lib/userError.ts`); what the PC or the browser said follows on a
+  second line in the interface face, selectable, never in the mono stack (which has no Hangul and
+  would set Korean with letter-wide spaces).
+- Every placeholder is `--text-dim` at full opacity (at least 4.5:1 on every field of every
+  palette), never the browser's own grey (3.8:1 on a dark field).
 
 ### Menu / popover (`.menu*`)
 - Bordered `--radius-lg` surface with `--shadow-pop`; rows use `--control-h`, `--radius-md`, icon,
@@ -578,7 +609,7 @@ One set for both themes: the card is island black wherever it shows.
   A tab's mark follows the same choice, held still.
 
 ### Pill (`.pill`)
-- Mono metadata at `--chip-h`. Offline is the one header pill that stays, and uses danger tokens. A deep link waiting for its PC's roster says **Opening link…** in the same `.header-note` pill (`role="status"`) until it lands or its failure note replaces it. A deep link that could not open what it named, and Copy link, say so in a plain `.header-note` pill for a moment (8 s, 1.6 s for Link copied). The note takes the flexible context's place and ellipsizes when narrow, keeping the lens and More controls in view.
+- Mono metadata at `--chip-h`. Offline is the one header pill that stays, and uses danger tokens. A deep link waiting for its PC's roster says **Opening link…** in the same `.header-note` pill (`role="status"`) until it lands or its failure note replaces it. The `.header-note` pill carries a sentence, so it is set in the interface face (`--font-ui`), not the mono one. A deep link that could not open what it named, and Copy link, say so in a plain `.header-note` pill for a moment (8 s, 1.6 s for Link copied). The note takes the flexible context's place and ellipsizes when narrow, keeping the lens and More controls in view.
 
 ### Sidebar roster row and footer
 - No top bar. The sidebar opens with the plan panel (when Settings puts it there), the PC workspace groups and a separate **Agents** list spanning the connected PCs. A workspace starts from the `+` on its PC's header, or from the **New workspace**
@@ -1040,8 +1071,8 @@ One set for both themes: the card is island black wherever it shows.
   starts with the list-checks glyph, the word **Plan** and `done/total` in tabular figures; running
   background tasks follow after a hairline as their glyph and number. The chip keeps the working
   tint while a step or a task is left, and goes quiet once every step is done and nothing runs. A
-  narrow card drops the words and keeps the glyphs and numbers, and a finger gets a `--touch-target`
-  chip in both dimensions. The chip shows only in the chat lens, and not for an offline PC's cached
+  narrow card drops the words and keeps the glyphs and numbers; a finger gets a `--touch-target` hit
+  area through an invisible expander while the chip stays the `--chip-h` pill it is beside a mouse. The chip shows only in the chat lens, and not for an offline PC's cached
   plan. The sidebar's agent row repeats the count beside the background count, in its quiet mono
   figures and with no box (`.plan-count`).
 - The chip opens one list above the card: a **Plan** heading with `N of M done`, the steps in wave
@@ -1308,6 +1339,8 @@ One set for both themes: the card is island black wherever it shows.
   still `Discard`.
 - `/` completions come from `GET /api/pane/commands` and group built-in, user and project commands;
   `@` completions query `GET /api/pane/files`. Arrow keys navigate, Enter/Tab accepts, Escape closes.
+  A listing that failed is told apart from no matches: a `role="status"` row says **Couldn't load
+  suggestions. Keep typing to try again.** (every change of the query asks again).
 - Paste, picker or drag/drop attaches up to 100 files per action; the message box names how many it left out.
   An image is stored as a paste, any other file under its own sanitised name. Each uploads through `POST /api/pane/image`, three at a time
   across all picks, and puts a removable editable `@path` mention at the start of the message (after
@@ -1500,8 +1533,10 @@ One set for both themes: the card is island black wherever it shows.
   app holds the pane, a failed output stream, the held draft, a copy note) stand over the card
   instead (Composer: Notices).
   Banners wrap inside their pane at any width (a phone, or a narrow split on a desktop): text breaks
-  between words, or anywhere in held input with no space, and what does not fit beside the text
-  (held input, actions) moves to the next line with button labels kept whole.
+  between words, and what does not fit beside the text (held input, actions) moves to the next line
+  with button labels kept whole; wrapped lines start at the left. Held input, in the reconnecting
+  banner's preview (`Input held: “…”`) and in the review banner, stays on one line in mono, cut with
+  an ellipsis, with the whole text as its title: a command is never broken inside a word.
 - The mobile key bar starts with Esc, Tab and `^C`, then sticky Ctrl/Alt/Shift, Enter and arrows;
   it never steals typing focus. Modifiers remain highlighted until toggled off,
   leaving the pane/lens or disconnecting; each exposes `aria-pressed`.

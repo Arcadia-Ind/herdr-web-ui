@@ -630,7 +630,7 @@ export const ZH: Record<string, string> = {
   "Type {range} to choose…": "输入 {range} 进行选择…",
   "Choose with the option numbers above, e.g. 1 3.": "请使用上方的选项编号进行选择，例如 1 3。",
   "Choose one of the options above: type {range}.": "请从上方选项中选择一项：输入 {range}。",
-  "Couldn't load suggestions": "无法加载建议",
+  "Couldn't load suggestions. Keep typing to try again.": "无法加载建议。继续输入即可重试。",
   "{name} attached": "已附加 {name}",
   "{name} could not be attached: {reason}": "无法附加 {name}：{reason}",
 

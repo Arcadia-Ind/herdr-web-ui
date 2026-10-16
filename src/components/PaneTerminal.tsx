@@ -46,7 +46,7 @@ import { PendingMessages } from "./PendingMessages.tsx";
 import type { AgentStatus, ClientRole, ConversationMetadata, InteractivePrompt, PlanSummary, ServerMessage } from "../../shared/protocol.ts";
 import type { PaneControls, PaneView } from "../lib/actions.ts";
 import { usePaneLane } from "../lib/chatLane.ts";
-import { useSettings, terminalTheme, type Palette, type ResolvedTheme } from "../lib/settings.ts";
+import { useSettings, terminalMinimumContrast, terminalTheme, type Palette, type ResolvedTheme } from "../lib/settings.ts";
 import { loadFontStack, TERMINAL_FONT_STACK, terminalFontStack } from "../lib/fontFamily.ts";
 import { useT } from "../lib/i18n.ts";
 import { isAppShortcut } from "../lib/shortcuts.ts";
@@ -554,6 +554,8 @@ export function PaneTerminal({
       // a chosen family follows in the font effect below, once its faces have loaded
       fontFamily: TERMINAL_FONT_STACK,
       theme: terminalTheme(theme, palette),
+      // a light terminal lifts a program's own colours to AA on paper; a dark one draws them as sent
+      minimumContrastRatio: terminalMinimumContrast(theme),
       linkHandler: {
         activate: (event, uri) => {
           if (!linkPressed(event)) return;
@@ -2000,7 +2002,9 @@ export function PaneTerminal({
   // the theme follows the settings without a remount
   useEffect(() => {
     const term = termRef.current;
-    if (term) term.options.theme = terminalTheme(theme, palette);
+    if (!term) return;
+    term.options.theme = terminalTheme(theme, palette);
+    term.options.minimumContrastRatio = terminalMinimumContrast(theme);
   }, [theme, palette]);
 
   // the font follows too, and a font change moves the grid. xterm measures the cell (and the DOM
@@ -2780,13 +2784,14 @@ export function PaneTerminal({
         {paneId !== null && !chatView && !ended && !connected && (
           <div className="terminal-banner terminal-banner-warning" role="status">
             {t("Reconnecting to herdr web ui…")}
-            {draft.text.length > 0 && <span className="draft-held"> {t("Input held:")} “{draft.text}”</span>}
+            {/* one line, cut with an ellipsis: a command is never broken inside a word; the title holds it whole */}
+            {draft.text.length > 0 && <span className="draft-held" title={draft.text}> {t("Input held:")} <code>“{draft.text}”</code></span>}
           </div>
         )}
         {paneId !== null && !ended && connected && !draftIsEmpty(draft) && !noticesDocked && (
           <div className="terminal-banner terminal-banner-draft" role="status">
             <span className="draft-label">{t("Input held until the terminal is ready:")}</span>
-            {draft.text.length > 0 && <code className="draft-text">{draft.text}</code>}
+            {draft.text.length > 0 && <code className="draft-text" title={draft.text}>{draft.text}</code>}
             {/* the preview shows the start of the text: without this, a draft that lost its end looks whole */}
             {draft.truncated && <span className="draft-truncated">{t("Some input could not be held and was left out.")}</span>}
             {/* Enter is never held: without this, two commands look like one line and a paste looks whole */}

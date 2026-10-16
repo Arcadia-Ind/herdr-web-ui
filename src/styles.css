@@ -549,6 +549,13 @@ html:is(:lang(ja), :lang(zh)) body {
   line-break: auto;
 }
 
+/* A failure's second line quotes what the PC or the browser said (lib/userError.ts): a sentence,
+   often a translated one, so it takes the interface face. The mono stack has no Hangul: Korean set
+   in it gets a letter-wide space between words and a period set off from its word. */
+:is([role="alert"], .composer-note-text) > code {
+  font-family: var(--font-ui);
+}
+
 /* A title that wraps takes even lines, never a full line over a one-word stub: dialog titles, the
    empty chat's greeting and a Settings group's caption. */
 .modal-title,
@@ -1181,6 +1188,12 @@ button {
   background: var(--danger-tint);
 }
 
+/* a pill that carries a sentence (the header's link and copy notes): the interface face, for the
+   same reason as a failure's detail line above */
+.header-note {
+  font-family: var(--font-ui);
+}
+
 /* a lens that is on its way: inside a segmented button, so it stays small */
 .pill-soon {
   height: auto;
@@ -1479,6 +1492,14 @@ button {
   color: var(--text-strong);
   font: inherit;
   font-size: var(--fs-input);
+}
+
+/* a field's placeholder: the browser's own grey reads 3.8:1 on a dark field, so every placeholder
+   takes --text-dim (at least 4.5:1 on every field of every palette) at full opacity, which Firefox
+   would otherwise dim */
+::placeholder {
+  color: var(--text-dim);
+  opacity: 1;
 }
 
 /* a bordered field shows focus on its own border; the offset ring is for controls without one */

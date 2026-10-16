@@ -496,7 +496,9 @@ export function resolveTheme(setting: ThemeSetting): ResolvedTheme {
   return typeof window !== "undefined" && window.matchMedia?.(DARK_QUERY).matches === false ? "light" : "dark";
 }
 
-type TerminalColors = { background: string; foreground: string; cursor: string; selectionBackground: string };
+export const ANSI_NAMES = ["black", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "brightBlack", "brightRed", "brightGreen", "brightYellow", "brightBlue", "brightMagenta", "brightCyan", "brightWhite"] as const;
+export type AnsiName = (typeof ANSI_NAMES)[number];
+export type TerminalColors = { background: string; foreground: string; cursor: string; selectionBackground: string } & Partial<Record<AnsiName, string>>;
 
 /** The xterm theme for a resolved theme and palette: the `--term-*` tokens of src/styles.css, verbatim. */
 const TERMINAL_THEMES: Record<Palette, Record<ResolvedTheme, TerminalColors>> = {
@@ -514,8 +516,39 @@ const TERMINAL_THEMES: Record<Palette, Record<ResolvedTheme, TerminalColors>> = 
   },
 };
 
+/**
+ * The sixteen ANSI colours of a light terminal, each at least 4.5:1 on its palette's `--term-bg`
+ * (DESIGN.md Terminal theme lists them; settings.test.ts checks both). xterm's own defaults are
+ * tuned for a dark background: its yellow reads 2.4:1 on paper. Dark terminals keep those defaults.
+ * Each hue is the palette's own: the agent-state, accent and syntax tokens of its light block, with
+ * the bright variants a step lighter and still readable.
+ */
+const LIGHT_ANSI: Record<Palette, Record<AnsiName, string>> = {
+  amber: {
+    black: "#2a251f", red: "#a82323", green: "#2f6317", yellow: "#8c5000", blue: "#155a72", magenta: "#8a3f7a", cyan: "#0f6b6f", white: "#685e52",
+    brightBlack: "#5a5045", brightRed: "#c42b2b", brightGreen: "#3b741c", brightYellow: "#9d5a00", brightBlue: "#1d6f8c", brightMagenta: "#a24b90", brightCyan: "#117676", brightWhite: "#16120d",
+  },
+  charcoal: {
+    black: "#242424", red: "#b3261e", green: "#22743a", yellow: "#8a5300", blue: "#0b6e8a", magenta: "#6f42c1", cyan: "#0f6f74", white: "#5f5b56",
+    brightBlack: "#4e4b47", brightRed: "#c92d24", brightGreen: "#277d3f", brightYellow: "#9f6100", brightBlue: "#1a7391", brightMagenta: "#7f52d1", brightCyan: "#13767e", brightWhite: "#111111",
+  },
+  catppuccin: {
+    black: "#4c4f69", red: "#ac0c2f", green: "#28651b", yellow: "#8a5710", blue: "#1750bf", magenta: "#712fc6", cyan: "#0e6b70", white: "#5c5f77",
+    brightBlack: "#64677d", brightRed: "#c41545", brightGreen: "#2f7620", brightYellow: "#905c13", brightBlue: "#0b59f4", brightMagenta: "#8839ef", brightCyan: "#13737a", brightWhite: "#4c4f69",
+  },
+};
+
 export function terminalTheme(theme: ResolvedTheme, palette: Palette = "amber"): TerminalColors {
-  return TERMINAL_THEMES[palette][theme];
+  return theme === "light" ? { ...TERMINAL_THEMES[palette][theme], ...LIGHT_ANSI[palette] } : TERMINAL_THEMES[palette][theme];
+}
+
+/**
+ * xterm's `minimumContrastRatio`: a light terminal lifts any foreground a program picks (a
+ * 256-colour or true-colour amber prompt, say) to WCAG AA on its background; a dark one draws
+ * colours as sent, as the ANSI defaults already read on it. VS Code's terminal uses the same 4.5.
+ */
+export function terminalMinimumContrast(theme: ResolvedTheme): number {
+  return theme === "light" ? 4.5 : 1;
 }
 
 /** `<meta name="theme-color">` follows the panel surface so the PWA title bar matches. */
