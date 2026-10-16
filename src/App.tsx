@@ -38,6 +38,7 @@ import { SnapshotRequests } from "./lib/snapshotRequests.ts";
 import { alertPrefs, useSettings } from "./lib/settings.ts";
 import { formatKeys, shortcutDisplayKeys, useShortcuts } from "./lib/shortcuts.ts";
 import { useMediaQuery } from "./lib/useMediaQuery.ts";
+import { useAnnouncedText } from "./lib/useAnnouncedText.ts";
 import { PaneLenses } from "./lib/paneLens.ts";
 import { paneContextPress } from "./lib/paneCanvas.ts";
 import type { AppActions, PaneView, PaneControls } from "./lib/actions.ts";
@@ -149,21 +150,35 @@ function SlotSessions({ slot, machineIds, children }: { slot: SplitSlot; machine
 }
 
 /** The header's note. Its status is in the header from the header's first render, clipped while empty
-    (never display: none, as the connection chip): a live region that appears together with its words
-    is not read. So the words land a frame after the box, even the ones a page opens with. */
+    (never display: none, as the connection chip), and its words land a frame after the box, even the
+    ones a page opens with (lib/useAnnouncedText.ts). */
 function HeaderNote({ note }: { note: string | null }) {
-  const [framed, setFramed] = useState(false);
-  useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setFramed(true));
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-  const shown = framed ? note : null;
+  const shown = useAnnouncedText(note);
   return (
     <div className={shown === null ? "visually-hidden" : "context"}>
       <span className={shown === null ? undefined : "pill header-note"} role="status" style={{ minWidth: 0 }}>
         <span className="context-title-text">{shown}</span>
       </span>
     </div>
+  );
+}
+
+/** The connecting shell's one sidebar line: the same announced status as every other (lib/useAnnouncedText.ts). */
+function ConnectingNote() {
+  const shown = useAnnouncedText("Connecting…");
+  return <p className={shown === null ? "visually-hidden" : "tree-state"} role="status">{shown}</p>;
+}
+
+/** The header's connection chip. It speaks only while the bridge is not live; live, it stays in the document
+    for a screen reader (and the browser scripts that wait on it), drawn by nothing (styles.css). Its word lands
+    a frame after the chip (lib/useAnnouncedText.ts), as every status line's does. */
+function ConnectionChip({ connected, word, title }: { connected: boolean; word: string; title: string | undefined }) {
+  const shown = useAnnouncedText(word);
+  return (
+    <span className={`conn ${connected ? "conn-live" : "conn-reconnecting"}`} role="status" title={title}>
+      <span className="conn-dot" aria-hidden="true" />
+      <span className="conn-text">{shown}</span>
+    </span>
   );
 }
 
@@ -1371,9 +1386,7 @@ export function App() {
         </header>
         <div className="app-body">
           <aside className="sidebar">
-            <p className="tree-state" role="status">
-              Connecting…
-            </p>
+            <ConnectingNote />
           </aside>
           <main className="terminal-host">
             <div className="terminal-placeholder">
@@ -1454,16 +1467,11 @@ export function App() {
           </div>
         )}
         <div className="header-meta">
-          {/* speaks only while the bridge is not live; live, it stays in the document for a screen
-              reader (and the browser scripts that wait on it), drawn by nothing (styles.css) */}
-          <span
-            className={`conn ${connected ? "conn-live" : "conn-reconnecting"}`}
-            role="status"
+          <ConnectionChip
+            connected={connected}
+            word={connWord}
             title={[connected ? null : connWord, targetHerdr ? t("herdr {version} · protocol {protocol}", { version: targetHerdr.version, protocol: targetHerdr.protocol }) : null].filter((part) => part !== null).join(" · ") || undefined}
-          >
-            <span className="conn-dot" aria-hidden="true" />
-            <span className="conn-text">{connWord}</span>
-          </span>
+          />
           {!targetHerdr && <span className="pill pill-offline">{t("herdr offline")}</span>}
           <span className="header-more">
             <button
