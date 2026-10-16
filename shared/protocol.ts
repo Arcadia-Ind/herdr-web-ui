@@ -325,6 +325,22 @@ export interface UsageReport {
   readonly providers: readonly ProviderUsage[];
 }
 
+/** CLIProxyAPI management configuration: the management key never leaves the server. */
+export interface CLIProxyStatus {
+  readonly configured: boolean;
+  readonly url: string;
+  readonly ok: boolean;
+  readonly problem: string | null;
+}
+export type CLIProxyProvider = "claude" | "codex";
+export interface CLIProxyLogin {
+  readonly url: string;
+  readonly state: string;
+}
+export interface CLIProxyLoginStatus {
+  readonly status: "wait" | "ok" | "error";
+}
+
 /** How a request got in, when it did. */
 export type AccessVia = "local" | "tailscale" | "device" | "token" | "open";
 /** Why a request did not. */
@@ -999,6 +1015,8 @@ export interface SlashCommand {
   source: "builtin" | "user" | "project" | "skill" | "plugin";
   /** `$`: typed as `$name` (Codex skills); otherwise `/name` */
   trigger?: "$";
+  /** an omo skill's: `bundled` ships with omo, `user` is the person's own (omo's agent directory or ~/.agents/skills) */
+  origin?: "bundled" | "user";
 }
 
 /**

@@ -12,6 +12,7 @@
 import type { AgentStatus, SlashCommand } from "../../shared/protocol.ts";
 import { knownStatus, STATUS_WORD } from "./status.ts";
 import { t } from "./i18n.ts";
+import type { ActiveTrigger } from "./mentions.ts";
 
 /** This cap keeps one composer message inside a single WS frame. */
 export const MAX_COMPOSER_CHARS = 20_000;
@@ -242,6 +243,47 @@ function slashMatchTier(command: SlashCommand, needle: string, prefixOnly: boole
     if (at === needle.length) return 3;
   }
   return needle.length >= 2 && command.description.toLocaleLowerCase().includes(needle) ? 4 : null;
+}
+
+/** Commands the agent can invoke at this position, before query ranking. */
+export function commandsForTrigger(commands: readonly SlashCommand[], agent: string | null, trigger: ActiveTrigger): SlashCommand[] {
+  return commands.filter((command) => {
+    if (agent === "omo") {
+      return trigger.prefix === "$" ? command.source === "skill" : trigger.start === 0;
+    }
+    const prefix = command.trigger ?? "/";
+    if (trigger.start === 0) return prefix === (trigger.prefix ?? "/");
+    // Claude honours a skill mention as permission to invoke it; Codex names skills with `$`.
+    // pi expands /skill:name only at message start, and builtins are whole-message commands.
+    return command.source === "skill" && (agent === "claude" ? prefix === "/" : agent === "codex" && prefix === "$");
+  });
+}
+
+/**
+ * A menu row's description down to its first sentence: a skill's goes on to say when to use it
+ * and when not, which is for the agent, and on a phone it ran to five lines a row. A full stop
+ * ends a sentence only before a capital (or a letter with no case) or as `\u3002`, so `e.g. foo`
+ * and `v1.2` keep their text.
+ */
+export function briefDescription(description: string): string {
+  const text = description.trim();
+  const end = /[.!?](?=\s+[\p{Lu}\p{Lo}"'(])|\u3002/u.exec(text);
+  return (end ? text.slice(0, end.index) : text).replace(/(?<!\.)[.\u3002]$/u, "");
+}
+
+/** Where a bare `/` or `$` lists a command: an omo skill under whose it is, yours before omo's. */
+export const COMMAND_GROUPS = ["builtin", "user", "project", "skill-user", "skill", "skill-bundled", "plugin"] as const;
+export type CommandGroup = (typeof COMMAND_GROUPS)[number];
+
+export function commandGroup(command: SlashCommand): CommandGroup {
+  if (command.source === "skill" && command.origin !== undefined) return command.origin === "user" ? "skill-user" : "skill-bundled";
+  return command.source;
+}
+
+/** omo's inline skills use the typed `$`, while other agents use the command's wire trigger. */
+export function slashCommandReplacement(command: SlashCommand, agent: string | null, trigger: ActiveTrigger): string {
+  const prefix = agent === "omo" ? trigger.prefix ?? "/" : command.trigger ?? "/";
+  return `${prefix}${command.name} `;
 }
 
 /**

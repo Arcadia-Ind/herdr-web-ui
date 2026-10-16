@@ -1128,6 +1128,54 @@ export async function paneRunsOmo(paneId: string): Promise<boolean> {
   );
 }
 
+/** Loaded skill roots belong to the pane's omo process, not herdr's changing label. */
+export async function paneOmoRoots(paneId: string): Promise<{ agentDir: string | null; pluginDir: string | null } | null> {
+  const info = await herdrRpc<{ process_info?: { foreground_processes?: { pid?: unknown; argv?: unknown; cwd?: unknown }[] } }>(
+    "pane.process_info", { pane_id: paneId },
+  ).catch(() => null);
+  const home = process.env["HOME"] ?? "";
+  const directory = (path: string | null): string | null => {
+    try { return path && statSync(path).isDirectory() ? path : null; } catch { return null; }
+  };
+  for (const candidate of info?.process_info?.foreground_processes ?? []) {
+    const process = {
+      pid: typeof candidate.pid === "number" ? candidate.pid : -1,
+      argv: Array.isArray(candidate.argv) ? candidate.argv.map(String) : [],
+      cwd: typeof candidate.cwd === "string" ? candidate.cwd : "",
+    };
+    const identity = omoProcessIdentity(process, "", home);
+    if (!identity) continue;
+    const agentDir = directory(identity.agentDir);
+    const argv = process.argv.map((word) => word.replace(/\\/g, "/"));
+    const extension = argv.find((word, index) => argv[index - 1] === "--extension" && /\/omo-ai\/plugin\/?$/.test(word));
+    let pluginDir = directory(extension ? nodePath.resolve(process.cwd, extension) : null);
+    if (!pluginDir) {
+      const word = argv.find((word) => word.includes("/omo-ai/"));
+      if (word) {
+        try {
+          const canonical = realpathSync(nodePath.resolve(process.cwd, word));
+          const paths = nodePath.win32.isAbsolute(canonical) && !nodePath.posix.isAbsolute(canonical) ? nodePath.win32 : nodePath.posix;
+          for (let parent = paths.dirname(canonical); parent !== paths.dirname(parent); parent = paths.dirname(parent)) {
+            if (paths.basename(parent) === "omo-ai") {
+              pluginDir = directory(paths.join(parent, "plugin"));
+              break;
+            }
+          }
+        } catch { /* launcher may have gone away; try the installed executable */ }
+      }
+    }
+    if (!pluginDir) {
+      const executable = Bun.which("omo");
+      if (executable) {
+        try { pluginDir = directory(nodePath.join(nodePath.dirname(nodePath.dirname(realpathSync(executable))), "plugin")); }
+        catch { /* no readable installed plugin */ }
+      }
+    }
+    return { agentDir, pluginDir };
+  }
+  return null;
+}
+
 /**
  * herdr labels an omo pane `pi` while it waits and `claude` while omo's claude-sdk child
  * runs, so the sidebar showed another agent's mark, and one that changed as omo worked.

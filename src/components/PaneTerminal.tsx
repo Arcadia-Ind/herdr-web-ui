@@ -46,14 +46,14 @@ import { PendingMessages } from "./PendingMessages.tsx";
 import type { AgentStatus, ClientRole, ConversationMetadata, InteractivePrompt, PlanSummary, ServerMessage } from "../../shared/protocol.ts";
 import type { PaneControls, PaneView } from "../lib/actions.ts";
 import { usePaneLane } from "../lib/chatLane.ts";
-import { useSettings, terminalMinimumContrast, terminalTheme, type Palette, type ResolvedTheme } from "../lib/settings.ts";
+import { useSettings, terminalTheme, type Palette, type ResolvedTheme } from "../lib/settings.ts";
 import { loadFontStack, TERMINAL_FONT_STACK, terminalFontStack } from "../lib/fontFamily.ts";
 import { useT } from "../lib/i18n.ts";
 import { isAppShortcut } from "../lib/shortcuts.ts";
 import { plainPageDirection } from "../lib/pageScroll.ts";
 import { keyboardHoldsGrid, keyboardUp } from "../lib/keyboard.ts";
 import { OpenFileContext } from "../lib/filePaths.ts";
-import { fileUriPath, hyperlinkFilter, isWebLink, terminalFileLinkProvider } from "../lib/terminalFileLinks.ts";
+import { fileUriPath, hyperlinkFilter, isWebLink, openWebLink, terminalFileLinkProvider } from "../lib/terminalFileLinks.ts";
 import { adjustTerminalGlyphs } from "../lib/terminalGlyphs.ts";
 import { terminalLabel } from "../lib/terminalLabel.ts";
 import { useMediaQuery } from "../lib/useMediaQuery.ts";
@@ -88,6 +88,8 @@ const plainError = (cause: unknown): string => {
 export interface PaneTerminalProps {
   /** The pane this terminal attaches to; null renders the placeholder. */
   paneId: string | null;
+  /** A restored pane keeps its ID but gets a new terminal after herdr restarts. */
+  terminalId?: string | null;
   /** null while the PC identity loads, before the first attach's fixed-grid frame arrives. */
   mirrored?: boolean | null;
   /**
@@ -151,6 +153,7 @@ const heldRowNotes = new Map<string, { owner: string; id: string; text: string }
 
 export function PaneTerminal({
   paneId,
+  terminalId = null,
   mirrored = false,
   restoreError = null,
   agent = null,
@@ -568,14 +571,16 @@ export function PaneTerminal({
       // a chosen family follows in the font effect below, once its faces have loaded
       fontFamily: TERMINAL_FONT_STACK,
       theme: terminalTheme(theme, palette),
-      // a light terminal lifts a program's own colours to AA on paper; a dark one draws them as sent
-      minimumContrastRatio: terminalMinimumContrast(theme),
+      // a program's own colors suit one background (Claude Code's question titles are #ffffff, near
+      // 1:1 on a light palette): xterm moves a foreground under 4.5:1 toward black or white. Dim text
+      // needs half that, and box, block and powerline glyphs keep their color.
+      minimumContrastRatio: 4.5,
       linkHandler: {
         activate: (event, uri) => {
           if (!linkPressed(event)) return;
           const path = fileUriPath(uri);
           if (path !== null) openFileRef.current?.(path);
-          else if (isWebLink(uri)) window.open(uri, "_blank", "noopener,noreferrer");
+          else if (isWebLink(uri)) openWebLink(uri);
         },
         allowNonHttpProtocols: true,
       },
@@ -603,7 +608,7 @@ export function PaneTerminal({
     term.loadAddon(fit);
     matchHerdrWidths(term);
     // the same policy as the linkHandler above: an http(s) address or nothing (S10)
-    term.loadAddon(new WebLinksAddon((_event, uri) => { if (isWebLink(uri)) window.open(uri, "_blank", "noopener,noreferrer"); }));
+    term.loadAddon(new WebLinksAddon((_event, uri) => { if (isWebLink(uri)) openWebLink(uri); }));
     term.registerLinkProvider(terminalFileLinkProvider(() => term.buffer.active, (path, event) => { if (linkPressed(event)) openFileRef.current?.(path); }));
     term.open(host);
     let compositionEndTimer: number | null = null;
@@ -2028,7 +2033,6 @@ export function PaneTerminal({
     const term = termRef.current;
     if (!term) return;
     term.options.theme = terminalTheme(theme, palette);
-    term.options.minimumContrastRatio = terminalMinimumContrast(theme);
   }, [theme, palette]);
 
   // the font follows too, and a font change moves the grid. xterm measures the cell (and the DOM
@@ -2157,7 +2161,8 @@ export function PaneTerminal({
     if (sizesPty() && inUse()) socketRef.current?.resize(pane, term.cols, term.rows, true);
   }, [follow]);
 
-  // Reset synchronously on pane changes: old composition timers must never see the new pane.
+  // Reset on a pane or terminal replacement: a herdr restart can keep the pane ID.
+  // Old composition timers must never see the new terminal.
   useLayoutEffect(() => {
     const socket = socketRef.current;
     const term = termRef.current;
@@ -2204,6 +2209,11 @@ export function PaneTerminal({
     // A fresh background pane must not acquire size ownership even with the release setting off.
     // This also covers a replacement pane: no prior release or input ownership is inherited.
     setReleased(false);
+    // A restored terminal in a cached tab waits until that tab is presented again.
+    if (cachedRef.current) {
+      setReleased(true);
+      return leavePane;
+    }
     if (deferAttachRef.current(paneId)) return leavePane;
     // under the keyboard (a pane picked while typing) the fit waits for it to go, and the attach adopts
     // the pane's size meanwhile
@@ -2225,7 +2235,7 @@ export function PaneTerminal({
     // grid sent the keys straight to the pane, and showed a phone's IME text mid-screen
     if (activeRef.current && !chatViewRef.current && !autoSelected && !coarseRef.current && !modalOpen() && !findOpenRef.current) term.focus();
     return leavePane;
-  }, [paneId]);
+  }, [paneId, terminalId]);
 
   // the message the tab kept its pane for has gone (or was held): out of use, it lets go now
   useEffect(() => { releaseRef.current(); }, [pending]);

@@ -6,7 +6,7 @@ import { FONT_FAMILY_MAX_CHARS } from "./fontFamily.ts";
 import { DEFAULT_KEY_BAR_ITEMS, migrateKeyBarItems } from "./keyBar.ts";
 import { SHARED_SETTING_KEYS } from "../../shared/preferences.ts";
 import { NOTICE_VERSION, TELEMETRY_SETTINGS_KEYS, telemetrySettings } from "../../shared/telemetry.ts";
-import { ANSI_NAMES, SETTING_SCOPE, telemetrySettingsSnapshot, alertPrefs, CHAT_FONT_MAX, CHAT_FONT_MIN, CHAT_LANE_MAX_REM, CHAT_LANE_MIN, CHAT_WIDTHS, chatFontSize, chatLaneLength, chatLaneWidth, DEFAULT_SETTINGS, MARKDOWN_WIDTHS, QUICK_REPLIES_MAX, QUICK_REPLY_MAX_CHARS, quickReplyButtons, sanitizeSettings, terminalMinimumContrast, terminalTheme, forgetPaneViews, DICTATION_LANGUAGES, VOICE_BUTTONS, wantsVoiceInput } from "./settings.ts";
+import { ANSI_NAMES, SETTING_SCOPE, telemetrySettingsSnapshot, alertPrefs, CHAT_FONT_MAX, CHAT_FONT_MIN, CHAT_LANE_MAX_REM, CHAT_LANE_MIN, CHAT_WIDTHS, chatFontSize, chatLaneLength, chatLaneWidth, DEFAULT_SETTINGS, MARKDOWN_WIDTHS, QUICK_REPLIES_MAX, QUICK_REPLY_MAX_CHARS, quickReplyButtons, sanitizeSettings, terminalTheme, forgetPaneViews, DICTATION_LANGUAGES, VOICE_BUTTONS, wantsVoiceInput } from "./settings.ts";
 
 it("keeps a tab's pane while out of use until this device turns the pause on", () => {
   expect(DEFAULT_SETTINGS.releasePaneAway).toBe(false);
@@ -29,11 +29,18 @@ it("keeps the screen wake lock off until this device explicitly enables it", () 
   expect(sanitizeSettings({ terminalWheelSpeed: "3" }).terminalWheelSpeed).toBe(1);
 });
 
-it("keeps sidebar rows on two lines unless one line was chosen", () => {
-  expect(sanitizeSettings({}).sidebarRows).toBe("two");
-  expect(sanitizeSettings({ sidebarRows: "one" }).sidebarRows).toBe("one");
+it("keeps the suggestion chip off until this device turns it on, whatever an older version stored", () => {
+  expect(sanitizeSettings({}).suggestionChip).toBe(false);
+  expect(sanitizeSettings({ showSuggestionChip: true }).suggestionChip).toBe(false);
+  expect(sanitizeSettings({ suggestionChip: true }).suggestionChip).toBe(true);
+  expect(sanitizeSettings({ suggestionChip: "true" }).suggestionChip).toBe(false);
+});
+
+it("keeps sidebar rows on one line unless two lines were chosen", () => {
+  expect(sanitizeSettings({}).sidebarRows).toBe("one");
+  expect(sanitizeSettings({ sidebarRows: "two" }).sidebarRows).toBe("two");
   for (const sidebarRows of [null, true, "three", 2]) {
-    expect(sanitizeSettings({ sidebarRows }).sidebarRows).toBe("two");
+    expect(sanitizeSettings({ sidebarRows }).sidebarRows).toBe("one");
   }
 });
 
@@ -78,7 +85,7 @@ describe("telemetry settings snapshot", () => {
     });
     const snapshot = telemetrySettingsSnapshot(settings);
 
-    expect(NOTICE_VERSION).toBe(3);
+    expect(NOTICE_VERSION).toBe(4);
     expect(snapshot).toMatchObject({
       terminalInputMode: "direct",
       theme: "light",
@@ -610,8 +617,6 @@ describe("palette", () => {
       for (const name of named) if (ratio(rgba(colors[name]!)[0], rgba(colors.background)[0]) < 4.5) failures.push(`${theme}/${palette} ${name} ${colors[name]} on ${colors.background}`);
     }
     expect(failures).toEqual([]);
-    expect(terminalMinimumContrast("light")).toBe(4.5);
-    expect(terminalMinimumContrast("dark")).toBe(1);
   });
 
   // the cursor block is a shape, not text: the 3:1 of a non-text indicator, on every palette's background

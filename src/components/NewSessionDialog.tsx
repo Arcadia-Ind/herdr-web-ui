@@ -92,7 +92,8 @@ export function NewSessionDialog({ open, defaultCwd, tab = null, onClose, onCrea
   const prefillRef = useRef(prefill);
   prefillRef.current = prefill;
 
-  useEffect(() => {
+  // The previous launch may have left disabled fields: reset them before the opening paint.
+  useLayoutEffect(() => {
     if (!open) return;
     const filled = prefillRef.current;
     setCwd(filled?.cwd ?? defaultCwdRef.current ?? "");
