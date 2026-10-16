@@ -498,10 +498,13 @@ One set for both themes: the card is island black wherever it shows.
 ### Button (`.btn`, `.icon-button`)
 - `.btn` is a medium text control. Variants: neutral, `.btn-primary`, `.btn-danger`, `.btn-ghost`.
   Primary uses `--primary`; danger uses danger tint plus blocked border; ghost removes fill/edge.
-  A destructive action that asks twice (Settings → Phone & devices, Revoke) is a ghost button in
-  `--status-blocked` text from its first state (`.devices-revoke`), and takes `.btn-danger` only
-  while it asks to confirm. A trust decision (the SSH host key) states its consequence in a hint
-  above Reject and Trust.
+  A destructive action that asks twice (Settings → Phone & devices, Revoke) is a neutral
+  `.icon-button` (the trash glyph, named "Revoke {name}") at rest and becomes `.btn-danger` with
+  its "Revoke?" label only while it asks to confirm; the same element through both steps, so focus
+  stays on it. A trust decision (the SSH host key) shows the fingerprint to compare
+  (`.machine-fingerprint`: `--font-mono`, `--fs-md`, `--text-strong`, under a dim "Fingerprint of
+  {host}" label) over one sentence, "Trust it only if it matches the fingerprint shown on the PC.";
+  ssh's own words wait behind a Show SSH output fold, and no status box sits above the question.
 - `.icon-button` is a square unlabeled visual control with mandatory `aria-label`; `.is-outlined`
   adds the border. Both families use `--control-h`, `--radius-md`, focus ring, hover and disabled.
 - Coarse pointers grow controls to `--touch-target`.
@@ -1471,7 +1474,13 @@ One set for both themes: the card is island black wherever it shows.
   for five or more, a stepper (minus, value in `--font-mono`, plus, in one bordered well) and a
   text field; inside a card they sit on `--bg-input`. On a phone a control that needs the line
   (three or more segments, a text field, or a long sentence above it) goes under its label at
-  the card's width, its segments sharing it equally; the rest stay on the label's line.
+  the card's width, its segments sharing it equally; the rest stay on the label's line. A
+  condition that applies right now (Keep screen on without HTTPS) is one more line under the
+  sentence, in `--text` (`.settings-condition`), and absent otherwise. A block's explanation is
+  one dim sentence at rest with an accent "Details" word after a middle dot (`.settings-details`,
+  a `details` whose `summary` is the sentence); the conditions and exceptions open under it. On
+  coarse pointers an invisible expander gives that line the touch target without changing its
+  height.
 - Terminal keeps Key bar as a compact description and Edit key bar button. That button opens
   a detail screen in the same dialog with its own scroll body and a Back to settings control.
   Back or Escape returns to the Terminal page's scroll position and focuses Edit key bar;
