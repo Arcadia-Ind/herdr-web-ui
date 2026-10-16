@@ -172,6 +172,7 @@ export const ZH: Record<string, string> = {
   "live": "已连接",
   "disconnected": "已断开",
   "reconnecting": "正在重连",
+  "connecting": "正在连接",
   "herdr offline": "herdr 离线",
   "Browse files": "浏览文件",
   "Copy link": "复制链接",
@@ -576,6 +577,7 @@ export const ZH: Record<string, string> = {
 
   // ---- composer ----
   "Reconnecting… message held here, never queued": "正在重连… 消息保留在此处，不会加入队列",
+  "Connecting… message held here, never queued": "正在连接… 消息保留在此处，不会加入队列",
   "Message {agent}…": "给 {agent} 发消息…",
   "Sent as it was. Your changes made while it was sending stayed here and were not sent.": "已按原内容发送。发送期间所做的修改保留在此处，未被发送。",
   "Message composer": "消息输入框",

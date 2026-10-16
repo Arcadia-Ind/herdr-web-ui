@@ -74,6 +74,11 @@ const RELEASE_AFTER_MS = 1000;
 // off at its split's edge
 const inUse = (): boolean => document.visibilityState === "visible" && document.hasFocus();
 
+/** The PC sockets this page has been connected to (lib/machineSession.ts keeps one per PC, across pane
+    views and terminal mounts): not connected on one of them, a terminal is reconnecting; on any other, it
+    is connecting for the first time. The words say which (here, ChatView and the header's chip). */
+const connectedSockets = new WeakSet<HerdrSocket>();
+
 /** A failure as one line: the plain sentence, then what the server or the browser said. */
 const plainError = (cause: unknown): string => {
   const failure = userErrorMessage(cause);
@@ -133,8 +138,9 @@ export interface PaneTerminalProps {
   role?: ClientRole;
   /** Fires with the server-confirmed role (the header toggle shows it). */
   onRoleAck?: (mode: ClientRole) => void;
-  /** Fires on every change of the socket's connected state (the header shows it). */
-  onConnectionChange?: (connected: boolean) => void;
+  /** Fires on every change of the socket's connected state (the header shows it). `connectedBefore`: the
+   *  socket has been connected on this page before, so a connection it waits for is a reconnect, not the first. */
+  onConnectionChange?: (connected: boolean, connectedBefore: boolean) => void;
   /** Every server frame also reaches App: it merges pane-status and schedules refetches. */
   onServerMessage?: (message: ServerMessage) => void;
 }
@@ -242,6 +248,9 @@ export function PaneTerminal({
   const onServerMessageRef = useRef(onServerMessage);
   const onRoleAckRef = useRef(onRoleAck);
   const [connected, setConnected] = useState(false);
+  /** the socket has been connected on this page before (connectedSockets): not connected, this terminal, its
+   *  chat and the header say Reconnecting; before the first connection they say Connecting */
+  const [connectedBefore, setConnectedBefore] = useState(false);
   const pendingScopeRef = useRef<string | null>(null);
   /** The PC session's epoch: a receipt belongs to the connection on which its request left. */
   const pendingEpochRef = useRef(0);
@@ -512,8 +521,10 @@ export function PaneTerminal({
   onRoleAckRef.current = onRoleAck;
 
   useEffect(() => {
-    if (active) onConnectionChangeRef.current?.(connected);
-  }, [connected, active]);
+    if (connected && socketRef.current !== null) connectedSockets.add(socketRef.current);
+    if (connected && !connectedBefore) setConnectedBefore(true);
+    if (active) onConnectionChangeRef.current?.(connected, connectedBefore || connected);
+  }, [connected, connectedBefore, active]);
 
   useEffect(() => {
     if (active) onRoleAckRef.current?.(observing ? "observe" : "interact");
@@ -1088,6 +1099,8 @@ export function PaneTerminal({
     pendingScopeRef.current = session.scope;
     pendingEpochRef.current = session.epoch;
     socketRef.current = socket;
+    // a socket this page was connected to before this mount (a switch back to the PC): a wait is a reconnect
+    setConnectedBefore(connectedSockets.has(socket));
     let outputGeneration = 0;
     let deferredAttach = false;
     const off = session.on((message, sent) => {
@@ -2789,7 +2802,7 @@ export function PaneTerminal({
         )}
         {paneId !== null && !chatView && !ended && !connected && (
           <div className="terminal-banner terminal-banner-warning" role="status">
-            {t("Reconnecting to herdr web ui…")}
+            {t(connectedBefore ? "Reconnecting to herdr web ui…" : "Connecting to herdr web ui…")}
             {/* one line, cut with an ellipsis: a command is never broken inside a word; the title holds it whole */}
             {draft.text.length > 0 && <span className="draft-held" title={draft.text}> {t("Input held:")} <code>“{draft.text}”</code></span>}
           </div>
@@ -2879,6 +2892,7 @@ export function PaneTerminal({
             onTerminalOutput={onTerminalOutput}
             sentKey={chatSent}
             connected={connected}
+            connectedBefore={connectedBefore}
             ended={ended}
             agent={agent}
             agentStatus={agentStatus}
@@ -3003,6 +3017,7 @@ export function PaneTerminal({
           backgroundWait={backgroundWait}
           metadata={chatMetadata?.pane === paneId ? chatMetadata.value : null}
           connected={connected && !held}
+          connectedBefore={connectedBefore}
           answerHint={answering === null ? null
             : pendingAnswer?.promptId === answering.id ? t("Confirm your answer in the card above, or type another…") : answerHint(answering)}
           // no suggestion under any card, a fallback or queued one included

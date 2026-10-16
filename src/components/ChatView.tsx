@@ -112,6 +112,9 @@ export interface ChatViewProps {
   /** bumped when a composer message goes out, before the transcript holds it */
   sentKey?: number;
   connected: boolean;
+  /** the socket has been connected on this page before: not connected, the footer says Reconnecting…, else
+   *  Connecting… (omitted, as the fixtures do, a wait reads as the first connection) */
+  connectedBefore?: boolean;
   ended: boolean;
   agent: string | null;
   agentStatus?: AgentStatus;
@@ -717,7 +720,7 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
 }
 
 // the app re-renders on every pane-status and poll; an unchanged transcript sits those out
-export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
+export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, connectedBefore = false, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, title = null }: ChatViewProps) {
   const t = useT();
   const { fetchPaneConversation, peekPaneConversation, fetchPanePromptState, fetchPaneTranscript } = useMachineApi();
   const { settings } = useSettings();
@@ -1376,10 +1379,10 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
   </>;
   // the chat's own waits are live regions in the footer from the view's first render, clipped while
   // empty (never display: none); their words land a frame after it (lib/useAnnouncedText.ts)
-  const reconnectingWords = useAnnouncedText(!ended && !connected ? t("Reconnecting…") : null);
+  const connectionWords = useAnnouncedText(!ended && !connected ? t(connectedBefore ? "Reconnecting…" : "Connecting…") : null);
   const loadingWords = useAnnouncedText(!loaded && error === null ? t("Loading conversation…") : null);
   const footer = <>
-      <p className={reconnectingWords === null ? "visually-hidden" : "chat-inline-state"} role="status">{reconnectingWords}</p>
+      <p className={connectionWords === null ? "visually-hidden" : "chat-inline-state"} role="status">{connectionWords}</p>
       {error !== null && <p className="chat-inline-state chat-inline-error" role="alert">{errorStatus === 401 ? t("locked — the token gate is asking again") : <>{error.message}{error.detail !== null && <><br /><code>{error.detail}</code></>}</>}</p>}
       <p className={loadingWords === null ? "visually-hidden" : "chat-inline-state"} role="status">{loadingWords}</p>
       {loaded && error === null && agent === "grok" && state.source !== "conversation" && <p className="chat-inline-state" role="status">{t("Grok chat is unavailable. Open Terminal to see activity and tool calls.")}</p>}

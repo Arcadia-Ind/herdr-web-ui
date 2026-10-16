@@ -165,7 +165,8 @@ function HeaderNote({ note }: { note: string | null }) {
 
 /** The connecting shell's one sidebar line: the same announced status as every other (lib/useAnnouncedText.ts). */
 function ConnectingNote() {
-  const shown = useAnnouncedText("Connecting…");
+  const t = useT();
+  const shown = useAnnouncedText(t("Connecting…"));
   return <p className={shown === null ? "visually-hidden" : "tree-state"} role="status">{shown}</p>;
 }
 
@@ -452,6 +453,9 @@ export function App() {
   // the dialog makes a tab in this workspace instead of a workspace, while set
   const [newTab, setNewTab] = useState<NewTabTarget | null>(null);
   const [connected, setConnected] = useState(false);
+  /** the active terminal's socket has been connected on this page before (PaneTerminal reports it): not
+   *  connected, the chip says reconnecting; before this page's first connection to the PC, connecting */
+  const [connectedBefore, setConnectedBefore] = useState(false);
   // the active slot's pane could not be drawn: no terminal is attached there to say so itself
   const paneLost = useCallback(() => setConnected(false), []);
   const [outputStopped, setOutputStopped] = useState(false);
@@ -749,7 +753,7 @@ export function App() {
     // Only another PC mounts a new terminal (and socket), which reports its own state. A pane
     // on the same PC keeps the connected socket, which never reports again: resetting here
     // left the header on "reconnecting" after every pane switch.
-    if (machineId !== selectedMachineRef.current) setConnected(false);
+    if (machineId !== selectedMachineRef.current) { setConnected(false); setConnectedBefore(false); }
     // the active half alone takes the pick, whatever the other half shows (lib/split.ts)
     setSelectedMachineId(machineId); setSelectedPaneId(paneId); setAutoSelected(false); setDrawerOpen(false);
     setOutputStopped(false);
@@ -996,7 +1000,7 @@ export function App() {
     const current: SplitTarget | null = selectedPaneId === null ? null : { machineId: selectedMachineId, paneId: selectedPaneId };
     const after: SplitSlot = next ? next.active : was && sameTarget(select, was.other) ? otherSlot(was.active) : was ? was.active : soloSlot;
     const before = was ? (was.active === after ? current : was.other) : after === soloSlot ? current : null;
-    if (before === null || before.machineId !== select.machineId) setConnected(false);
+    if (before === null || before.machineId !== select.machineId) { setConnected(false); setConnectedBefore(false); }
     if (next === null) endSplit(after); else setSplit(next);
     setSelectedMachineId(select.machineId); setSelectedPaneId(select.paneId); setAutoSelected(keepFocus); setOutputStopped(false);
     storeSelection(select.machineId, select.paneId);
@@ -1213,7 +1217,7 @@ export function App() {
   const bellVisible = notifications === "default" || notifications === "granted" || settings.alertInApp;
   // the menu's button carries a dot while alerts are off here: the one state of the menu worth a glance
   const alertsOffDot = bellVisible && !bell.on;
-  const connWord = t(connected ? "live" : outputStopped ? "disconnected" : "reconnecting");
+  const connWord = t(connected ? "live" : outputStopped ? "disconnected" : connectedBefore ? "reconnecting" : "connecting");
   const crumb = selectedPane && selectedTitle !== null
     ? headerCrumb({ machine: selectedMachine?.name ?? selectedMachineId, workspace: selectedWorkspace?.label ?? selectedPane.workspace_id, title: selectedTitle, cwd: selectedPane.cwd })
     : null;
@@ -1643,7 +1647,7 @@ export function App() {
                         terminalFontFamily={settings.terminalFontFamily}
                         theme={resolvedTheme}
                         palette={resolvedPalette}
-                        onConnectionChange={active && itemActive ? (next) => { setConnected(next); if (next) setOutputStopped(false); } : undefined}
+                        onConnectionChange={active && itemActive ? (next, before) => { setConnected(next); setConnectedBefore(before); if (next) setOutputStopped(false); } : undefined}
                         onServerMessage={active && itemActive ? handleServerMessage : undefined}
                       />
                     </OpenFileContext.Provider>} />
