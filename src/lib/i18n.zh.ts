@@ -708,7 +708,9 @@ export const ZH: Record<string, string> = {
   "Held input discarded": "已丢弃保留的输入",
   "Reconnecting to herdr web ui…": "正在重新连接 herdr web ui…",
   "Input held:": "保留的输入：",
-  "View only — the operator’s screen size is untouched": "仅查看 — 操作者的屏幕尺寸保持不变",
+  "Send held input": "发送保留的输入",
+  "Discard held input": "丢弃保留的输入",
+  "View only": "仅查看",
   "Terminal text size {px} px": "终端文字大小 {px} px",
 
   // ---- install help ----
