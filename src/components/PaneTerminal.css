@@ -284,6 +284,9 @@
   overflow-wrap: normal;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* takes the pointer back from the pass-through column, as a banner's action does: a title only
+     shows for an element the pointer can reach */
+  pointer-events: auto;
 }
 
 .draft-held code {
