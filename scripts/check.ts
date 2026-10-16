@@ -39,6 +39,7 @@ import { availableParallelism, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { finished } from "node:stream/promises";
 import { DISPOSABLE_CONFIG_ENV, DISPOSABLE_CONFIG_FILE } from "./disposable-config.ts";
+import { testShellEnv } from "./test-shell.ts";
 import {
   artifactIdentity,
   artifactUnchangedAfterBuild,
@@ -156,6 +157,7 @@ export function isolate(base: Record<string, string | undefined>, kept: string |
   // not what names the herdr this was started from (a pane of the user's): its socket, its pane
   for (const [name, value] of Object.entries(base)) if (value !== undefined && !LIVE_HERDR.includes(name)) env[name] = value;
   Object.assign(env, {
+    ...testShellEnv,
     XDG_CONFIG_HOME: config,
     [DISPOSABLE_CONFIG_ENV]: config,
     XDG_STATE_HOME: join(dir, "state"),
