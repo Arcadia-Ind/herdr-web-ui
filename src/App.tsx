@@ -151,13 +151,15 @@ function SlotSessions({ slot, machineIds, children }: { slot: SplitSlot; machine
 
 /** The header's note. Its status is in the header from the header's first render, clipped while empty
     (never display: none, as the connection chip), and its words land a frame after the box, even the
-    ones a page opens with (lib/useAnnouncedText.ts). */
+    ones a page opens with (lib/useAnnouncedText.ts). Its sentence is cut like the title it stands in
+    for, under its own class: only the pane title carries .context-title-text, which the browser
+    checks measure (scripts/mobile-tabs-regression.ts). */
 function HeaderNote({ note }: { note: string | null }) {
   const shown = useAnnouncedText(note);
   return (
     <div className={shown === null ? "visually-hidden" : "context"}>
       <span className={shown === null ? undefined : "pill header-note"} role="status" style={{ minWidth: 0 }}>
-        <span className="context-title-text">{shown}</span>
+        <span className="header-note-text">{shown}</span>
       </span>
     </div>
   );

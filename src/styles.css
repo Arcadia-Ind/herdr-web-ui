@@ -552,6 +552,13 @@ html:is(:lang(ja), :lang(zh)) body {
   line-break: auto;
 }
 
+/* The two boxes' placeholders are interface copy, not typed text: Korean keeps their words whole
+   too ("넣지 않습니다", never "넣지 않 / 습니다"). The pseudo-element alone takes keep-all, so the box
+   itself, what the user types in it, and the code and terminal subtrees keep the reset above. */
+html:lang(ko) :is(.composer-text, .terminal-input-text)::placeholder {
+  word-break: keep-all;
+}
+
 /* A failure's second line quotes what the PC or the browser said (lib/userError.ts): a sentence,
    often a translated one, so it takes the interface face. The mono stack has no Hangul: Korean set
    in it gets a letter-wide space between words and a period set off from its word. */
@@ -839,7 +846,10 @@ button {
   letter-spacing: var(--tracking-tight);
 }
 
-.context-title-text {
+/* the header note's sentence (.header-note-text, App.tsx) is cut like the title it stands in for; its
+   own class keeps .context-title-text on the pane title alone (the browser checks measure it) */
+.context-title-text,
+.header-note-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
