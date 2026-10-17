@@ -38,6 +38,7 @@ describe("Chat Highlights: parsed prose and prompt matching", () => {
     const a = assistant("Visible answer");
     expect(matchingChatPrompts([a]).get(a)).toBeNull();
     expect(copyChatExchange(null, "Visible answer", labels)).toBeNull();
+    expect(copyChatExchange(assistant("Not a user prompt"), "Visible answer", labels)).toBeNull();
     const earlier = user("Loaded later");
     expect(matchingChatPrompts([earlier, a]).get(a)).toBe(earlier);
   });

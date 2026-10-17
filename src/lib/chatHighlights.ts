@@ -34,7 +34,7 @@ export function matchingChatPrompts(turns: readonly ConversationTurn[]): Map<Con
 
 export type ChatPromptState = "available" | "missing" | "empty";
 export function chatPromptState(prompt: ConversationTurn | null): ChatPromptState {
-  return prompt === null ? "missing" : chatProse(prompt).trim() ? "available" : "empty";
+  return prompt === null || prompt.role !== "user" ? "missing" : chatProse(prompt).trim() ? "available" : "empty";
 }
 
 /** The prompt comes only from the matching parsed user turn, not a scan or the current composer. */
