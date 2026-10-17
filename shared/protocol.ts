@@ -7,6 +7,15 @@
  * types that quietly disagree with the server.
  */
 
+/** Read-only catalogs and batched thread summaries; no configuration documents are returned.
+ * GET /api/themes -> ThemeCatalog (installed local colors)
+ * GET /api/workspace/projects -> ProjectCatalog (registry bound to this bridge's socket)
+ * GET /api/workspace/diff/summaries?pane_ids=a,b -> ThreadDiffBatch (at most eight panes)
+ * Summary counts compare the recorded thread worktree with HEAD, including staged changes.
+ * Untracked and binary files are reported as partial counts, never as a clean worktree.
+ */
+export type { ThemeCatalog, InstalledTheme, ProjectCatalog, HerdrProject, ProjectThread, ThreadDiffSummary, ThreadDiffBatch } from "./customization.ts";
+
 export type {
   AgentInfo,
   AgentSessionInfo,

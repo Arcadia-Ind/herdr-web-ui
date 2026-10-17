@@ -810,3 +810,14 @@ export async function saveVoiceConfig(update: VoiceConfigUpdate): Promise<VoiceS
   if (!response.ok) throw await errorFrom("/api/voice/config", response);
   return (await response.json()) as VoiceStatus;
 }
+
+/** Local installed colors; no native theme or layout setting is changed. */
+export async function fetchInstalledThemes(): Promise<import("../../shared/protocol.ts").ThemeCatalog> {
+  return getJson("/api/themes");
+}
+export async function fetchProjects(machineId: string, signal?: AbortSignal): Promise<import("../../shared/protocol.ts").ProjectCatalog> {
+  return getJson(machinePath(machineId, "workspace/projects"), { signal });
+}
+export async function fetchThreadDiffs(machineId: string, ids: string[], signal?: AbortSignal): Promise<import("../../shared/protocol.ts").ThreadDiffBatch> {
+  return getJson(machinePath(machineId, "workspace/diff/summaries?pane_ids=" + encodeURIComponent(ids.join(","))), { signal: signal ?? AbortSignal.timeout(30_000) });
+}

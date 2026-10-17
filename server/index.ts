@@ -40,6 +40,8 @@ import { createDirectory, listDirectories } from "./directories.ts";
 import { claudeSessionTempDir } from "./claude-store.ts";
 import { fileResponse, findFile, crossSiteFileRead } from "./file-view.ts";
 import { repoDiffResponse } from "./repo-diff.ts";
+import { cachedCatalog, installedProjects, installedThemes, type CatalogPaths } from "./local-catalog.ts";
+import { ThreadDiffCache, threadDiffBatch } from "./thread-diffs.ts";
 import {
   agentManifests,
   agentPrompt,
@@ -444,6 +446,8 @@ export interface ServerInstance {
 
 export function createServer(
   options: {
+    /** Tests pass isolated catalogs and a synthetic pane roster. */
+    customization?: { paths: CatalogPaths; snapshot?: () => Promise<SessionSnapshot>; diffs?: ThreadDiffCache };
     port?: number;
     hostname?: string;
     token?: string;
@@ -569,6 +573,9 @@ export function createServer(
   const typedEscape = new Set<string>();
   /** per pane, the WS keys still waiting at the tail of the pane's queue: later keys of the same sender join them */
   const waitingKeys = new Map<string, { keys: string[]; client: unknown; origin: unknown; pty: unknown; claim: unknown; roles: number; run: Promise<unknown> | null; sent: boolean }>();
+  const readThemes = cachedCatalog(() => installedThemes(options.customization?.paths), 60_000);
+  const readProjects = cachedCatalog(() => installedProjects(options.customization?.paths));
+  const threadDiffs = options.customization?.diffs ?? new ThreadDiffCache();
   const hostname = options.hostname ?? process.env["HOST"] ?? "127.0.0.1";
   /** Empty token = gate disabled; every route then behaves exactly as it did before auth existed. */
   const token = options.token ?? process.env["HERDR_WEB_TOKEN"] ?? "";
@@ -2049,6 +2056,20 @@ export function createServer(
       if (pathname === "/api/access") {
         if (request.method !== "GET") return badRequest("method_not_allowed", "use GET");
         return jsonResponse(await remoteAccess(bunServer.port ?? DEFAULT_PORT), 200, { "cache-control": "no-store" });
+      }
+
+      if (pathname === "/api/themes" || pathname === "/api/workspace/projects" || pathname === "/api/workspace/diff/summaries") {
+        if (request.method !== "GET") return badRequest("method_not_allowed", "use GET");
+        if (request.headers.get("sec-fetch-site") === "cross-site") return jsonResponse({ error: { code: "cross_site", message: "Read local catalogs from this app" } }, 403);
+        try {
+          if (pathname === "/api/themes") return jsonResponse(await readThemes());
+          const catalog = await readProjects();
+          if (pathname === "/api/workspace/projects") return jsonResponse(catalog);
+          const ids = (url.searchParams.get("pane_ids") ?? "").split(",");
+          if (ids.length > 8 || ids.some((id) => !/^w[0-9]+:p[0-9]+$/.test(id)) || new Set(ids).size !== ids.length) return badRequest("invalid_panes", "name one to eight distinct panes");
+          const snapshot = await (options.customization?.snapshot ?? sessionSnapshot)();
+          return jsonResponse(await threadDiffBatch(catalog, snapshot, ids, threadDiffs));
+        } catch { return jsonResponse({ error: { code: "catalog_unavailable", message: "The local catalog could not be read" } }, 503); }
       }
 
       if (pathname === "/api/session") {
