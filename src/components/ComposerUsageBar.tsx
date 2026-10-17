@@ -19,7 +19,7 @@ export function ComposerUsageReadings({ items, label: groupLabel, stateLabel }: 
   stateLabel: (state: UsageBarItem["state"]) => string;
 }) {
   return (
-    <div className="composer-usage" role="group" aria-label={groupLabel}>
+    <div className="composer-usage-bar" role="group" aria-label={groupLabel}>
       <div className="composer-usage-strip">
         {items.map((item) => {
           const state = stateLabel(item.state);

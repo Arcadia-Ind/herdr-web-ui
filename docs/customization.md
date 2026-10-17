@@ -27,3 +27,15 @@ The question-mark count names untracked files. An asterisk means that some lines
 The client sends batches of at most eight visible thread IDs. The server permits only current registered thread identities. It derives directories from metadata, shares in-flight reads, runs at most two repository listings at once, and keeps at most 128 cached directories for fifteen seconds. Existing git byte and time limits remain in effect.
 
 The existing authentication, watch-device, same-origin, and cross-site controls still apply. Browser checks use fictional data and temporary browser contexts.
+
+## Composer usage
+
+The strip above the message box shows recorded context use, cache reads, and five-hour and weekly account limits. It is available at narrow widths and follows the pane's PC. The existing Show usage setting controls its visibility.
+
+Request counters are folded in the existing transcript metadata reader. No second transcript scan is needed. Codex uses the latest request's reported total and context limit. Claude adds uncached input, cache reads, and cache creation; its ordinary transcript does not establish a context limit. Model names do not supply a missing limit. Unsupported sources and absent counters remain unavailable.
+
+Cache percentage is the last request's cache reads divided by all input tokens. It is separate from cumulative session billing. Expand each item to see its denominator and observation time. New models, compaction, context clears, and replacement transcripts clear old request counters.
+
+Account observations use the existing cached usage service for that PC. One visible account can supply a reference. Several accounts require an explicit Settings order. The reference does not prove which account the pane uses. Without a selected reference, recorded transcript limits can be shown with that same identity limit. Codex limits need the actual period before they can be called five-hour or weekly. Missing periods remain unavailable.
+
+Unknown times remain unknown. Request observations older than thirty minutes and account observations older than five minutes are marked stale. A passed reset time does not set a counter to zero. A failed or rate-limited refresh retains its last observation with a separate state.

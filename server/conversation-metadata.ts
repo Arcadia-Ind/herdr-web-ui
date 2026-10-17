@@ -1,5 +1,6 @@
 import { isContextClear, piMessage } from "./transcript-records.ts";
 import { piContextWindow } from "./pi-models.ts";
+import { foldSessionUsage } from "./session-usage.ts";
 import type { ConversationMetadata, ConversationResponse } from "../shared/protocol.ts";
 
 type RecordValue = Record<string, unknown>;
@@ -44,6 +45,11 @@ export function parseConversationMetadata(text: string, source: ConversationResp
   for (const line of text.split("\n")) {
     let entry: RecordValue;
     try { entry = record(JSON.parse(line)); } catch { continue; }
+    const usage = foldSessionUsage(metadata.usage, source, entry);
+    // Keep the additive field absent until a request reports counters. Once present,
+    // preserve explicit clears so old values cannot survive compaction or a model change.
+    if (metadata.usage !== undefined || usage && (usage.observed_at !== null || usage.context.used !== null
+      || usage.cache.read_tokens !== null || usage.cache.creation_tokens !== null || usage.quota !== null)) metadata.usage = usage;
     if (isContextClear(entry, source)) { metadata.model = null; metadata.reasoning_effort = null; piProvider = null; delete metadata.context; continue; }
     if (source === "grok-transcript") {
       const update = record(record(entry.params).update);

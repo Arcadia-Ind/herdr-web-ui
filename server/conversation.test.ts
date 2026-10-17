@@ -1589,6 +1589,27 @@ it("preserves literal paste lookalikes, partial wrappers and mismatched ids", ()
   expect(unwrapPastes('before\n<pasted_content id="a_1">\r\nfirst\r\n</pasted_content id="a_1">\nafter')).toBe("before\nfirst\nafter");
 });
 
+it("carries request usage through the transcript page cache and clears a replaced transcript", () => {
+  const root = mkdtempSync(join(tmpdir(), "herdr-page-usage-"));
+  const path = join(root, "live.jsonl");
+  const record = (cached: number) => JSON.stringify({ type: "event_msg", timestamp: "2026-10-17T05:00:00Z",
+    payload: { type: "token_count", info: { model_context_window: 200_000,
+      last_token_usage: { input_tokens: 30_000, output_tokens: 1000, total_tokens: 31_000, cached_input_tokens: cached } } } });
+  try {
+    writeFileSync(path, record(10_000) + "\n");
+    const first = transcriptPage("codex-transcript", path);
+    expect(first.metadata.usage?.cache.read_tokens).toBe(10_000);
+    appendFileSync(path, record(20_000) + "\n");
+    const second = transcriptPage("codex-transcript", path);
+    expect(second.metadata.context).toEqual(first.metadata.context);
+    expect(second.metadata.usage?.cache.read_tokens).toBe(20_000);
+    const replacement = join(root, "replacement.jsonl");
+    writeFileSync(replacement, JSON.stringify({ type: "turn_context", payload: { model: "replacement" } }) + "\n");
+    renameSync(replacement, path);
+    expect(transcriptPage("codex-transcript", path).metadata.usage).toBeUndefined();
+  } finally { forgetTranscriptState(); rmSync(root, { recursive: true, force: true }); }
+});
+
 it("incrementally reads one growing Codex task across split UTF-8, partial records and a rewrite", () => {
   const root = mkdtempSync(join(tmpdir(), "herdr-codex-growing-"));
   try {

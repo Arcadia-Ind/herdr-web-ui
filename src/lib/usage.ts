@@ -37,6 +37,12 @@ export function composerUsage(providers: readonly ProviderUsage[], agent: string
   return orderProviders(providers, order).find((usage) => usage.id === providerId && !hidden.includes(usage.key));
 }
 
+/** Multiple accounts need an explicit Settings order; the report's order proves no preference. */
+export function composerAccountReference(providers: readonly ProviderUsage[], agent: string | null, order: readonly string[], hidden: readonly string[]): ProviderUsage | null {
+  const visible = providers.filter((usage) => usage.id === providerForAgent(agent) && !hidden.includes(usage.key));
+  return visible.length === 1 ? visible[0]! : order.map((key) => visible.find((usage) => usage.key === key)).find((usage) => usage !== undefined) ?? null;
+}
+
 /** Plan-wide five-hour session first, then week; scoped limits do not stand in for either. */
 export function statusWindows(usage: ProviderUsage): UsageWindow[] {
   return (["session", "week"] as const)
@@ -120,28 +126,30 @@ export function moveInOrder(shown: readonly string[], saved: readonly string[], 
   return [...next, ...saved.filter((known) => !shown.includes(known))];
 }
 
-export function useUsage(enabled: boolean) {
-  const [report, setReport] = useState<UsageReport | null>(null);
+export function useUsage(enabled: boolean, machineId = "local") {
+  const [sample, setSample] = useState<{ machine: string; report: UsageReport } | null>(null);
+  const [now, setNow] = useState(Date.now);
   const [loading, setLoading] = useState(false);
   const visible = usePageVisible();
   const generation = useRef(0);
 
   const load = useCallback(async (refresh: boolean) => {
     const current = ++generation.current;
+    setNow(Date.now());
     setLoading(true);
     try {
-      const next = await fetchUsage(refresh);
-      if (current === generation.current) setReport((previous) => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
+      const next = await fetchUsage(refresh, machineId);
+      if (current === generation.current) setSample((previous) => previous?.machine === machineId && JSON.stringify(previous.report) === JSON.stringify(next) ? previous : { machine: machineId, report: next });
     } catch { /* offline or restarting: the last report stays */ }
     finally { if (current === generation.current) setLoading(false); }
-  }, []);
+  }, [machineId]);
 
   useEffect(() => {
-    if (!enabled) { generation.current++; setReport(null); setLoading(false); return; }
+    if (!enabled) { generation.current++; setSample(null); setLoading(false); return; }
     if (!visible) return;
     void load(false);
     const timer = setInterval(() => void load(false), POLL_MS);
-    return () => clearInterval(timer);
+    return () => { clearInterval(timer); generation.current++; };
   }, [enabled, visible, load]);
 
   useEffect(() => {
@@ -152,5 +160,5 @@ export function useUsage(enabled: boolean) {
   }, [enabled, load]);
 
   const refresh = useCallback(() => { if (enabled) void load(true); }, [enabled, load]);
-  return { report, loading, refresh };
+  return { report: enabled && sample?.machine === machineId ? sample.report : null, loading, refresh, now };
 }

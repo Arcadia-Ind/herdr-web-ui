@@ -465,7 +465,8 @@ export function PaneTerminal({
     setChatMetadata((previous) => previous?.pane === pane && previous.value?.model === value?.model
       && previous.value?.reasoning_effort === value?.reasoning_effort
       && previous.value?.context?.used === value?.context?.used
-      && previous.value?.context?.window === value?.context?.window ? previous : { pane, value });
+      && previous.value?.context?.window === value?.context?.window
+      && JSON.stringify(previous.value?.usage) === JSON.stringify(value?.usage) ? previous : { pane, value });
   }, []);
   const queueStore = messageQueues;
   const queueOwner = paneId === null ? null : paneStorageId(machineId, paneId);

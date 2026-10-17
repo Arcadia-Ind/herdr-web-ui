@@ -6,7 +6,7 @@ const record = (value: unknown): Row => value !== null && typeof value === "obje
 const count = (value: unknown): number | null => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null;
 const positive = (value: unknown): number | null => (count(value) ?? 0) > 0 ? value as number : null;
 const sum = (...values: (number | null)[]): number | null => values.every((value) => value !== null) ? count(values.reduce<number>((total, value) => total + value!, 0)) : null;
-const modelName = (value: unknown): string | null => typeof value === "string" && value.trim() ? value.trim() : null;
+const modelName = (value: unknown): string | null => typeof value === "string" && value.trim() && !value.startsWith("<") ? value.trim() : null;
 
 function timestamp(value: unknown): string | null {
   const ms = typeof value === "string" ? Date.parse(value) : NaN;
