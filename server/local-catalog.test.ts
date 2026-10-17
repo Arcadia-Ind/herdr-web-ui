@@ -27,6 +27,7 @@ it("rejects palette text and CSS values that are not colors", () => {
   expect(paletteTheme("bad", "bad", "foreground = #ffffff\n")).toBeNull();
   expect(paletteTheme("ok", "ok", palette + "# hpick-override: accent=url(https://invalid)\n")?.colors.accent).toBe("#8080ff");
   expect(themeSections('[auth]\nkey="secret"\n[theme]\nname="ocean"\n[agent]\npassword="secret"')).not.toContain("secret");
+  expect(themeSections('[theme.custom]\ntext="#ffffff"\n[[agents]]\npassword="secret"')).not.toContain("secret");
 });
 
 it("binds projects to the exact session and returns only selected registry fields", async () => {

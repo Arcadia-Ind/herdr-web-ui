@@ -75,7 +75,7 @@ function ThreadRow({ thread, summary, ...props }: Omit<Props, "catalog"> & { thr
   const title = `${thread.id} · ${thread.title} · ${state}`;
   const diffState = !props.online ? t("Disconnected") : !pane ? t("Not running") : !summary ? t("Loading changes…")
     : summary.state === "no-repo" ? t("No repository") : summary.state === "no-directory" ? t("No directory")
-    : summary.state !== "ready" ? t("Changes unavailable") : summary.files === 0 ? t("Clean")
+    : summary.state !== "ready" ? t("Changes unavailable") : summary.files === 0 && !summary.partial ? t("Clean")
     : `+${summary.additions} −${summary.deletions}${summary.untracked ? " · ?" + summary.untracked : ""}${summary.partial ? " *" : ""}`;
   const diffTitle = t("Working tree vs HEAD") + " · " + diffState + (summary?.partial ? " · " + t("Counts exclude unknown lines") : "");
   return <li className="project-thread" data-thread={thread.id}>

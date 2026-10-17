@@ -30,7 +30,7 @@ export function themeSections(text: string): string {
   let selected = false;
   return text.split(/\r?\n/).filter((line) => {
     const section = line.match(/^\s*\[([^\]]+)\]\s*(?:#.*)?$/);
-    if (section) selected = section[1] === "theme" || section[1] === "theme.custom";
+    if (line.trimStart().startsWith("[")) selected = section?.[1] === "theme" || section?.[1] === "theme.custom";
     return selected;
   }).join("\n");
 }
