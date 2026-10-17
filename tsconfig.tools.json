@@ -31,7 +31,8 @@
     "scripts/repo-diff-fixture.tsx",
     "scripts/lan-exposure-notice-regression.ts",
     "scripts/application-paging-regression.ts",
-    "scripts/pane-paging-demo-regression.ts"
+    "scripts/pane-paging-demo-regression.ts",
+    "scripts/project-sidebar-demo-regression.ts"
   ],
   "include": []
 }

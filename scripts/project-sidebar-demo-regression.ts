@@ -11,6 +11,13 @@ const app = mkdtempSync(join(tmpdir(), "herdr-project-sidebar-"));
 const evidence = process.env["UI_EVIDENCE_DIR"];
 const fixture = `(() => {
   const original = window.fetch.bind(window);
+  const observed = new Date().toISOString();
+  window.usageFixtureCacheRead = 12000;
+  window.fixtureSockets = [];
+  const DemoSocket = window.WebSocket;
+  window.WebSocket = class extends DemoSocket {
+    constructor(url) { super(url); window.fixtureSockets.push(this); }
+  };
   window.customizationReads = [];
   const json = (value) => new Response(JSON.stringify(value), { headers: { "content-type": "application/json" } });
   window.fetch = async (input, init) => {
@@ -36,6 +43,16 @@ const fixture = `(() => {
       "w1F:p1": { state: "ready", additions: 0, deletions: 0, untracked: 0, files: 0, partial: false },
       "w1E:p1": { state: "no-repo", additions: 0, deletions: 0, untracked: 0, files: 0, partial: false }
     } });
+    if (path === "/api/pane/conversation") {
+      const response = await original(input, init);
+      const body = await response.json();
+      if (body.source !== "codex-transcript") return json(body);
+      return json({ ...body, metadata: { ...body.metadata, context: { used: 31000, window: 200000 }, usage: {
+        provider: "codex", model: body.metadata.model, observed_at: observed,
+        context: { used: 31000, limit: 200000, basis: "total" },
+        cache: { input_tokens: 30000, read_tokens: window.usageFixtureCacheRead, creation_tokens: null }, quota: null
+      } } });
+    }
     return original(input, init);
   };
 })();`;
@@ -54,16 +71,30 @@ try {
   try {
     const browser = await chromium.launch({ executablePath: chromePath(), headless: true });
     try {
-      for (const width of [1280, 390]) {
+      for (const width of [1280, 390, 320]) {
         const context = await browser.newContext({ viewport: { width, height: 900 }, locale: "en-US" });
         try {
           await context.addInitScript(() => {
-            if (!localStorage.getItem("herdr-web-ui:settings")) localStorage.setItem("herdr-web-ui:settings", JSON.stringify({ language: "en", herdrTheme: "fixture-night" }));
+            if (!localStorage.getItem("herdr-web-ui:settings")) localStorage.setItem("herdr-web-ui:settings", JSON.stringify({ language: "en", herdrTheme: "fixture-night", showUsage: true }));
           });
           const page = await context.newPage();
           const errors: string[] = [];
           page.on("pageerror", (error) => errors.push(error.message));
           await page.goto(`http://127.0.0.1:${server.port}/?pane=w1D%3Ap1`);
+          const usage = page.locator(".composer-usage-bar");
+          await page.waitForFunction(() => document.querySelector(".composer-usage-bar")?.textContent?.includes("12K"));
+          assert.match(await usage.locator(".composer-usage-item").first().innerText(), /31K \/ 200K · 15.5%/);
+          await usage.locator("summary").first().click();
+          assert.match(await usage.locator(".composer-usage-detail").first().innerText(), /Last request input and output/);
+          await usage.locator("summary").first().click();
+          await page.evaluate(() => {
+            const fixture = window as unknown as { usageFixtureCacheRead: number; fixtureSockets: { push: (message: unknown) => void }[] };
+            fixture.usageFixtureCacheRead = 24000;
+            for (const socket of fixture.fixtureSockets) socket.push({ type: "conversation-changed", pane_id: "w1D:p1", signature: "fixture-cache-only" });
+          });
+          await page.waitForFunction(() => document.querySelector(".composer-usage-bar")?.textContent?.includes("24K"));
+          assert.match(await usage.locator(".composer-usage-item").nth(1).innerText(), /80%/);
+          assert.equal(await usage.locator("summary").count(), 4);
           const openDrawer = async () => { if (width < 769 && !await page.locator(".sidebar").evaluate((node) => node.classList.contains("is-open"))) await page.getByRole("button", { name: "Open workspace list", exact: true }).click(); };
           await openDrawer();
           const group = page.locator('.project-group[data-project="demo-project"]');
@@ -111,7 +142,7 @@ try {
           if (evidence) await page.screenshot({ path: join(evidence, `project-sidebar-${width}-expanded.png`) });
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
           assert.deepEqual(errors, []);
-          console.log(`PASS ${width}px: groups, selection, folds, compact labels, themes, diff target and layout`);
+          console.log(`PASS ${width}px: groups, selection, folds, compact labels, themes, diff target, usage updates and layout`);
         } finally { await context.close(); }
       }
     } finally { await browser.close(); }
