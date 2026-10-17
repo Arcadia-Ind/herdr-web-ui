@@ -70,6 +70,7 @@ const fixture = `(() => {
       "w1F:p1": { state: "ready", additions: 0, deletions: 0, untracked: 0, files: 0, partial: false },
       "w1E:p1": { state: "no-repo", additions: 0, deletions: 0, untracked: 0, files: 0, partial: false }
     } });
+    if (path === "/api/pane/prompt" && new URLSearchParams(location.search).has("quiet_prompt")) return json({ prompt: null });
     if (path === "/api/pane/conversation") {
       const response = await original(input, init);
       const body = await response.json();
@@ -98,7 +99,7 @@ async function checkHighlights(page: Page, width: number): Promise<void> {
   const mode = page.getByRole("button", { name: "Text only", exact: true });
   await mode.waitFor();
   if (await mode.getAttribute("aria-pressed") === "true") await mode.click();
-  const answer = page.locator(".chat-turn-assistant").last();
+  const answer = page.locator(".chat-turn-agent").last();
   await answer.getByText("The fixture is ready.", { exact: true }).waitFor();
   const draft = page.locator(".composer-text");
   await draft.fill("My editable draft.  \n");
@@ -162,11 +163,14 @@ try {
     try {
       for (const width of [1280, 390, 320]) {
         const context = await browser.newContext({ viewport: { width, height: 900 }, locale: "en-US", hasTouch: width < 769, isMobile: width < 769 });
+        context.setDefaultTimeout(10_000);
+        context.setDefaultNavigationTimeout(15_000);
         try {
           await context.addInitScript(() => {
             if (!localStorage.getItem("herdr-web-ui:settings")) localStorage.setItem("herdr-web-ui:settings", JSON.stringify({ language: "en", herdrTheme: "fixture-night", showUsage: true }));
           });
           const page = await context.newPage();
+          console.log(`CHECK ${width}px: usage and Highlights`);
           const errors: string[] = [];
           page.on("pageerror", (error) => errors.push(error.message));
           await page.goto(`http://127.0.0.1:${server.port}/?pane=w1D%3Ap1`);
@@ -185,6 +189,7 @@ try {
           assert.match(await usage.locator(".composer-usage-item").nth(1).innerText(), /80%/);
           assert.equal(await usage.locator("summary").count(), 4);
           await checkHighlights(page, width);
+          console.log(`CHECK ${width}px: groups, themes and diffs`);
           const openDrawer = async () => { if (width < 769 && !await page.locator(".sidebar").evaluate((node) => node.classList.contains("is-open"))) await page.getByRole("button", { name: "Open workspace list", exact: true }).click(); };
           await openDrawer();
           const group = page.locator('.project-group[data-project="demo-project"]');
@@ -220,6 +225,7 @@ try {
           await page.getByRole("button", { name: "Close files", exact: true }).click();
           await openDrawer();
           await thread.getByRole("button", { name: "File explorer · Review the web change", exact: true }).click();
+          console.log(`CHECK ${width}px: explorer and history`);
           const explorer = page.locator(".app-explorer-pane .paired-explorer");
           await explorer.getByRole("button", { name: "software", exact: true }).click();
           await explorer.getByRole("button", { name: "src", exact: true }).click();
@@ -228,6 +234,7 @@ try {
           await explorer.locator('.explorer-document[aria-label="software/pseudocode/control.cpp.md"]').waitFor();
           await explorer.getByRole("heading", { name: "Control step", exact: true }).waitFor();
           assert.equal(await explorer.locator(".explorer-document").count(), 2);
+          if (evidence) await page.screenshot({ path: join(evidence, `project-pair-${width}.png`), animations: "disabled" });
           await explorer.getByRole("button", { name: "Hide code", exact: true }).click();
           assert.equal(await explorer.locator(".explorer-document").count(), 1);
           await explorer.getByRole("button", { name: "docs", exact: true }).click();
@@ -279,8 +286,12 @@ try {
           const settingsClose = page.getByRole("button", { name: "Close settings", exact: true });
           if (await settingsClose.count()) await settingsClose.click();
           await openDrawer();
-          if (evidence) await page.screenshot({ path: join(evidence, `project-sidebar-${width}-expanded.png`) });
+          if (evidence) await page.screenshot({ path: join(evidence, `project-sidebar-${width}-expanded.png`), animations: "disabled" });
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+          await page.goto(`http://127.0.0.1:${server.port}/?pane=w1D%3Ap1&quiet_prompt=1`);
+          await page.locator(".chat-turn-agent .chat-highlights-prose").waitFor();
+          await page.locator(".composer-usage-bar").waitFor();
+          if (evidence) await page.screenshot({ path: join(evidence, `project-highlights-${width}.png`), animations: "disabled" });
           await page.goto(`http://127.0.0.1:${server.port}/?pane=w1D%3Ap1&missing_prompt=1`);
           await page.getByText("Matching prompt unavailable — load earlier messages.", { exact: true }).waitFor();
           assert.equal(await page.getByRole("button", { name: "Copy prompt and answer", exact: true }).isDisabled(), true);
@@ -290,6 +301,16 @@ try {
           }
           assert.deepEqual(errors, []);
           console.log(`PASS ${width}px: groups, themes, diffs, usage, explorer, Highlights, pointer copy and layout`);
+        } catch (error) {
+          if (evidence) {
+            mkdirSync(evidence, { recursive: true });
+            const page = context.pages()[0];
+            if (page) {
+              await page.screenshot({ path: join(evidence, `failure-${width}.png`) });
+              writeFileSync(join(evidence, `failure-${width}.txt`), await page.locator("body").innerText());
+            }
+          }
+          throw error;
         } finally { await context.close(); }
       }
     } finally { await browser.close(); }

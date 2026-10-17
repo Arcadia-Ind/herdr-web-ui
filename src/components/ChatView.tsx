@@ -1247,7 +1247,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
     const scroll = (direction: -1 | 1) => {
       const node = scroller.current;
       if (!node) return;
-      const prose = node.querySelector<HTMLElement>(".chat-turn-agent > .markdown, .chat-bubble") ?? node;
+      const prose = node.querySelector<HTMLElement>(".chat-turn-agent > .chat-highlights-prose > .markdown, .chat-bubble") ?? node;
       const style = getComputedStyle(prose);
       const lineHeight = parseFloat(style.lineHeight);
       const rowHeight = Number.isFinite(lineHeight) ? lineHeight : parseFloat(style.fontSize);
