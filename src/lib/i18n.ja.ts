@@ -8,6 +8,20 @@
  * in English. Placeholders in braces keep their English names.
  */
 export const JA: Record<string, string> = {
+  "File explorer is unavailable on this PC.": "このPCではファイルエクスプローラーを利用できません。",
+  "File explorer": "ファイルエクスプローラー",
+  "Read only": "読み取り専用",
+  "Close pair {name}": "{name} のペアを閉じる",
+  "Pseudocode": "擬似コード",
+  "Hide code": "コードを隠す",
+  "Show code": "コードを表示",
+  "Select a file.": "ファイルを選択してください。",
+  "The tab limit has been reached.": "タブ数の上限に達しました。",
+  "Workspace files could not be loaded.": "ワークスペースのファイルを読み込めませんでした。",
+  "Folder list is incomplete.": "フォルダー一覧は不完全です。",
+  "No matching file is available.": "対応するファイルがありません。",
+  "This file has no text preview.": "このファイルにはテキストのプレビューがありません。",
+  "Preview is incomplete.": "プレビューは不完全です。",
   "5h": "5時間",
   "Account reference: {account}. The pane's account is not verified.": "参照アカウント: {account}。このペインのアカウントは未確認です。",
   "Cache creation: {tokens} tokens.": "キャッシュ作成: {tokens} トークン。",

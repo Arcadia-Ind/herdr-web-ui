@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
-import { ChevronDown, ChevronRight, GitCompareArrows } from "lucide-react";
+import { ChevronDown, ChevronRight, FolderOpen, GitCompareArrows } from "lucide-react";
+import type { ExplorerContext } from "../../shared/explorer.ts";
 import type { HerdrProject, ProjectCatalog, ProjectThread, ThreadDiffSummary } from "../../shared/customization.ts";
 import type { SessionSnapshot } from "../../shared/protocol.ts";
 import { useT } from "../lib/i18n.ts";
@@ -17,6 +18,7 @@ interface Props {
   selectedPaneId: string | null;
   onSelect(pane: string): void;
   onChanges(pane: string, directory: string | null): void;
+  onExplore(context: ExplorerContext): void;
 }
 export function ProjectSidebar(props: Props) {
   return <div className="project-list">{props.catalog.projects.map((project) => <ProjectGroup key={project.id} {...props} project={project} />)}</div>;
@@ -45,6 +47,8 @@ function ProjectGroup({ project, ...props }: Props & { project: HerdrProject }) 
         <span className="project-name">{project.name}</span>
         <StatusBadge status={status} compact alwaysVisible />
       </button>
+      <button type="button" className="icon-button" title={t("File explorer") + " · " + project.name} aria-label={t("File explorer") + " · " + project.name} disabled={!props.online || !coordinator}
+        onClick={() => coordinator && props.onExplore({ machine: props.machineId, project: project.id, workspace: coordinator.workspace_id, pane: coordinator.pane_id, thread: null })}><FolderOpen aria-hidden="true" /></button>
     </header>
     <ul className="project-threads" id={listId} hidden={folded}>
       {project.coordinators.filter((row) => projectPane(props.snapshot, row)).map((row) => {
@@ -61,12 +65,12 @@ function ProjectGroup({ project, ...props }: Props & { project: HerdrProject }) 
           <span className="thread-number">{pane.pane_id}</span><span className="thread-title">{displayPaneTitle(pane)}</span><StatusBadge status={props.online ? paneStatus(pane) : "unknown"} compact alwaysVisible />
         </button>
       </li>)}
-      {project.threads.map((thread) => <ThreadRow key={thread.id} {...props} thread={thread} summary={summaries.get(thread.pane_id)} />)}
+      {project.threads.map((thread) => <ThreadRow key={thread.id} {...props} projectId={project.id} thread={thread} summary={summaries.get(thread.pane_id)} />)}
     </ul>
   </section>;
 }
 
-function ThreadRow({ thread, summary, ...props }: Omit<Props, "catalog"> & { thread: ProjectThread; summary?: ThreadDiffSummary }) {
+function ThreadRow({ thread, summary, projectId, ...props }: Omit<Props, "catalog"> & { projectId: string; thread: ProjectThread; summary?: ThreadDiffSummary }) {
   const t = useT();
   const pane = projectPane(props.snapshot, thread);
   const status = props.online && pane ? paneStatus(pane) : "unknown";
@@ -85,5 +89,7 @@ function ThreadRow({ thread, summary, ...props }: Omit<Props, "catalog"> & { thr
     <button type="button" className="thread-diff" disabled={!props.online || !pane} aria-label={t("Changes for {name}", { name: thread.title }) + " · " + diffTitle} title={diffTitle} onClick={() => props.onChanges(thread.pane_id, thread.directory)}>
       <GitCompareArrows aria-hidden="true" /><span className="thread-diff-count">{diffState}</span>
     </button>
+    <button type="button" className="icon-button thread-explore" title={t("File explorer") + " · " + thread.title} aria-label={t("File explorer") + " · " + thread.title}
+      disabled={!props.online || !pane && !thread.directory} onClick={() => props.onExplore({ machine: props.machineId, project: projectId, workspace: thread.workspace_id, pane: thread.pane_id, thread: thread.id })}><FolderOpen aria-hidden="true" /></button>
   </li>;
 }

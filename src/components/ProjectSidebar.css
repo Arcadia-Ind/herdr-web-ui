@@ -25,6 +25,7 @@
   font: var(--fs-xs) var(--font-mono); padding: var(--space-1) var(--space-2);
 }
 .thread-diff svg { width: var(--space-4); height: var(--space-4); }
+.thread-explore { flex: none; margin-bottom: var(--space-1); }
 .project-thread:has([aria-current="page"]) .thread-diff { color: var(--accent); }
 .sidebar-compact-toggle { width: 100%; justify-content: flex-start; min-height: var(--control-h); }
 [data-sidebar-compact="true"] .project-name, [data-sidebar-compact="true"] .thread-title,

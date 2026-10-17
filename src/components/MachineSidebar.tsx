@@ -17,6 +17,7 @@ import { useSettings } from "../lib/settings.ts";
 import { ungroupedSnapshot } from "../lib/projectSidebar.ts";
 import { useProjectCatalogs, type ProjectLoad } from "../lib/useProjectCatalogs.ts";
 import { ProjectSidebar } from "./ProjectSidebar.tsx";
+import type { ExplorerContext } from "../../shared/explorer.ts";
 
 /** The PC header's state word; "connected" is the quiet default and shows as a dot alone, every other state also writes its word under the name. */
 export const STATE_WORD: Readonly<Record<MachineState, string>> = {
@@ -27,7 +28,7 @@ export const STATE_WORD: Readonly<Record<MachineState, string>> = {
   error: "Connection error",
 };
 
-interface Props { machines: Machine[]; selectedMachineId: string; selectedPaneId: string | null; actions: AppActions; onSelect(machineId: string, paneId: string | null): void; onNew(machineId: string): void; onSetup(machine: Machine, update?: boolean): void; onChanges(machineId: string, paneId: string, directory: string | null): void }
+interface Props { machines: Machine[]; selectedMachineId: string; selectedPaneId: string | null; actions: AppActions; onSelect(machineId: string, paneId: string | null): void; onNew(machineId: string): void; onSetup(machine: Machine, update?: boolean): void; onChanges(machineId: string, paneId: string, directory: string | null): void; onExplore(context: ExplorerContext): void }
 export function MachineSidebar(props: Props) {
   const t = useT();
   const { settings, update } = useSettings();
@@ -124,7 +125,7 @@ function MachineGroup({ machine, projects, ...props }: Props & { machine: Machin
     {error && <p className="machine-error" role="alert">{error}</p>}
     {!collapsed && projects?.unavailable && <p className="tree-state" role="status">{t("Projects unavailable")}</p>}
     {!collapsed && projects?.catalog?.partial && <p className="tree-state" role="status">{t("Some project records could not be read")}</p>}
-    {!collapsed && projects?.catalog && <ProjectSidebar machineId={machine.id} catalog={projects.catalog} snapshot={machine.snapshot} online={online} selectedPaneId={props.selectedMachineId === machine.id ? props.selectedPaneId : null} onSelect={(pane) => props.onSelect(machine.id, pane)} onChanges={(pane, directory) => props.onChanges(machine.id, pane, directory)} />}
+    {!collapsed && projects?.catalog && <ProjectSidebar machineId={machine.id} catalog={projects.catalog} snapshot={machine.snapshot} online={online} selectedPaneId={props.selectedMachineId === machine.id ? props.selectedPaneId : null} onSelect={(pane) => props.onSelect(machine.id, pane)} onChanges={(pane, directory) => props.onChanges(machine.id, pane, directory)} onExplore={props.onExplore} />}
     {!collapsed && <div className={online ? "" : "machine-offline"} inert={!online}>
       {!online && !machine.snapshot ? <p className="tree-state machine-empty" role="status">{t("No saved sessions")}</p> : <MachineContext.Provider value={machine.id}><Sidebar snapshot={ungroupedSnapshot(machine.snapshot, projects?.catalog ?? null)} online={online} selectedPaneId={props.selectedMachineId === machine.id ? props.selectedPaneId : null} actions={actions} /></MachineContext.Provider>}
     </div>}

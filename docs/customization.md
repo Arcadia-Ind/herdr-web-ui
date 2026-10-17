@@ -28,6 +28,14 @@ The client sends batches of at most eight visible thread IDs. The server permits
 
 The existing authentication, watch-device, same-origin, and cross-site controls still apply. Browser checks use fictional data and temporary browser contexts.
 
+## Paired file explorer
+
+Each project header and thread row has a File explorer action. It opens a read-only pane in the app. The folder tree reads only that registered workspace. Sim's declared source mapping opens code and its pseudocode as one tab group. Several groups can stay open. Hide code keeps the description visible, and closing either member closes the pair. Unpaired documents remain independent.
+
+The app address retains the explorer context, tab order, selected member, and code visibility. Back, Forward, and reload restore that state. Open in a new tab opens a standalone reader with the same state. An invalid standalone address shows a refusal and attaches to no native terminal.
+
+The current bridge can grant its own local catalog only. Remote contexts show an explicit refusal and never use local roots. No URL can supply an arbitrary filesystem root. Authentication and full device access are required. Watching devices, private configuration paths, root escapes, external symlinks, and special files are refused. Existing preview budgets remain in effect.
+
 ## Composer usage
 
 The strip above the message box shows recorded context use, cache reads, and five-hour and weekly account limits. It is available at narrow widths and follows the pane's PC. The existing Show usage setting controls its visibility.

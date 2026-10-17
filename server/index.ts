@@ -42,6 +42,7 @@ import { fileResponse, findFile, crossSiteFileRead } from "./file-view.ts";
 import { repoDiffResponse } from "./repo-diff.ts";
 import { cachedCatalog, installedProjects, installedThemes, type CatalogPaths } from "./local-catalog.ts";
 import { ThreadDiffCache, threadDiffBatch } from "./thread-diffs.ts";
+import { explorerResponse } from "./explorer.ts";
 import {
   agentManifests,
   agentPrompt,
@@ -2056,6 +2057,11 @@ export function createServer(
       if (pathname === "/api/access") {
         if (request.method !== "GET") return badRequest("method_not_allowed", "use GET");
         return jsonResponse(await remoteAccess(bunServer.port ?? DEFAULT_PORT), 200, { "cache-control": "no-store" });
+      }
+
+      if (/^\/api\/workspace\/explorer\/(?:list|stat|file)$/.test(pathname)) {
+        return explorerResponse(request, { canRead: authenticated && !readOnly, catalog: readProjects,
+          snapshot: options.customization?.snapshot ?? sessionSnapshot });
       }
 
       if (pathname === "/api/themes" || pathname === "/api/workspace/projects" || pathname === "/api/workspace/diff/summaries") {

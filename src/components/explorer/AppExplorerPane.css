@@ -1,0 +1,9 @@
+.app-explorer-pane {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+}

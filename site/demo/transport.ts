@@ -985,6 +985,7 @@ async function route(url: URL, method: string, init: RequestInit | undefined, in
   }
   // Optional installed catalogs are empty in the public demo; browser checks inject owned fixtures.
   if (path === "/api/themes") return json({ themes: [], partial: false });
+  if (path === "/api/workspace/explorer/list" || path === "/api/workspace/explorer/stat" || path === "/api/workspace/explorer/file") return error("demo", "The explorer needs a connected project workspace.", 409);
   if (path === "/api/workspace/projects") return json({ projects: [], partial: false });
   if (path === "/api/workspace/diff/summaries") return json({ summaries: {}, refreshed_at: Date.now() });
   // no key in the demo: the app falls back to the browser's own speech recognition

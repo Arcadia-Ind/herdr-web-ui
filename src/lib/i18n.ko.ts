@@ -6,6 +6,20 @@
  * braces keep their English names.
  */
 export const KO: Record<string, string> = {
+  "File explorer is unavailable on this PC.": "이 PC에서는 파일 탐색기를 사용할 수 없습니다.",
+  "File explorer": "파일 탐색기",
+  "Read only": "읽기 전용",
+  "Close pair {name}": "{name} 쌍 닫기",
+  "Pseudocode": "의사 코드",
+  "Hide code": "코드 숨기기",
+  "Show code": "코드 표시",
+  "Select a file.": "파일을 선택하세요.",
+  "The tab limit has been reached.": "탭 수 제한에 도달했습니다.",
+  "Workspace files could not be loaded.": "워크스페이스 파일을 불러오지 못했습니다.",
+  "Folder list is incomplete.": "폴더 목록이 불완전합니다.",
+  "No matching file is available.": "일치하는 파일이 없습니다.",
+  "This file has no text preview.": "이 파일은 텍스트 미리 보기를 제공하지 않습니다.",
+  "Preview is incomplete.": "미리 보기가 불완전합니다.",
   "5h": "5시간",
   "Account reference: {account}. The pane's account is not verified.": "계정 참고: {account}. 이 패널의 계정은 확인되지 않았습니다.",
   "Cache creation: {tokens} tokens.": "캐시 생성: {tokens} 토큰.",

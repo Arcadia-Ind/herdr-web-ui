@@ -11,6 +11,7 @@
  * GET /api/themes -> ThemeCatalog (installed local colors)
  * GET /api/workspace/projects -> ProjectCatalog (registry bound to this bridge's socket)
  * GET /api/workspace/diff/summaries?pane_ids=a,b -> ThreadDiffBatch (at most eight panes)
+ * GET /api/workspace/explorer/list|stat|file -> scoped project files (shared/explorer.ts)
  * Summary counts compare the recorded thread worktree with HEAD, including staged changes.
  * Untracked and binary files are reported as partial counts, never as a clean worktree.
  */

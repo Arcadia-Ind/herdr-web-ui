@@ -10,6 +10,20 @@
  * Placeholders in braces keep their English names.
  */
 export const ZH: Record<string, string> = {
+  "File explorer is unavailable on this PC.": "此电脑无法使用文件资源管理器。",
+  "File explorer": "文件资源管理器",
+  "Read only": "只读",
+  "Close pair {name}": "关闭配对 {name}",
+  "Pseudocode": "伪代码",
+  "Hide code": "隐藏代码",
+  "Show code": "显示代码",
+  "Select a file.": "请选择文件。",
+  "The tab limit has been reached.": "已达到标签页数量上限。",
+  "Workspace files could not be loaded.": "无法加载工作区文件。",
+  "Folder list is incomplete.": "文件夹列表不完整。",
+  "No matching file is available.": "没有可用的匹配文件。",
+  "This file has no text preview.": "此文件没有文本预览。",
+  "Preview is incomplete.": "预览不完整。",
   "5h": "5小时",
   "Account reference: {account}. The pane's account is not verified.": "参考账户：{account}。此窗格的账户尚未验证。",
   "Cache creation: {tokens} tokens.": "缓存写入：{tokens} 个令牌。",

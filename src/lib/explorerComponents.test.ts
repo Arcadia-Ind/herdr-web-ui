@@ -22,6 +22,13 @@ function markup(target = explorerFixtureTarget()): string {
 const members = (html: string) => [...html.matchAll(/class="explorer-document"/g)].length;
 
 describe("read-only explorer view", () => {
+  it("refuses a remote context without a trusted owning-machine adapter", () => {
+    const target = explorerFixtureTarget();
+    target.context.machine = "remote";
+    const html = renderToStaticMarkup(createElement(SettingsProvider, null, createElement(PairedExplorer, { target, history: false })));
+    expect(html).toContain("File explorer is unavailable on this PC.");
+    expect(html).not.toContain("explorer-document");
+  });
   it("renders multiple pair groups and both members with one close control per group", () => {
     const html = markup();
     expect(members(html)).toBe(2);

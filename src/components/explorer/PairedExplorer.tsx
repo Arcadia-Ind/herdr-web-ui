@@ -35,6 +35,7 @@ export function PairedExplorer({ target: initial, api = workspaceExplorerApi, hi
   const propIdentity = JSON.stringify(initial.context);
   const propState = JSON.stringify(initial.state);
   const identity = JSON.stringify(target.context);
+  const remoteUnavailable = api === workspaceExplorerApi && target.context.machine !== "local";
   const current = useRef(target);
   current.current = target;
   // An app selection supplies new authority; stale files disappear before its root is loaded.
@@ -52,13 +53,14 @@ export function PairedExplorer({ target: initial, api = workspaceExplorerApi, hi
     const controller = new AbortController();
     setListing(null);
     setFailed(false);
+    if (remoteUnavailable) return () => controller.abort();
     void api.list(target.context, "", hidden, controller.signal).then((next) => {
       if (controller.signal.aborted) return;
       setListing(next);
       setTarget((saved) => ({ ...saved, state: restoreExplorerState(saved.state, next.pairing) }));
     }).catch(() => { if (!controller.signal.aborted) setFailed(true); });
     return () => controller.abort();
-  }, [api, identity, hidden, revision]);
+  }, [api, identity, hidden, revision, remoteUnavailable]);
   // Revalidate Back/Forward tab members as well as first-load members.
   const navigate = useCallback((state: ExplorerState) => {
     const next = { context: current.current.context, state };
@@ -85,13 +87,13 @@ export function PairedExplorer({ target: initial, api = workspaceExplorerApi, hi
   };
   return <section className="paired-explorer" aria-label={t("File explorer")}>
     <header className="explorer-toolbar">
-      <Files aria-hidden="true" /><strong>{target.context.project}{target.context.thread ? " / " + target.context.thread : ""}</strong>
+      <Files aria-hidden="true" /><strong>{target.context.machine} / {target.context.project}{target.context.thread ? " / " + target.context.thread : ""}</strong>
       <span className="explorer-read-only">{t("Read only")}</span>
       <button type="button" className="icon-button" title={t("Refresh")} aria-label={t("Refresh")} onClick={() => setRevision((value) => value + 1)}><RefreshCw aria-hidden="true" /></button>
       <a className="icon-button" href={explorerHref(target)} target="_blank" rel="noopener noreferrer" title={t("Open in a new tab")} aria-label={t("Open in a new tab")}><ExternalLink aria-hidden="true" /></a>
       {onClose && <button type="button" className="icon-button" aria-label={t("Close files")} onClick={onClose}><X aria-hidden="true" /></button>}
     </header>
-    <div className="explorer-workspace">
+    {remoteUnavailable ? <p className="explorer-note" role="alert">{t("File explorer is unavailable on this PC.")}</p> : <div className="explorer-workspace">
       <aside className="explorer-sidebar">
         <header><strong>{listing?.name ?? target.context.project}</strong><label><input type="checkbox" checked={hidden} onChange={(event) => setHidden(event.target.checked)} />{t("Show hidden")}</label></header>
         {listing ? <ExplorerTree key={identity + revision} context={target.context} api={api} listing={listing} hidden={hidden} selected={selected} onOpen={open} />
@@ -117,6 +119,6 @@ export function PairedExplorer({ target: initial, api = workspaceExplorerApi, hi
           </div>
         </> : <div className="explorer-empty"><Files aria-hidden="true" /><p>{t("Select a file.")}</p></div>}
       </div>
-    </div>
+    </div>}
   </section>;
 }
