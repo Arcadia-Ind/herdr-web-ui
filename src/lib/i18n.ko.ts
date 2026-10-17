@@ -6,6 +6,18 @@
  * braces keep their English names.
  */
 export const KO: Record<string, string> = {
+  "Answer": "답변",
+  "Copy prompt and answer": "질문과 답변 복사",
+  "Couldn't add the quote. The draft is unchanged.": "인용을 추가하지 못했습니다. 초안은 그대로 유지됩니다.",
+  "Matching prompt unavailable — load earlier messages.": "일치하는 질문이 없습니다. 이전 메시지를 불러오세요.",
+  "Prompt": "질문",
+  "Quote message": "메시지 인용",
+  "Quote selected text": "선택한 텍스트 인용",
+  "Reply draft unavailable": "답변 초안을 사용할 수 없음",
+  "Text only": "텍스트만",
+  "Text-only Chat is unavailable until the conversation loads.": "대화를 불러온 후 텍스트 전용 채팅을 사용할 수 있습니다.",
+  "The matching prompt has no text.": "일치하는 질문에 텍스트가 없습니다.",
+  "Tool details and reasoning are hidden": "도구 세부 정보와 추론이 숨겨져 있습니다",
   "File explorer is unavailable on this PC.": "이 PC에서는 파일 탐색기를 사용할 수 없습니다.",
   "File explorer": "파일 탐색기",
   "Read only": "읽기 전용",

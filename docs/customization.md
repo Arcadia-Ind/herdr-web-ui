@@ -47,3 +47,11 @@ Cache percentage is the last request's cache reads divided by all input tokens. 
 Account observations use the existing cached usage service for that PC. One visible account can supply a reference. Several accounts require an explicit Settings order. The reference does not prove which account the pane uses. Without a selected reference, recorded transcript limits can be shown with that same identity limit. Codex limits need the actual period before they can be called five-hour or weekly. Missing periods remain unavailable.
 
 Unknown times remain unknown. Request observations older than thirty minutes and account observations older than five minutes are marked stale. A passed reset time does not set a counter to zero. A failed or rate-limited refresh retains its last observation with a separate state.
+
+## Chat Highlights
+
+Codex and Claude Chat have a Text only option. It retains assistant prose, including commentary, and hides tools and reasoning. The option is saved in this browser.
+
+Quote message and Quote selected text append a reference to the existing editable pane draft. Repeated quotes can be combined with typed replies. The adapter checks the pane, PC, and current conversation history, reads the latest saved draft, and refuses oversized additions. It does not send a message or clear existing text.
+
+Copy prompt and answer uses the actual matching parsed user turn. If the earlier prompt is not loaded, the action is disabled with a visible reason. Existing answer-only Markdown and plain-text copy remain available.

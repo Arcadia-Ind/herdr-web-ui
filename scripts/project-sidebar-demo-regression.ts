@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { chromium } from "playwright-core";
+import { chromium, type Page } from "playwright-core";
 import { buildDemoApp } from "./demo-build.ts";
 import { chromePath } from "./chrome-path.ts";
 import { explorerResponse } from "../server/explorer.ts";
@@ -33,9 +33,13 @@ const fixture = `(() => {
   const observed = new Date().toISOString();
   window.usageFixtureCacheRead = 12000;
   window.fixtureSockets = [];
+  window.fixtureSends = [];
+  window.fixtureClipboard = "";
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (value) => { window.fixtureClipboard = value; } } });
   const DemoSocket = window.WebSocket;
   window.WebSocket = class extends DemoSocket {
     constructor(url) { super(url); window.fixtureSockets.push(this); }
+    send(data) { window.fixtureSends.push(JSON.parse(data)); return super.send(data); }
   };
   window.customizationReads = [];
   const json = (value) => new Response(JSON.stringify(value), { headers: { "content-type": "application/json" } });
@@ -69,16 +73,72 @@ const fixture = `(() => {
     if (path === "/api/pane/conversation") {
       const response = await original(input, init);
       const body = await response.json();
-      if (body.source !== "codex-transcript") return json(body);
-      return json({ ...body, metadata: { ...body.metadata, context: { used: 31000, window: 200000 }, usage: {
-        provider: "codex", model: body.metadata.model, observed_at: observed,
-        context: { used: 31000, limit: 200000, basis: "total" },
-        cache: { input_tokens: 30000, read_tokens: window.usageFixtureCacheRead, creation_tokens: null }, quota: null
+      if (body.source !== "codex-transcript" && body.source !== "claude-transcript") return json(body);
+      const codex = body.source === "codex-transcript";
+      const assistant = { role: "assistant", ts: observed, end_ts: observed, parts: [
+        { kind: "text", text: "I checked the fixture.", phase: "commentary" },
+        { kind: "thinking", text: "Hidden fixture reasoning" },
+        { kind: "tool", name: "Read", summary: "Hidden fixture tool", input: "{}", output: "Hidden tool output" },
+        { kind: "text", text: "The **fixture** is ready.", phase: "final_answer" }
+      ] };
+      const missing = new URLSearchParams(location.search).has("missing_prompt");
+      const turns = missing ? [{ role: "assistant", ts: observed, end_ts: observed, parts: [{ kind: "text", text: "Earlier fixture answer." }] }]
+        : [{ role: "user", ts: observed, parts: [{ kind: "text", text: "Please review the fixture." }] }, assistant];
+      return json({ ...body, turns, history_id: "fixture-history", cursor: missing ? "fixture-older-page" : null, metadata: { ...body.metadata, context: { used: 31000, window: codex ? 200000 : null }, usage: {
+        provider: codex ? "codex" : "claude", model: body.metadata.model, observed_at: observed,
+        context: { used: 31000, limit: codex ? 200000 : null, basis: codex ? "total" : "input" },
+        cache: { input_tokens: codex ? 30000 : 31000, read_tokens: window.usageFixtureCacheRead, creation_tokens: codex ? null : 1000 }, quota: null
       } } });
     }
     return original(input, init);
   };
 })();`;
+
+async function checkHighlights(page: Page, width: number): Promise<void> {
+  const mode = page.getByRole("button", { name: "Text only", exact: true });
+  await mode.waitFor();
+  if (await mode.getAttribute("aria-pressed") === "true") await mode.click();
+  const answer = page.locator(".chat-turn-assistant").last();
+  await answer.getByText("The fixture is ready.", { exact: true }).waitFor();
+  const draft = page.locator(".composer-text");
+  await draft.fill("My editable draft.  \n");
+  const quote = answer.getByRole("button", { name: "Quote message", exact: true });
+  if (width < 769) await quote.tap(); else await quote.click();
+  await page.waitForFunction(() => document.querySelector<HTMLTextAreaElement>(".composer-text")?.value.includes("> The **fixture** is ready."));
+  await quote.focus(); await quote.press("Enter");
+  const twoQuotes = await draft.inputValue();
+  assert.ok(twoQuotes.startsWith("My editable draft.  \n"));
+  assert.equal(twoQuotes.split("> The **fixture** is ready.").length - 1, 2);
+  await answer.locator(".chat-highlights-prose strong").evaluate((node) => {
+    const range = document.createRange(); range.selectNodeContents(node);
+    const selection = window.getSelection(); selection?.removeAllRanges(); selection?.addRange(range);
+    document.dispatchEvent(new Event("selectionchange"));
+  });
+  const selection = answer.getByRole("button", { name: "Quote selected text", exact: true });
+  await page.waitForFunction(() => [...document.querySelectorAll<HTMLButtonElement>(".chat-highlights-actions button")].some((button) => button.textContent?.includes("Quote selected text") && !button.disabled));
+  if (width < 769) await selection.tap(); else await selection.click();
+  assert.ok((await draft.inputValue()).endsWith("> fixture\n\n"));
+  // Pointer actions exercise the real hit targets. Only the clipboard transport is synthetic.
+  await answer.getByRole("button", { name: "Copy as markdown", exact: true }).click({ timeout: 5000 });
+  assert.equal(await page.evaluate(() => (window as unknown as { fixtureClipboard: string }).fixtureClipboard), "The **fixture** is ready.");
+  await answer.getByRole("button", { name: "Copy as plain text", exact: true }).click();
+  assert.equal(await page.evaluate(() => (window as unknown as { fixtureClipboard: string }).fixtureClipboard), "The fixture is ready.");
+  await answer.getByRole("button", { name: "Copy prompt and answer", exact: true }).click();
+  assert.equal(await page.evaluate(() => (window as unknown as { fixtureClipboard: string }).fixtureClipboard),
+    "## Prompt\n\n> Please review the fixture.\n\n## Answer\n\nThe **fixture** is ready.");
+  await mode.click();
+  await page.waitForFunction(() => document.querySelector(".chat-highlights-prose")?.closest(".chat-frame")?.textContent?.includes("I checked the fixture."));
+  assert.equal(await page.locator(".work-block").count(), 0);
+  assert.equal(await page.getByText("Hidden fixture reasoning", { exact: true }).count(), 0);
+  assert.equal(await page.getByText("Hidden fixture tool", { exact: true }).count(), 0);
+  const saved = await draft.inputValue();
+  const sent = await page.evaluate(() => (window as unknown as { fixtureSends: { type: string }[] }).fixtureSends);
+  assert.equal(sent.filter((message) => /^(?:input|keys|submit)$/.test(message.type)).length, 0);
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector<HTMLTextAreaElement>(".composer-text")?.value.includes("> fixture"));
+  assert.equal(await draft.inputValue(), saved);
+  assert.equal(await mode.getAttribute("aria-pressed"), "true");
+}
 
 try {
   await buildDemoApp(app);
@@ -101,7 +161,7 @@ try {
     const browser = await chromium.launch({ executablePath: chromePath(), headless: true });
     try {
       for (const width of [1280, 390, 320]) {
-        const context = await browser.newContext({ viewport: { width, height: 900 }, locale: "en-US" });
+        const context = await browser.newContext({ viewport: { width, height: 900 }, locale: "en-US", hasTouch: width < 769, isMobile: width < 769 });
         try {
           await context.addInitScript(() => {
             if (!localStorage.getItem("herdr-web-ui:settings")) localStorage.setItem("herdr-web-ui:settings", JSON.stringify({ language: "en", herdrTheme: "fixture-night", showUsage: true }));
@@ -124,6 +184,7 @@ try {
           await page.waitForFunction(() => document.querySelector(".composer-usage-bar")?.textContent?.includes("24K"));
           assert.match(await usage.locator(".composer-usage-item").nth(1).innerText(), /80%/);
           assert.equal(await usage.locator("summary").count(), 4);
+          await checkHighlights(page, width);
           const openDrawer = async () => { if (width < 769 && !await page.locator(".sidebar").evaluate((node) => node.classList.contains("is-open"))) await page.getByRole("button", { name: "Open workspace list", exact: true }).click(); };
           await openDrawer();
           const group = page.locator('.project-group[data-project="demo-project"]');
@@ -220,8 +281,15 @@ try {
           await openDrawer();
           if (evidence) await page.screenshot({ path: join(evidence, `project-sidebar-${width}-expanded.png`) });
           assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+          await page.goto(`http://127.0.0.1:${server.port}/?pane=w1D%3Ap1&missing_prompt=1`);
+          await page.getByText("Matching prompt unavailable — load earlier messages.", { exact: true }).waitFor();
+          assert.equal(await page.getByRole("button", { name: "Copy prompt and answer", exact: true }).isDisabled(), true);
+          if (width === 1280) {
+            await page.goto(`http://127.0.0.1:${server.port}/?pane=w1C%3Ap1`);
+            await checkHighlights(page, width);
+          }
           assert.deepEqual(errors, []);
-          console.log(`PASS ${width}px: groups, themes, diffs, usage, explorer pairing/history/standalone/refusals and layout`);
+          console.log(`PASS ${width}px: groups, themes, diffs, usage, explorer, Highlights, pointer copy and layout`);
         } finally { await context.close(); }
       }
     } finally { await browser.close(); }

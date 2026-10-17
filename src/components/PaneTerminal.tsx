@@ -27,6 +27,8 @@ import { answerFromText, answerHint, answerRefusal, needsConfirmation, type Type
 import { ApiError, assertAttachable, fetchPaneScroll, fetchPaneSelection, scrollPane } from "../lib/api.ts";
 import { parseOsc52 } from "../lib/osc52.ts";
 import { composerDrafts } from "../lib/composerDraft.ts";
+import { appendChatQuoteDraft } from "../lib/chatQuoteDraft.ts";
+import type { ChatQuoteReference } from "../lib/chatHighlights.ts";
 import { appendQuote, formatTerminalQuote } from "../lib/terminalQuote.ts";
 import { matchHerdrWidths } from "../lib/terminalWidths.ts";
 import { useMachineApi, useMachineId } from "../lib/machineContext.tsx";
@@ -412,6 +414,12 @@ export function PaneTerminal({
     if (next === memory) return;
     rememberGreeting(owner, next); redrawGreeting();
   }, [machineId]);
+  const onAppendChatQuote = useCallback((quote: ChatQuoteReference): boolean => {
+    if (paneId !== paneRef.current) return false;
+    const history = paneId === null ? null : greetingMemory(paneStorageId(machineId, paneId)).history;
+    return appendChatQuoteDraft(composerDrafts, machineId, paneId, history, quote,
+      quote.role === "user" ? t("User") : agentDisplayLabel(agent), MAX_COMPOSER_CHARS);
+  }, [machineId, paneId, agent, t]);
   // the stack (stackRef, above) holds the composer and the greeting over it (measured below)
   const [greetingRoom, setGreetingRoom] = useState(true);
   const greetingRef = useRef<HTMLDivElement | null>(null);
@@ -2874,6 +2882,9 @@ export function PaneTerminal({
             agentStatus={agentStatus}
             onMetadata={onChatMetadata}
             onRead={onChatRead}
+            onAppendQuote={onAppendChatQuote}
+            textOnly={settings.chatTextOnly}
+            onTextOnlyChange={(chatTextOnly) => updateSettings({ chatTextOnly })}
             greeted={greeted}
             onPrompt={onChatPrompt}
             onSuggestion={onChatSuggestion}

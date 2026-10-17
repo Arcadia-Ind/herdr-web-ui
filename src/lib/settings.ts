@@ -72,6 +72,8 @@ export interface Settings {
   herdrTheme: string | null;
   /** Browser sidebar only; the expanded width and project folds are retained. */
   compactSidebar: boolean;
+  /** Text-focused chat in this browser; tool details remain available when turned off. */
+  chatTextOnly: boolean;
   density: Density;
   /** How much a workspace row says: its name, or its pane's title over its place. */
   sidebarRows: SidebarRows;
@@ -171,7 +173,7 @@ export type DiffStyle = (typeof DIFF_STYLES)[number];
  * Settings field in the projection makes a new field require an explicit collection decision. */
 type TelemetrySourceSettings = Omit<Settings,
   "keyBarExtras" | "keyBarItems" | "shortcutOverrides" | "terminalFontFamily" | "chatFontFamily"
-  | "quickReplies" | "usageOrder" | "usageHidden" | "herdrTheme" | "compactSidebar">;
+  | "quickReplies" | "usageOrder" | "usageHidden" | "herdrTheme" | "compactSidebar" | "chatTextOnly">;
 
 /** Compare structured custom settings by content against this app's built-in defaults. */
 function differsFromDefault(value: unknown, defaultValue: unknown): boolean {
@@ -239,7 +241,7 @@ export function telemetrySettingsSnapshot(settings: Settings): TelemetrySettings
  * must be placed here, or the build fails; when in doubt it is the device's.
  */
 export const SETTING_SCOPE = {
-  herdrTheme: "device", compactSidebar: "device",
+  herdrTheme: "device", compactSidebar: "device", chatTextOnly: "device",
   theme: "shared", palette: "shared", language: "shared", sidebarRows: "shared", agentOrder: "shared",
   agentMarks: "shared", autoSendQueued: "shared", showThinking: "shared", quickReplies: "shared",
   showQuickReplies: "shared", showUsage: "shared", usageCount: "shared",
@@ -268,6 +270,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: "dark",
   herdrTheme: null,
   compactSidebar: false,
+  chatTextOnly: false,
   density: "comfortable",
   sidebarRows: "one",
   agentOrder: "workspace",
@@ -435,6 +438,7 @@ export function sanitizeSettings(raw: unknown): Settings {
     shortcutOverrides: sanitizeShortcutOverrides(record["shortcutOverrides"]),
     herdrTheme: typeof record["herdrTheme"] === "string" && /^[a-z0-9][a-z0-9-]{0,79}$/.test(record["herdrTheme"]) ? record["herdrTheme"] : null,
     compactSidebar: record["compactSidebar"] === true,
+    chatTextOnly: record["chatTextOnly"] === true,
     theme: theme === "dark" || theme === "light" || theme === "system" ? theme : DEFAULT_SETTINGS.theme,
     density: density === "compact" || density === "comfortable" ? density : DEFAULT_SETTINGS.density,
     sidebarRows: record["sidebarRows"] === "one" || record["sidebarRows"] === "two" ? record["sidebarRows"] : DEFAULT_SETTINGS.sidebarRows,

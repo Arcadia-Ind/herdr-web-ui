@@ -10,6 +10,18 @@
  * Placeholders in braces keep their English names.
  */
 export const ZH: Record<string, string> = {
+  "Answer": "回答",
+  "Copy prompt and answer": "复制提示和回答",
+  "Couldn't add the quote. The draft is unchanged.": "无法添加引用。草稿保持不变。",
+  "Matching prompt unavailable — load earlier messages.": "匹配的提示不可用，请加载较早的消息。",
+  "Prompt": "提示",
+  "Quote message": "引用消息",
+  "Quote selected text": "引用选中文本",
+  "Reply draft unavailable": "回复草稿不可用",
+  "Text only": "仅文本",
+  "Text-only Chat is unavailable until the conversation loads.": "会话加载完成前无法使用纯文本聊天。",
+  "The matching prompt has no text.": "匹配的提示没有文本。",
+  "Tool details and reasoning are hidden": "工具详情和推理已隐藏",
   "File explorer is unavailable on this PC.": "此电脑无法使用文件资源管理器。",
   "File explorer": "文件资源管理器",
   "Read only": "只读",

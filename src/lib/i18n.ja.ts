@@ -8,6 +8,18 @@
  * in English. Placeholders in braces keep their English names.
  */
 export const JA: Record<string, string> = {
+  "Answer": "回答",
+  "Copy prompt and answer": "プロンプトと回答をコピー",
+  "Couldn't add the quote. The draft is unchanged.": "引用を追加できませんでした。下書きは変更されていません。",
+  "Matching prompt unavailable — load earlier messages.": "対応するプロンプトがありません。以前のメッセージを読み込んでください。",
+  "Prompt": "プロンプト",
+  "Quote message": "メッセージを引用",
+  "Quote selected text": "選択したテキストを引用",
+  "Reply draft unavailable": "返信の下書きを利用できません",
+  "Text only": "テキストのみ",
+  "Text-only Chat is unavailable until the conversation loads.": "会話が読み込まれるまでテキストのみのチャットは利用できません。",
+  "The matching prompt has no text.": "対応するプロンプトにテキストがありません。",
+  "Tool details and reasoning are hidden": "ツールの詳細と推論を非表示にしています",
   "File explorer is unavailable on this PC.": "このPCではファイルエクスプローラーを利用できません。",
   "File explorer": "ファイルエクスプローラー",
   "Read only": "読み取り専用",
