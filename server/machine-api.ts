@@ -104,6 +104,10 @@ export async function handleMachineRequest(request: Request, manager: MachineMan
     }
     if (parts.length === 1 && request.method === "DELETE") { manager.remove(id); return jsonResponse({ ok: true }); }
     const path = parts.slice(1).join("/");
+    if (path === "usage") {
+      if (request.method !== "GET") return fail("method_not_allowed", "Use GET for cached usage", 405);
+      if (url.search !== "") return fail("invalid_query", "Read cached usage without refresh parameters", 400);
+    }
     if (MACHINE_PROXY_PATH.test(path)) {
       const endpoint = manager.endpoint(id);
       if (!endpoint) return fail("machine_offline", "This PC is disconnected", 503);

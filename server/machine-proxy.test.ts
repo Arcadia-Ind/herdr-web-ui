@@ -57,6 +57,12 @@ describe("PC proxy", () => {
     const crossSite = await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage", { headers: { "sec-fetch-site": "cross-site" } }), manager);
     expect(crossSite.status).toBe(403);
     expect((await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage/credentials"), manager)).status).toBe(404);
+    for (const method of ["POST", "PUT", "DELETE", "HEAD"]) {
+      expect((await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage", { method, headers: { "x-herdr-machine": "1" } }), manager)).status).toBe(405);
+    }
+    for (const query of ["?refresh=1", "?refresh=0", "?account=other"]) {
+      expect((await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage" + query), manager)).status).toBe(400);
+    }
     expect(usageAsked).toHaveLength(1);
   });
   it("carries a conversation's ETag both ways and passes an unchanged answer on as a bodyless 304", async () => {

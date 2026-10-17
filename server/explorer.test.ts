@@ -28,6 +28,62 @@ const request = (suffix: string, extra = "", init?: RequestInit): Request =>
 const respond = (req: Request) => explorerResponse(req, { canRead: true, catalog: async () => catalog, snapshot: async () => snapshot });
 
 describe("workspace authority", () => {
+  const grant = (directory: string, thread: boolean) => {
+    catalog.projects[0]!.threads[0]!.directory = directory;
+    snapshot.panes.find((pane) => pane.pane_id === "w1:p1")!.cwd = directory;
+    return (route: string, path = "config") => new Request("http://fixture/api/workspace/explorer/" + route + "?" + new URLSearchParams({
+      machine: "local", project: "demo", workspace: thread ? "w2" : "w1", pane: thread ? "w2:p1" : "w1:p1",
+      ...(thread ? { thread: "t-0001" } : {}), path: route === "list" ? "" : path,
+    }));
+  };
+  it("refuses protected roots and their descendants for coordinators and threads", async () => {
+    for (const location of [".ssh", ".ssh/nested", ".codex", ".config/herdr", ".herdr", ".herdr/state", ".local/share", ".herdr-projects/demo"]) {
+      const directory = join(outside, location);
+      await mkdir(directory, { recursive: true });
+      await writeFile(join(directory, "config"), "PRIVATE ROOT FIXTURE");
+      for (const thread of [false, true]) {
+        const read = grant(directory, thread);
+        for (const route of ["list", "stat", "file"]) {
+          const response = await respond(read(route));
+          expect(response.status).toBe(403);
+          const body = await response.text();
+          expect(body).not.toContain("PRIVATE ROOT FIXTURE");
+          expect(body).not.toContain(outside);
+        }
+      }
+    }
+  });
+  it("refuses granted aliases whose canonical roots are private", async () => {
+    const directory = join(outside, ".ssh/nested");
+    await mkdir(directory, { recursive: true });
+    await writeFile(join(directory, "config"), "PRIVATE ALIAS FIXTURE");
+    const alias = join(outside, "ordinary-root");
+    await symlink(directory, alias);
+    for (const thread of [false, true]) {
+      const read = grant(alias, thread);
+      for (const route of ["list", "stat", "file"]) expect((await respond(read(route))).status).toBe(403);
+    }
+  });
+  it("retains exact registered Herdr worktrees and aliases while blocking private children", async () => {
+    const directory = join(outside, ".herdr/worktrees/demo/task");
+    await mkdir(join(directory, ".ssh"), { recursive: true });
+    await writeFile(join(directory, "config"), "PUBLIC WORKTREE FIXTURE");
+    await writeFile(join(directory, ".ssh/config"), "PRIVATE CHILD FIXTURE");
+    await symlink(join(directory, ".ssh/config"), join(directory, "private-alias"));
+    const alias = join(outside, "worktree-alias");
+    await symlink(directory, alias);
+    for (const granted of [directory, alias]) for (const thread of [false, true]) {
+      const read = grant(granted, thread);
+      expect((await respond(read("list"))).status).toBe(200);
+      expect((await respond(read("stat"))).status).toBe(200);
+      const file = await respond(read("file"));
+      expect(file.status).toBe(200);
+      expect(await file.text()).toBe("PUBLIC WORKTREE FIXTURE");
+      for (const path of [".ssh/config", "private-alias", "../config"]) expect((await respond(read("file", path))).status).toBe(403);
+    }
+    // A broader private parent is not a registered worktree root.
+    expect((await respond(grant(join(outside, ".herdr/worktrees"), true)("list"))).status).toBe(403);
+  });
   it("resolves a registered thread and rejects foreign project, workspace, thread and pane identities", () => {
     expect(resolveExplorerRoot(context, catalog, snapshot)).toBe(root);
     for (const change of [{ project: "other" }, { workspace: "w1" }, { thread: "t-9999" }, { pane: "w1:p1" }]) expect(() => resolveExplorerRoot({ ...context, ...change }, catalog, snapshot)).toThrow();

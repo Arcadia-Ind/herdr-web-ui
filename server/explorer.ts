@@ -45,14 +45,23 @@ function contains(root: string, path: string): boolean {
   return child === "" || !isAbsolute(child) && child !== ".." && !child.startsWith(".." + sep);
 }
 
+/** Registered Herdr worktrees are source roots; their other private ancestors are not. */
+function privateLocation(path: string): boolean {
+  const parts = resolve(path).split(sep);
+  return parts.some((part, index) => {
+    if (/^\.herdr$/i.test(part) && parts[index + 1] === "worktrees" && parts.length > index + 3) return false;
+    return explorerPrivatePath(part);
+  });
+}
+
 /** Both lexical and physical paths must remain inside the same granted root. */
 async function safePath(root: string, path: string, directory = false): Promise<string> {
-  if (explorerPath(path, directory) === null || explorerPrivatePath(path)) return denied();
+  if (privateLocation(root) || explorerPath(path, directory) === null || explorerPrivatePath(path)) return denied();
   const target = resolve(root, path);
   if (!contains(root, target)) return denied();
   let physical: string;
   try { physical = await realpath(target); } catch { return missing(); }
-  if (!contains(root, physical) || explorerPrivatePath(relative(root, physical).split(sep).join("/"))) return denied();
+  if (!contains(root, physical) || privateLocation(physical) || explorerPrivatePath(relative(root, physical).split(sep).join("/"))) return denied();
   return physical;
 }
 
@@ -192,7 +201,10 @@ export async function explorerResponse(request: Request, dependencies: ExplorerD
     // A remote proxy must preserve identity while resolving it on the owning machine.
     if (context.machine !== "local") throw new ExplorerError("remote_unavailable", "This explorer is not available on that PC.", 409);
     const [catalog, snapshot] = await Promise.all([dependencies.catalog(), dependencies.snapshot()]);
-    const root = await realpath(resolveExplorerRoot(context, catalog, snapshot));
+    const granted = resolveExplorerRoot(context, catalog, snapshot);
+    if (privateLocation(granted)) return denied();
+    const root = await realpath(granted);
+    if (privateLocation(root)) return denied();
     const path = url.searchParams.get("path") ?? "";
     if (url.pathname.endsWith("/list")) return jsonResponse(await explorerList(root, path, url.searchParams.get("hidden") === "1"), 200, NO_STORE);
     if (url.pathname.endsWith("/stat")) return jsonResponse(await explorerStat(root, path), 200, NO_STORE);

@@ -55,3 +55,14 @@ Codex and Claude Chat have a Text only option. It retains assistant prose, inclu
 Quote message and Quote selected text append a reference to the existing editable pane draft. Repeated quotes can be combined with typed replies. The adapter checks the pane, PC, and current conversation history, reads the latest saved draft, and refuses oversized additions. It does not send a message or clear existing text.
 
 Copy prompt and answer uses the actual matching parsed user turn. If the earlier prompt is not loaded, the action is disabled with a visible reason. Existing answer-only Markdown and plain-text copy remain available.
+
+## Read boundaries
+
+The explorer checks the granted root and its canonical location as well as every descendant path.
+Registered roots under `.herdr/worktrees/<repository>/<worktree>` remain available. This exception
+does not expose the private parent, a private ancestor, or private files within the worktree.
+
+An installed app's registered bridge credential can read `GET /api/usage` without query parameters.
+This permission uses the bridge Bearer credential and the existing origin check. It does not grant
+forced refresh or account controls. The PC proxy also refuses usage methods and query parameters
+outside that cached read, and continues to replace browser credentials with the owning bridge's.
