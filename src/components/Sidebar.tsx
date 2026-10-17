@@ -672,7 +672,7 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
           aria-keyshortcuts={fixed ? undefined : "Alt+ArrowUp Alt+ArrowDown"}
           aria-description={fixed ? undefined : `${t("Reorder workspace {name}", { name: workspace.label })} · ${t("Drag to reorder · Alt+↑/↓")}`}
           data-pane={pane.pane_id}
-          aria-label={settings.compactSidebar ? `${workspace.workspace_id} · ${rowTitle}` : undefined}
+          aria-label={settings.compactSidebar ? rowTitle : undefined}
           aria-current={selected ? "true" : undefined}
           title={[`${pane.pane_id} — ${rowTitle}`, branchNote, ...paths, paneTitle(pane), agentsTitle(workspace)].filter(Boolean).join(" — ")}
           onClick={() => actions.selectPane(pane.pane_id)}
@@ -684,7 +684,6 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
             actions.selectPane(pane.pane_id);
           }}
         >
-          <span className="sidebar-compact-number" aria-hidden="true">{workspace.workspace_id}</span>
           {rowMark(pane, workspace.worktree?.is_linked_worktree === true)}
           {editingWorkspace ? <input
             className="input workspace-rename-input"

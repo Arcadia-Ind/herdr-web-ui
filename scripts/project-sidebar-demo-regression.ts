@@ -203,7 +203,7 @@ try {
           await page.waitForFunction(() => document.documentElement.dataset.theme === "dark" && getComputedStyle(document.documentElement).getPropertyValue("--bg").trim() === "#101020");
 
           await page.getByRole("button", { name: "Compact sidebar", exact: true }).click();
-          assert.equal(await thread.locator(".thread-title").isVisible(), false);
+          assert.equal(await thread.locator(".thread-title").isVisible(), true);
           assert.match(await thread.locator(".project-thread-select").getAttribute("aria-label") ?? "", /Review the web change/);
           assert.equal(Math.round((await page.locator(".sidebar").boundingBox())!.width), 180);
           if (evidence) { mkdirSync(evidence, { recursive: true }); await page.screenshot({ path: join(evidence, `project-sidebar-${width}-compact.png`) }); }

@@ -34,6 +34,27 @@ export function projectNumber(project: HerdrProject, snapshot: SessionSnapshot |
   const workspace = snapshot?.workspaces.find((row) => row.workspace_id === project.workspace_id);
   return workspace ? "P" + workspace.number : project.workspace_id || project.id;
 }
+
+/** Registry membership and live pane identity, independent of status, titles, order and diff counts. */
+export function projectMemberIds(project: HerdrProject, snapshot: SessionSnapshot | null): Set<string> {
+  const registered = [...project.coordinators, ...project.threads];
+  const panes = [...registered.flatMap((row) => {
+    const pane = projectPane(snapshot, row);
+    return pane ? [pane] : [];
+  }), ...projectAdditionalPanes(snapshot, project)];
+  return new Set([
+    ...project.threads.map((thread) => `thread:${thread.id}`),
+    ...panes.map((pane) => `pane:${pane.pane_id}:${pane.terminal_id}`),
+  ]);
+}
+
+/** The first complete discovery honors the saved fold. Later new identities open the project once. */
+export function discoverProjectMembers(seen: ReadonlySet<string> | null, members: ReadonlySet<string>, ready: boolean): { seen: ReadonlySet<string> | null; added: boolean } {
+  if (!seen) return { seen: ready ? new Set(members) : null, added: false };
+  const added = [...members].some((member) => !seen.has(member));
+  // Keep earlier identities through partial catalogs, disconnects and pane removal.
+  return { seen: added ? new Set([...seen, ...members]) : seen, added };
+}
 export const projectFoldKey = (machine: string, project: string) => `herdr-web-ui:project-fold:${machine}:${project}`;
 export function readProjectFold(machine: string, project: string): boolean {
   try { return localStorage.getItem(projectFoldKey(machine, project)) === "1"; } catch { return false; }
