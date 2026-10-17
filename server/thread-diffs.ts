@@ -37,7 +37,7 @@ export class ThreadDiffCache {
     else this.active++;
     let value: ThreadDiffSummary;
     try {
-      const list = await this.read(directory, new URLSearchParams({ scope: "workspace" }), { maxFiles: 4096, maxListBytes: 256 * 1024, deadlineMs: 1500 });
+      const list = await this.read(directory, new URLSearchParams({ scope: "combined" }), { maxFiles: 4096, maxListBytes: 256 * 1024, deadlineMs: 1500 });
       value = {
         state: "ready",
         additions: list.files.reduce((sum, file) => sum + (file.additions ?? 0), 0),

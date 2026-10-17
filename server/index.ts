@@ -1967,7 +1967,7 @@ export function createServer(
       }
       // Chat reads can chain several valid 10 s RPCs. Leave the 15/30 s client deadline
       // in charge rather than Bun's default 10 s idle cutoff. PC proxies have their own budget above.
-      if (pathname === "/api/pane/read" || pathname === "/api/pane/conversation") bunServer.timeout(request, 60);
+      if (pathname === "/api/pane/read" || pathname === "/api/pane/conversation" || pathname === "/api/workspace/diff/summaries") bunServer.timeout(request, 60);
       if (pathname === "/ws") {
         if (!sameOrigin(request)) return new Response("invalid origin", { status: 403 });
         const deviceId = access.level === "full" ? access.device?.id : undefined;
@@ -2066,7 +2066,7 @@ export function createServer(
           const catalog = await readProjects();
           if (pathname === "/api/workspace/projects") return jsonResponse(catalog);
           const ids = (url.searchParams.get("pane_ids") ?? "").split(",");
-          if (ids.length > 8 || ids.some((id) => !/^w[0-9]+:p[0-9]+$/.test(id)) || new Set(ids).size !== ids.length) return badRequest("invalid_panes", "name one to eight distinct panes");
+          if (ids.length > 8 || ids.some((id) => !/^w[0-9A-Za-z]+:p[0-9A-Za-z]+$/.test(id)) || new Set(ids).size !== ids.length) return badRequest("invalid_panes", "name one to eight distinct panes");
           const snapshot = await (options.customization?.snapshot ?? sessionSnapshot)();
           return jsonResponse(await threadDiffBatch(catalog, snapshot, ids, threadDiffs));
         } catch { return jsonResponse({ error: { code: "catalog_unavailable", message: "The local catalog could not be read" } }, 503); }

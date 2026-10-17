@@ -738,7 +738,7 @@ export interface FileInfo {
 }
 
 /** Which two states of a repository are compared. */
-export type RepoDiffScope = "workspace" | "staged" | "commit";
+export type RepoDiffScope = "workspace" | "staged" | "commit" | "combined";
 
 /** How one file changed. `untracked` exists only in the `workspace` scope. */
 export type RepoDiffStatus = "added" | "deleted" | "modified" | "renamed" | "copied" | "type_changed" | "unmerged" | "untracked";

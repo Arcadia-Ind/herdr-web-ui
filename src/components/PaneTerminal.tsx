@@ -327,7 +327,7 @@ export function PaneTerminal({
   // keyboard by itself, only a tap on the message box or the grid does. A desktop has no keyboard
   // to raise, and the pane it picks takes the typing at once.
   const coarseRef = useRef(coarse); coarseRef.current = coarse;
-  const { settings, update: updateSettings } = useSettings();
+  const { settings, installedTheme, update: updateSettings } = useSettings();
   const availableModifiers = settings.keyBarItems.reduce((mask, item) => item.type === "modifier"
     ? mask | { ctrl: 4, alt: 2, shift: 1 }[item.modifier] : mask, 0);
   useLayoutEffect(() => {
@@ -548,7 +548,7 @@ export function PaneTerminal({
       fontSize: terminalFontSize,
       // a chosen family follows in the font effect below, once its faces have loaded
       fontFamily: TERMINAL_FONT_STACK,
-      theme: terminalTheme(theme, palette),
+      theme: terminalTheme(theme, palette, installedTheme),
       // a program's own colors suit one background (Claude Code's question titles are #ffffff, near
       // 1:1 on a light palette): xterm moves a foreground under 4.5:1 toward black or white. Dim text
       // needs half that, and box, block and powerline glyphs keep their color.
@@ -1995,8 +1995,8 @@ export function PaneTerminal({
   // the theme follows the settings without a remount
   useEffect(() => {
     const term = termRef.current;
-    if (term) term.options.theme = terminalTheme(theme, palette);
-  }, [theme, palette]);
+    if (term) term.options.theme = terminalTheme(theme, palette, installedTheme);
+  }, [theme, palette, installedTheme]);
 
   // the font follows too, and a font change moves the grid. xterm measures the cell (and the DOM
   // renderer its glyph widths) when fontFamily or fontSize changes, and setting the same value

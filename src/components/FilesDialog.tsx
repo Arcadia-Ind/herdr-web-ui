@@ -15,6 +15,7 @@ import { useMediaQuery } from "../lib/useMediaQuery.ts";
 export interface FilesDialogProps {
   /** the folder to open at: the pane's own */
   start: string;
+  initialTab?: "browse" | "changes";
   /** the pane whose repository's changes are listed */
   paneId: string;
   /** a file or a diff is open above this dialog: Escape belongs to it, which closes first */
@@ -29,13 +30,13 @@ export interface FilesDialogProps {
 type Tab = "browse" | "changes";
 
 /** The files of the pane's folder (and any other), each opened in the file viewer, and the changes of its repository, each opened as a diff. */
-export function FilesDialog({ start, paneId, viewing, onOpenFile, onOpenDiff, onBrowseFolders, onClose }: FilesDialogProps) {
+export function FilesDialog({ start, initialTab = "browse", paneId, viewing, onOpenFile, onOpenDiff, onBrowseFolders, onClose }: FilesDialogProps) {
   const t = useT();
   const phone = useMediaQuery("(max-width: 480px)");
   const surface = useFocusTrap<HTMLElement>(true);
-  const [tab, setTab] = useState<Tab>("browse");
+  const [tab, setTab] = useState<Tab>(initialTab);
   // the changes are read with the first visit and kept, as the browser keeps its folder
-  const [changesVisited, setChangesVisited] = useState(false);
+  const [changesVisited, setChangesVisited] = useState(initialTab === "changes");
   useSheetSwipe(surface, onClose);
   // a file opened from the list is drawn over it with an entry of its own: Back closes the file first
   usePhoneSheetBack(onClose, !viewing);
@@ -67,7 +68,7 @@ export function FilesDialog({ start, paneId, viewing, onOpenFile, onOpenDiff, on
         </header>
         <div className="modal-body">
           <div hidden={tab !== "browse"}><DirectoryBrowser start={start} onOpenFile={onOpenFile} onFolder={(path) => { folder.current = path; }} /></div>
-          {changesVisited && <div hidden={tab !== "changes"}><RepoChanges paneId={paneId} directory={start} onOpenDiff={onOpenDiff} /></div>}
+          {changesVisited && <div hidden={tab !== "changes"}><RepoChanges initialScope={initialTab === "changes" ? "combined" : "workspace"} paneId={paneId} directory={start} onOpenDiff={onOpenDiff} /></div>}
         </div>
       </section>
     </div>

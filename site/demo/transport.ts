@@ -983,19 +983,23 @@ async function route(url: URL, method: string, init: RequestInit | undefined, in
     structureChanged();
     return json({ workspace_id: id, pane_id: pane.pane_id, agent_started: agent !== null } satisfies WorkspaceCreated);
   }
+  // Optional installed catalogs are empty in the public demo; browser checks inject owned fixtures.
+  if (path === "/api/themes") return json({ themes: [], partial: false });
+  if (path === "/api/workspace/projects") return json({ projects: [], partial: false });
+  if (path === "/api/workspace/diff/summaries") return json({ summaries: {}, refreshed_at: Date.now() });
   // no key in the demo: the app falls back to the browser's own speech recognition
   if (path === "/api/voice") return json({ configured: false, source: null, ...VOICE_DEFAULTS } satisfies VoiceStatus, 200, { "cache-control": "no-store" });
   if (path === "/api/voice/config") return error("demo", "the demo saves no OpenAI key", 409);
   if (path === "/api/voice/transcribe") return error("voice_not_configured", "transcription is unavailable in the demo", 409);
   if (path === "/api/workspace/diff/files" || path === "/api/workspace/diff/file") {
     const scope = query.get("scope") || "workspace";
-    if (scope !== "workspace" && scope !== "staged" && scope !== "commit") return error("invalid_scope", "scope must be workspace, staged or commit", 400);
+    if (scope !== "workspace" && scope !== "staged" && scope !== "commit" && scope !== "combined") return error("invalid_scope", "scope must be workspace, staged or commit", 400);
     // the demo keeps no history to name commits in
     if (scope === "commit") return error("revision_not_found", "the demo repository has no commits to compare", 404);
     const root = snapshot().panes.find((pane) => pane.pane_id === paneId)?.cwd ?? query.get("directory") ?? "/home/demo/checkout-api";
     const repository: RepoDiffRepository = { root, branch: "main", head: "4f2a9c1d7e3b5a8c6d0e1f2a3b4c5d6e7f8a9b0c", detached: false, unborn: false };
     // everything in the demo is unstaged work
-    const changed = scope === "workspace" ? DEMO_DIFF : [];
+    const changed = scope === "workspace" || scope === "combined" ? DEMO_DIFF : [];
     const compared: RepoDiffScope = scope;
     const shared = { repository, scope: compared, base: null, head: null };
     if (path === "/api/workspace/diff/files") {

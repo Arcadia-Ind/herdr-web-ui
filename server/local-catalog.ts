@@ -1,6 +1,6 @@
 import { open, readdir } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { THEME_TOKENS, type HerdrProject, type InstalledTheme, type ProjectCatalog, type ProjectThread, type ThemeCatalog, type ThemeToken } from "../shared/customization.ts";
 import { herdrSocketPath } from "./herdr/client.ts";
 
@@ -65,11 +65,13 @@ export function paletteTheme(id: string, name: string, text: string): InstalledT
   });
 }
 
-export interface CatalogPaths { configDir: string; stateDir: string; cacheDir: string; projectsRoot: string; socket: string }
+export interface CatalogPaths { configDir: string; configFile?: string; stateDir: string; cacheDir: string; projectsRoot: string; socket: string }
 export function localCatalogPaths(): CatalogPaths {
   const home = homedir();
+  const configDir = join(process.env.XDG_CONFIG_HOME ?? join(home, ".config"), "herdr");
   return {
-    configDir: dirname(herdrSocketPath()),
+    configDir,
+    configFile: process.env.HERDR_CONFIG_PATH ?? join(configDir, "config.toml"),
     stateDir: join(process.env.XDG_STATE_HOME ?? join(home, ".local", "state"), "herdr", "plugins", "herdr-theme-picker"),
     cacheDir: join(process.env.XDG_CACHE_HOME ?? join(home, ".cache"), "herdr-theme-picker"),
     projectsRoot: process.env.HERDR_PROJECTS_ROOT ?? join(home, ".herdr-projects"),
@@ -101,7 +103,7 @@ export async function installedThemes(paths = localCatalogPaths()): Promise<Them
     } catch { partial = true; }
   }
   try {
-    const parsed = Bun.TOML.parse(themeSections(await catalogText(join(paths.configDir, "config.toml")))) as { theme?: { name?: unknown; custom?: Record<string, unknown> } };
+    const parsed = Bun.TOML.parse(themeSections(await catalogText(paths.configFile ?? join(paths.configDir, "config.toml")))) as { theme?: { name?: unknown; custom?: Record<string, unknown> } };
     const name = typeof parsed.theme?.name === "string" ? parsed.theme.name : "custom";
     const current = themeFromColors("current", name + " (Herdr)", parsed.theme?.custom ?? {});
     if (current) themes.set(current.id, current);

@@ -24,7 +24,7 @@ export interface RepoDiffTarget extends RepoComparison {
   oldPath: string | null;
 }
 
-export const REPO_DIFF_SCOPES: readonly RepoDiffScope[] = ["workspace", "staged", "commit"];
+export const REPO_DIFF_SCOPES: readonly RepoDiffScope[] = ["workspace", "staged", "commit", "combined"];
 
 /** git's own letter for a status, as `git status --short` prints it. */
 export const STATUS_MARK: Record<RepoDiffStatus, string> = {
@@ -51,6 +51,7 @@ export function shortHash(revision: string): string {
 
 export function comparisonWord(t: Translate, comparison: RepoComparison): string {
   switch (comparison.scope) {
+    case "combined": return t("All changes");
     case "workspace": return t("Working tree");
     case "staged": return t("Staged");
     case "commit": return `${shortHash(comparison.base ?? "")}..${shortHash(comparison.head ?? "HEAD")}`;
@@ -60,6 +61,7 @@ export function comparisonWord(t: Translate, comparison: RepoComparison): string
 /** The empty state of a comparison that changed nothing. */
 export function nothingChangedWord(t: Translate, scope: RepoDiffScope): string {
   switch (scope) {
+    case "combined": return t("No uncommitted changes");
     case "workspace": return t("No uncommitted changes");
     case "staged": return t("Nothing staged");
     case "commit": return t("These commits are the same");

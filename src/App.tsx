@@ -382,6 +382,7 @@ export function App() {
   const paneActionsRef = useRef<((target: HerdrPane) => RowMenuItem[]) | null>(null);
   // the Files dialog, and the file open in the viewer (a path as the chat or the dialog gave it)
   const [filesOpen, setFilesOpen] = useState(false);
+  const [changesTarget, setChangesTarget] = useState<{ machineId: string; paneId: string; directory: string } | null>(null);
   const { viewing, openFile, closeFile, setPresentation, releaseFile } = useFileViewer();
   // a repository diff from the Files dialog's Changes tab, an entry of its own like a file
   const { viewing: diffViewing, openDiff, closeDiff, releaseDiff } = useRepoDiffViewer();
@@ -1322,11 +1323,11 @@ export function App() {
         if (window.matchMedia("(max-width: 768px)").matches) setDrawerOpen((open) => !open);
         else setSidebarCollapsed((collapsed) => !collapsed);
       },
-      toggleTheme: () => updateSettings({ theme: resolvedTheme === "dark" ? "light" : "dark" }),
+      toggleTheme: () => updateSettings({ theme: resolvedTheme === "dark" ? "light" : "dark", herdrTheme: null }),
       lock: canSignOut ? lock : null,
       enableNotifications: bellVisible && bell.run === enableNotifications ? () => void enableNotifications() : null,
       refresh: () => void load(),
-      openFiles: selectedPaneId !== null ? () => { setDrawerOpen(false); setFilesOpen(true); } : null,
+      openFiles: selectedPaneId !== null ? () => { setChangesTarget(null); setDrawerOpen(false); setFilesOpen(true); } : null,
       // herdr's layout calls on the selected pane (components/TabStrip.tsx has the same for the
       // tab's own menu): the new layout reaches every client as session-changed, so only a
       // refusal is left to say, and that is logged as other background failures are
@@ -1570,9 +1571,14 @@ export function App() {
           {/* a sidebar that cannot be drawn leaves the panes working */}
           <RenderBoundary resetKey={null} fallback={(retry) => <RegionCrash message={t("The sidebar can't be shown.")} retry={retry} />}>
             <CrashProbe region="sidebar" />
-            <MachineSidebar machines={machines} selectedMachineId={selectedMachineId} selectedPaneId={selectedPaneId} actions={actions} onSelect={selectTarget} onSetup={(machine, update = false) => { setUpdateRemote(update); setMachineDialog(machine); }} onNew={(id) => { setNewSessionMachineId(id); setNewTab(null); setNewSessionOpen(true); setDrawerOpen(false); }} />
+            <MachineSidebar onChanges={(machineId, paneId, directory) => {
+              const pane = machines.find((machine) => machine.id === machineId)?.snapshot?.panes.find((row) => row.pane_id === paneId);
+              if (!pane) return;
+              setChangesTarget({ machineId, paneId, directory: directory ?? pane.foreground_cwd ?? pane.cwd ?? "" });
+              setFilesOpen(true); setDrawerOpen(false);
+            }} machines={machines} selectedMachineId={selectedMachineId} selectedPaneId={selectedPaneId} actions={actions} onSelect={selectTarget} onSetup={(machine, update = false) => { setUpdateRemote(update); setMachineDialog(machine); }} onNew={(id) => { setNewSessionMachineId(id); setNewTab(null); setNewSessionOpen(true); setDrawerOpen(false); }} />
           </RenderBoundary>
-          <SidebarResizer width={sidebarWidth} onResize={setSidebarWidth} />
+          {!settings.compactSidebar && <SidebarResizer width={sidebarWidth} onResize={setSidebarWidth} />}
         </aside>
 
         {/* kept on the page closed (styles.css): a swipe that begins on it closes the drawer */}
@@ -1749,12 +1755,14 @@ export function App() {
         selectTargetRef.current(machineId, paneId);
       }} />
       <SettingsDialog auth={auth} herdrVersion={health?.herdr?.version ?? null} open={settingsOpen} section={settingsSection} linkPage={settingsLinkPage} linkSection={settingsLinkSection} onPage={onSettingsPage} onClose={closeSettings} onUsageLogin={(paneId) => { closeSettings(); selectTarget("local", paneId, "terminal"); void load(); }} actions={actions} updates={updates} onEnableNotifications={enableNotifications} overPreview={(viewing !== null && !fileDocked) || diffViewing !== null} />
-      {filesOpen && selectedPane && (
-        <FilesDialog start={selectedPane.foreground_cwd ?? selectedPane.cwd ?? ""} paneId={selectedPane.pane_id} viewing={(viewing !== null && !fileDocked) || diffViewing !== null} onOpenFile={viewFile}
-          onOpenDiff={(comparison, file) => openDiff({ machineId: selectedMachineId, paneId: selectedPane.pane_id, directory: selectedPane.foreground_cwd ?? selectedPane.cwd ?? null, ...comparison, path: file.path, oldPath: file.old_path })}
-          onBrowseFolders={(path) => actions.openPalette(folderQueryFor(path, null))}
-          onClose={() => setFilesOpen(false)} />
-      )}
+      {filesOpen && (changesTarget || selectedPane) && (() => {
+        const target = changesTarget ?? { machineId: selectedMachineId, paneId: selectedPane!.pane_id, directory: selectedPane!.foreground_cwd ?? selectedPane!.cwd ?? "" };
+        return <MachineContext.Provider value={target.machineId}><FilesDialog key={`${target.machineId}:${target.paneId}:${changesTarget ? "changes" : "browse"}`} start={target.directory} paneId={target.paneId} initialTab={changesTarget ? "changes" : "browse"} viewing={(viewing !== null && !fileDocked) || diffViewing !== null}
+          onOpenFile={(path) => openFile({ path, paneId: target.paneId, machineId: target.machineId }, false)}
+          onOpenDiff={(comparison, file) => openDiff({ machineId: target.machineId, paneId: target.paneId, directory: target.directory, ...comparison, path: file.path, oldPath: file.old_path })}
+          onBrowseFolders={(path) => { selectTarget(target.machineId, target.paneId); actions.openPalette(folderQueryFor(path, null)); }}
+          onClose={() => { setFilesOpen(false); setChangesTarget(null); }} /></MachineContext.Provider>;
+      })()}
       {diffViewing !== null && <MachineContext.Provider value={diffViewing.machineId}>
         <RepoDiffViewer key={`${diffViewing.scope}:${diffViewing.path}`} target={diffViewing} onClose={closeDiff} onOpenFile={(path) => {
           const docked = filePanelAvailable && filePresentation(path) === "panel";

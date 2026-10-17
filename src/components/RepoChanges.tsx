@@ -14,6 +14,7 @@ import { skeletonRows } from "../lib/skeleton.ts";
 
 export interface RepoChangesProps {
   paneId: string;
+  initialScope?: RepoDiffScope;
   /** the pane's folder, read when the pane is gone */
   directory: string;
   onOpenDiff: (comparison: RepoComparison, file: RepoDiffFile) => void;
@@ -29,15 +30,15 @@ const PENDING: Load = { status: "pending" };
  * across refreshes and comparisons. The list is read on each choice and on Refresh, never polled;
  * while it is read, the last list's repository line stays and placeholder rows hold its height.
  */
-export function RepoChanges({ paneId, directory, onOpenDiff }: RepoChangesProps) {
+export function RepoChanges({ paneId, directory, onOpenDiff, initialScope = "workspace" }: RepoChangesProps) {
   const t = useT();
   const locale = useLocale();
   const { fetchRepoDiffFiles } = useMachineApi();
-  const [scope, setScope] = useState<RepoDiffScope>("workspace");
+  const [scope, setScope] = useState<RepoDiffScope>(initialScope);
   const [base, setBase] = useState("");
   const [head, setHead] = useState("");
   // the comparison read last: a commit comparison waits for Compare, the others read on choice
-  const [asked, setAsked] = useState<RepoComparison | null>({ scope: "workspace", base: null, head: null });
+  const [asked, setAsked] = useState<RepoComparison | null>({ scope: initialScope, base: null, head: null });
   const [load, setLoad] = useState<Load>(PENDING);
   // the last listing, kept while the next is read: its repository line stays and its rows size the placeholders
   const [last, setLast] = useState<RepoDiffFileList | null>(null);
@@ -129,6 +130,7 @@ export function RepoChanges({ paneId, directory, onOpenDiff }: RepoChangesProps)
     <div className="repo-changes" role="group" aria-label={t("Changes")} aria-busy={load.status === "pending"}>
       <div className="repo-changes-bar">
         <div className="segmented repo-changes-scopes" role="group" aria-label={t("Compare")}>
+          <button type="button" aria-pressed={scope === "combined"} onClick={() => choose("combined")}>{t("All changes")}</button>
           <button type="button" aria-pressed={scope === "workspace"} onClick={() => choose("workspace")}>{t("Working tree")}</button>
           <button type="button" aria-pressed={scope === "staged"} onClick={() => choose("staged")}>{t("Staged")}</button>
           <button type="button" aria-pressed={scope === "commit"} onClick={() => choose("commit")}>{t("Commits")}</button>

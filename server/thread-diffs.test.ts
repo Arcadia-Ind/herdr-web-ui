@@ -31,7 +31,7 @@ it("caches no-repository results and separates unavailable directories", async (
   expect((await failed.summary("/broken")).state).toBe("unavailable");
   expect(JSON.stringify(await failed.summary("/broken"))).not.toContain("stderr");
 });
-it("limits simultaneous git work to two and evicts old cache entries", async () => {
+it("limits simultaneous git work to two", async () => {
   let active = 0, peak = 0, calls = 0;
   const releases: (() => void)[] = [];
   const cache = new ThreadDiffCache(async () => { calls++; peak = Math.max(peak, ++active); await new Promise<void>((resolve) => releases.push(resolve)); active--; return list; }, Date.now, 15000, 3);
@@ -51,4 +51,12 @@ it("does not scan a stale pane identity", async () => {
   const snapshot = { panes: [{ pane_id: "w2:p1", workspace_id: "w9" }] } as SessionSnapshot;
   expect((await threadDiffBatch(catalog, snapshot, ["w2:p1"], cache)).summaries["w2:p1"]?.state).toBe("missing");
   expect(calls).toBe(0);
+});
+
+it("evicts the oldest completed directory when the cache reaches its bound", async () => {
+  let calls = 0;
+  const cache = new ThreadDiffCache(async () => { calls++; return list; }, Date.now, 15000, 2);
+  await cache.summary("/first"); await cache.summary("/second"); await cache.summary("/third");
+  await cache.summary("/first");
+  expect(calls).toBe(4);
 });

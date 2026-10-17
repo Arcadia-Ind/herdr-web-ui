@@ -142,8 +142,8 @@ async function resolveRevision(context: Context, root: string, name: string, val
 
 function scopeOf(value: string | null): RepoDiffScope {
   if (value === null || value === "" || value === "workspace") return "workspace";
-  if (value === "staged" || value === "commit") return value;
-  throw new RepoDiffError("invalid_scope", "scope must be workspace, staged or commit", 400);
+  if (value === "staged" || value === "commit" || value === "combined") return value;
+  throw new RepoDiffError("invalid_scope", "scope must be workspace, staged, commit or combined", 400);
 }
 
 /** A path inside the repository, as git names it: relative, forward slashes, no `..`. */
@@ -157,13 +157,21 @@ function repositoryPath(name: string, value: string): string {
 
 interface Comparison { scope: RepoDiffScope; base: string | null; head: string | null; args: string[] }
 
-async function comparisonOf(context: Context, root: string, params: URLSearchParams): Promise<Comparison> {
+async function comparisonOf(context: Context, root: string, params: URLSearchParams, repositoryHead: string | null): Promise<Comparison> {
   const scope = scopeOf(params.get("scope"));
   const base = params.get("base");
   const head = params.get("head");
   if (scope !== "commit") {
     if (base !== null || head !== null) throw new RepoDiffError("invalid_revision", "base and head apply to scope=commit only", 400);
-    return { scope, base: null, head: null, args: scope === "staged" ? ["--cached"] : [] };
+    let args = scope === "staged" ? ["--cached"] : [];
+    if (scope === "combined") {
+      // HEAD to the final working files includes staged and unstaged edits without double counting.
+      // An unborn repository compares with its empty tree; hash-object without -w writes nothing.
+      const empty = repositoryHead === null ? await runGit(context, root, ["hash-object", "-t", "tree", "--stdin"], 1024) : null;
+      if (empty && empty.code !== 0) throw new RepoDiffError("git_failed", "git could not read the empty tree", 500);
+      args = [repositoryHead ?? empty!.stdout.trim()];
+    }
+    return { scope, base: null, head: null, args };
   }
   if (base === null) throw new RepoDiffError("invalid_revision", "scope=commit needs a base revision", 400);
   const [from, to] = await Promise.all([resolveRevision(context, root, "base", base), resolveRevision(context, root, "head", head ?? "HEAD")]);
@@ -187,7 +195,7 @@ async function changedFiles(context: Context, root: string, comparison: Comparis
   const [names, counts, others] = await Promise.all([
     runGit(context, root, ["diff", ...DIFF_FLAGS, "--name-status", "-z", ...tail], context.maxListBytes),
     runGit(context, root, ["diff", ...DIFF_FLAGS, "--numstat", "-z", ...tail], context.maxListBytes),
-    comparison.scope === "workspace"
+    (comparison.scope === "workspace" || comparison.scope === "combined")
       ? runGit(context, root, ["ls-files", "-z", "--others", "--exclude-standard", "--", ...pathspec], context.maxListBytes)
       : Promise.resolve<GitRun>({ code: 0, stdout: "", overflow: false }),
   ]);
@@ -232,7 +240,7 @@ async function changedFiles(context: Context, root: string, comparison: Comparis
 export async function repoDiffFiles(cwd: string, params: URLSearchParams, options: RepoDiffOptions = {}): Promise<RepoDiffFileList> {
   const context = contextOf(options);
   const repository = await repositoryOf(context, cwd);
-  const comparison = await comparisonOf(context, repository.root, params);
+  const comparison = await comparisonOf(context, repository.root, params, repository.head);
   const listing = await changedFiles(context, repository.root, comparison, []);
   return {
     repository,
@@ -270,7 +278,7 @@ export async function repoDiffFile(cwd: string, params: URLSearchParams, options
   const oldParam = params.get("old_path");
   const oldPath = oldParam === null || oldParam === "" ? null : repositoryPath("old_path", oldParam);
   const repository = await repositoryOf(context, cwd);
-  const comparison = await comparisonOf(context, repository.root, params);
+  const comparison = await comparisonOf(context, repository.root, params, repository.head);
   const pathspec = oldPath !== null && oldPath !== path ? [oldPath, path] : [path];
   const listing = await changedFiles(context, repository.root, comparison, pathspec);
   const file = listing.files.find((candidate) => candidate.path === path);

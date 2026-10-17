@@ -1823,3 +1823,18 @@ button {
 button, a, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Compact browser navigation retains the saved expanded width and changes no Herdr geometry. */
+[data-sidebar-compact="true"] .app { --sidebar-shown-w: min(180px, 50vw); }
+[data-sidebar-compact="true"] .sidebar-resizer { display: none; }
+.sidebar-compact-number { display: none; }
+[data-sidebar-compact="true"] .sidebar-compact-number { display: inline; font: var(--fs-xs) var(--font-mono); }
+[data-sidebar-compact="true"] .workspace-select > .sidebar-mark,
+[data-sidebar-compact="true"] .workspace-select > .workspace-copy,
+[data-sidebar-compact="true"] .agent-select > .sidebar-mark,
+[data-sidebar-compact="true"] .agent-select > .agent-copy,
+[data-sidebar-compact="true"] .agent-select .agent-row-status { display: none; }
+[data-sidebar-compact="true"] .sidebar-compact-toggle { padding: var(--space-2); font-size: var(--fs-xs); }
+@media (max-width: 768px) {
+  [data-sidebar-compact="true"] .sidebar { width: min(180px, 88vw); }
+}
