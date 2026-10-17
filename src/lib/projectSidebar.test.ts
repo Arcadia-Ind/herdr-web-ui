@@ -1,7 +1,7 @@
 import { expect, it } from "bun:test";
 import type { ProjectCatalog } from "../../shared/customization.ts";
 import type { PaneInfo, SessionSnapshot } from "../../shared/protocol.ts";
-import { projectNumber, projectPaneIds, ungroupedSnapshot } from "./projectSidebar.ts";
+import { projectNumber, projectPane, projectPaneIds, ungroupedSnapshot } from "./projectSidebar.ts";
 import { sanitizeSettings, telemetrySettingsSnapshot } from "./settings.ts";
 
 const pane = (workspace: string, label: string): PaneInfo => ({ pane_id: workspace + ":p1", workspace_id: workspace, tab_id: workspace + ":t1", terminal_id: workspace + "-term", revision: 1, focused: false, agent_status: "blocked", label });
@@ -72,4 +72,28 @@ it("checks a retained worktree root even when the pane is in a subdirectory", ()
   expect(projectPaneIds(native, retained).has("w1D:p1")).toBe(true);
   native.workspaces[1]!.worktree.checkout_path = "/different-checkout";
   expect(projectPaneIds(native, retained).has("w1D:p1")).toBe(false);
+});
+
+it.each([null, "", undefined])("leaves reused native identities generic when a resolved directory is %p", (directory) => {
+  const retained = structuredClone(catalog);
+  const thread = retained.projects[0]!.threads[0]!;
+  thread.lifecycle = "resolved";
+  if (directory === undefined) Reflect.deleteProperty(thread, "directory");
+  else thread.directory = directory;
+  const native = { ...snapshot,
+    panes: snapshot.panes.map((row) => row.workspace_id === "w1D" ? { ...row, terminal_id: "replacement-terminal", cwd: "/unrelated/new-checkout" } : row),
+    workspaces: snapshot.workspaces.map((row) => row.workspace_id === "w1D" ? { ...row,
+      worktree: { checkout_path: "/unrelated/new-checkout", is_linked_worktree: true, repo_key: "unrelated", repo_name: "unrelated", repo_root: "/unrelated" },
+    } : row),
+  };
+  expect([...projectPaneIds(native, retained)]).toEqual(["w1C:p1"]);
+  expect(projectPane(native, thread)).toBeUndefined();
+  const generic = ungroupedSnapshot(native, retained)!;
+  expect(generic.panes.map((row) => row.pane_id)).toEqual(["w1D:p1", "w1E:p1"]);
+  expect(generic.agents.map((row) => row.pane_id)).toEqual(["w1D:p1", "w1E:p1"]);
+  expect(generic.workspaces.map((row) => row.workspace_id)).toEqual(["w1D", "w1E"]);
+  // Active threads keep the existing exact pane/workspace binding without a directory requirement.
+  thread.lifecycle = "open";
+  expect(projectPane(native, thread)?.terminal_id).toBe("replacement-terminal");
+  expect([...projectPaneIds(native, retained)]).toEqual(["w1C:p1", "w1D:p1"]);
 });

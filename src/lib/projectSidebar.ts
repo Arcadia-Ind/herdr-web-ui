@@ -3,7 +3,8 @@ import type { PaneInfo, SessionSnapshot } from "../../shared/protocol.ts";
 
 export function projectPane(snapshot: SessionSnapshot | null, row: { pane_id: string; workspace_id: string } & Partial<Pick<ProjectThread, "lifecycle" | "directory">>): PaneInfo | undefined {
   const pane = snapshot?.panes.find((pane) => pane.pane_id === row.pane_id && pane.workspace_id === row.workspace_id);
-  if (pane && row.lifecycle === "resolved" && row.directory) {
+  if (pane && row.lifecycle === "resolved") {
+    if (!row.directory) return undefined;
     const checkout = snapshot?.workspaces.find((workspace) => workspace.workspace_id === row.workspace_id)?.worktree?.checkout_path;
     if ((checkout || pane.cwd) !== row.directory) return undefined;
   }
