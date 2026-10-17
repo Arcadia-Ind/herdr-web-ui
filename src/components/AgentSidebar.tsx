@@ -142,7 +142,7 @@ export function AgentSidebar({ machines, selectedMachineId, selectedPaneId, stat
     return <li className={`agent-item${selected ? " is-selected" : ""}${online ? "" : " is-offline"}`} key={paneStorageId(machine.id, pane.pane_id)} data-machine={machine.id} data-pane={pane.pane_id} data-pin-key={pinKey}
       onMouseDownCapture={(event) => { if (event.button === 2 || (event.button === 0 && event.ctrlKey)) event.preventDefault(); }}
       onContextMenu={(event) => onRowContextMenu(event, toggleMenu)}>
-      <button type="button" className="agent-select agent-row" disabled={!online} aria-current={selected ? "true" : undefined} title={tooltip} onClick={() => onSelect(machine.id, pane.pane_id)}
+      <button type="button" className="agent-select agent-row" aria-label={settings.compactSidebar ? tooltip : undefined} disabled={!online} aria-current={selected ? "true" : undefined} title={tooltip} onClick={() => onSelect(machine.id, pane.pane_id)}
         draggable={online}
         // dropped on the pane area, the row opens its pane in half of it (lib/split.ts)
         onDragStart={(event) => {

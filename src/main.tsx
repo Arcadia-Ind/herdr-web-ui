@@ -8,6 +8,9 @@ import "./styles.css";
 import { App } from "./App.tsx";
 import { AppCrash, CrashProbe } from "./components/AppCrash.tsx";
 import { FileReader } from "./components/FileReader.tsx";
+import { ExplorerReader } from "./components/explorer/ExplorerReader.tsx";
+import { explorerFromSearch } from "./lib/explorerRoute.ts";
+import { embeddedExplorerFromSearch } from "./lib/appExplorerRoute.ts";
 import { RenderBoundary } from "./components/RenderBoundary.tsx";
 import { readerFromSearch } from "./lib/fileReader.ts";
 import { SettingsProvider } from "./lib/settings.ts";
@@ -23,6 +26,10 @@ if (!container) throw new Error("#root is missing from index.html");
 
 // a markdown file opened in a tab of its own is that page alone, not the app (FileReader)
 const reader = readerFromSearch(window.location.search);
+const query = new URLSearchParams(window.location.search);
+const wantsExplorer = query.has("explore");
+const explorer = explorerFromSearch(window.location.search);
+const invalidEmbeddedExplorer = query.has("explorer") && embeddedExplorerFromSearch(window.location.search) === null;
 
 // an error nothing else caught still reaches the console under one name, where a bug report can find it
 // (but not the browser's benign ResizeObserver loop notice: lib/uncaughtErrors.ts)
@@ -39,7 +46,7 @@ createRoot(container).render(
     <RenderBoundary resetKey={null} fallback={(_retry, error) => <AppCrash error={error} />}>
       <CrashProbe region="root" />
       <SettingsProvider>
-        {reader !== null ? <FileReader target={reader} /> : <App />}
+        {wantsExplorer || invalidEmbeddedExplorer ? <ExplorerReader target={wantsExplorer ? explorer : null} /> : reader !== null ? <FileReader target={reader} /> : <App />}
       </SettingsProvider>
     </RenderBoundary>
   </StrictMode>,

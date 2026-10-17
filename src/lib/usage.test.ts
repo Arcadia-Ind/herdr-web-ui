@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { ProviderUsage, UsageWindow } from "../../shared/protocol.ts";
-import { composerUsage, formatPercent, formatResetIn, glanceWindow, meterPercent, meterText, moveInOrder, orderProviders, providerForAgent, statusWindows, tightestWindow, usageName, windowLabel } from "./usage.ts";
+import { composerAccountReference, composerUsage, formatPercent, formatResetIn, glanceWindow, meterPercent, meterText, moveInOrder, orderProviders, providerForAgent, statusWindows, tightestWindow, usageName, windowLabel } from "./usage.ts";
 
 const NOW = Date.parse("2026-09-29T12:00:00Z");
 const window = (used_percent: number, kind: UsageWindow["kind"] = "week", scope: string | null = null): UsageWindow => ({ kind, scope, used_percent, resets_at: null, starts_at: null });
@@ -9,6 +9,15 @@ const provider = (id: ProviderUsage["id"], windows: UsageWindow[], account: stri
 });
 
 describe("usage meters", () => {
+  it("requires an account preference when several visible accounts share a provider", () => {
+    const a = provider("codex", [window(20)], "a@x");
+    const b = provider("codex", [window(80)], "b@x");
+    expect(composerAccountReference([a, b], "codex", [], [])).toBeNull();
+    expect(composerAccountReference([a, b], "codex", [b.key], [])).toBe(b);
+    expect(composerAccountReference([a, b], "codex", [], [a.key])).toBe(b);
+    expect(composerAccountReference([a], "claude", [], [])).toBeNull();
+    expect(composerAccountReference([a], "codex", [], [a.key])).toBeNull();
+  });
   it("uses the agent's provider and the first visible account in Settings order", () => {
     const accounts = [provider("claude", [window(40)]), provider("codex", [window(20)], "a@x"), provider("codex", [window(80)], "b@x")];
     expect(composerUsage(accounts, "codex", ["codex:b@x"], [])?.account).toBe("b@x");

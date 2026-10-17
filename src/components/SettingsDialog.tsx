@@ -245,13 +245,21 @@ function PaletteSelect({ id, value, onChange }: { id: string; value: PaletteName
 }
 
 function AppearancePage() {
-  const { settings, update } = useSettings();
+  const { settings, update, installedThemes, themeCatalogState } = useSettings();
   const t = useT();
   return (
     <>
     <SettingsGroup>
+      <SettingsRow label={t("Herdr theme")} htmlFor="settings-herdr-theme">
+        <select id="settings-herdr-theme" className="select settings-select" value={settings.herdrTheme ?? ""} onChange={(event) => update({ herdrTheme: event.target.value || null })}>
+          <option value="">{t("Web colors")}</option>
+          {settings.herdrTheme && !installedThemes.some((theme) => theme.id === settings.herdrTheme) && <option value={settings.herdrTheme}>{settings.herdrTheme} — {t("Unavailable")}</option>}
+          {installedThemes.map((theme) => <option key={theme.id} value={theme.id}>{theme.name} · {t(theme.mode === "dark" ? "Dark" : "Light")}</option>)}
+        </select>
+      </SettingsRow>
+      {themeCatalogState !== "ready" && <p className="field-hint" role="status">{t(themeCatalogState === "loading" ? "Loading installed themes…" : themeCatalogState === "partial" ? "Some installed themes could not be read" : "Installed themes are unavailable")}</p>}
       <SettingsRow label={t("Theme")} wide>
-        <Segmented label={t("Theme")} value={settings.theme} onChange={(theme) => update({ theme })} options={[{ value: "dark", label: t("Dark") }, { value: "light", label: t("Light") }, { value: "system", label: t("System") }]} />
+        <Segmented label={t("Theme")} value={settings.theme} onChange={(theme) => update({ theme, herdrTheme: null })} options={[{ value: "dark", label: t("Dark") }, { value: "light", label: t("Light") }, { value: "system", label: t("System") }]} />
       </SettingsRow>
       {settings.theme === "system" ? (
         <>

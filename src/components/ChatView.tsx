@@ -12,6 +12,8 @@ import "./ChatTimeline.css";
 
 import { AgentMark } from "./AgentMark.tsx";
 import { AnimatedHeight } from "./AnimatedHeight.tsx";
+import { ChatHighlightsActions, ChatHighlightsMode, ChatHighlightsProse, type ChatTurnHighlights } from "./ChatHighlights.tsx";
+import { chatProse, matchingChatPrompts, type AppendChatQuote } from "../lib/chatHighlights.ts";
 import { Markdown, ReservedImage } from "./Markdown.tsx";
 import { ImageLightbox } from "./ImageLightbox.tsx";
 import { PromptCard } from "./PromptCard.tsx";
@@ -93,6 +95,11 @@ const LOAD_OLDER_PX = 400;
 
 export interface ChatViewProps {
   paneId: string;
+  /** Owner adapter appends only to the existing per-pane saved draft; it never submits. */
+  onAppendQuote?: AppendChatQuote;
+  /** Optional shared setting. Without it the Chat toggle is local to this view. */
+  textOnly?: boolean;
+  onTextOnlyChange?: (next: boolean) => void;
   /** Only the active pane owns the chat-local Mod+F shortcut. */
   active?: boolean;
   /** false while the pane sits off-tab (a cached or retained pane): no reads, no conversation-watch */
@@ -512,7 +519,7 @@ function UserImages({ paneId, parts, text }: { paneId: string; parts: Conversati
  * every row) the last line fades into the card and "Show full message" opens it. Opened, it stays
  * open while its row leaves and re-enters the list (useChatRowToggle).
  */
-function UserMessage({ text, skills = null }: { text: string; skills?: SkillMatcher | null }) {
+function UserMessage({ text, skills = null, proseRef }: { text: string; skills?: SkillMatcher | null; proseRef?: (node: HTMLDivElement | null) => void }) {
   const t = useT();
   const canFold = useMemo(() => shouldFoldUserMessage(text), [text]);
   const [chosen, setOpen] = useChatRowToggle("fold", false);
@@ -545,7 +552,7 @@ function UserMessage({ text, skills = null }: { text: string; skills?: SkillMatc
     if (node && view && node.getBoundingClientRect().top < view.getBoundingClientRect().top) node.scrollIntoView({ block: "start" });
   }, [open]);
   return <div ref={card} className={`chat-bubble${capped ? " is-capped" : ""}${clipped ? " is-folded" : ""}`}>
-    <div ref={body} className="chat-bubble-body"><Markdown skills={skills}>{text}</Markdown></div>
+    <div ref={(node) => { body.current = node; proseRef?.(node); }} className="chat-bubble-body"><Markdown skills={skills}>{text}</Markdown></div>
     {(open || clipped) && <div className="chat-bubble-foot">
       <button type="button" className="chat-bubble-fold" aria-expanded={open} onClick={toggle}>{open ? t("Show less") : t("Show full message")}</button>
     </div>}
@@ -555,6 +562,7 @@ function UserMessage({ text, skills = null }: { text: string; skills?: SkillMatc
 interface TurnProps {
   paneId: string;
   turn: ConversationTurn;
+  highlights?: ChatTurnHighlights;
   /** the last turn while the agent runs: its work block reads "Working…" */
   live: boolean;
   /** ...and "Needs you" while the agent is blocked */
@@ -610,15 +618,20 @@ function noticeLabel(t: ReturnType<typeof useT>, notice: Extract<ConversationPar
 }
 
 // a turn that did not change keeps its object across polls: skip re-rendering it
-const Turn = memo(function Turn({ paneId, turn, live, waiting, showThinking, skills = null, userSkills = null }: TurnProps) {
+const Turn = memo(function Turn({ paneId, turn, live, waiting, showThinking, skills = null, userSkills = null, highlights }: TurnProps) {
   const t = useT();
+  const proseBody = useRef<HTMLDivElement>(null);
+  const textOnly = highlights?.textOnly === true;
+  const prose = chatProse(turn);
   // under the turn, not in its meta row: that row fades out once the pointer and focus leave
   const [copyFailed, setCopyFailed] = useChatRowToggle("copy-failed", false);
   const copyError = copyFailed && <p className="chat-copy-error" role="alert">{t("Couldn't copy. Select the text and copy it manually.")}</p>;
   const copied = (ok: boolean): void => setCopyFailed(!ok);
   const time = turn.ts === null ? null : <TurnTime ts={turn.ts} />;
+  // No special/tool/reasoning record can reveal its contents through the text-only lens.
+  if (textOnly && turn.role === "assistant" && !prose.trim()) return null;
   const compact = turn.parts.find((part): part is Extract<ConversationPart, { kind: "compact" }> => part.kind === "compact");
-  if (compact !== undefined) {
+  if (!textOnly && compact !== undefined) {
     return <ChatDetails memoryKey="compact" className="chat-compact">
       <summary>{t("Conversation compacted")}{time !== null && <> · {time}</>}</summary>
       <div className="chat-compact-text"><Markdown>{compact.text}</Markdown></div>
@@ -626,7 +639,7 @@ const Turn = memo(function Turn({ paneId, turn, live, waiting, showThinking, ski
   }
   // OmO's background tasks reported back: a card of what ended, each result on request
   const ended = turn.parts.find((part): part is Extract<ConversationPart, { kind: "task_result" }> => part.kind === "task_result");
-  if (ended !== undefined) {
+  if (!textOnly && ended !== undefined) {
     const heading = ended.tasks.length === 1 ? t("Background task ended") : t("{n} background tasks ended", { n: ended.tasks.length });
     return <section className="chat-task-results" aria-label={heading}>
       <p className="chat-task-results-head"><Layers aria-hidden="true" /><span>{heading}</span>{time !== null && <> · {time}</>}</p>
@@ -635,7 +648,7 @@ const Turn = memo(function Turn({ paneId, turn, live, waiting, showThinking, ski
   }
   // the runtime spoke, not the user: a quiet divider like a compaction, the text on request
   const notice = turn.parts.find((part): part is Extract<ConversationPart, { kind: "notice" }> => part.kind === "notice");
-  if (notice !== undefined) {
+  if (!textOnly && notice !== undefined) {
     return <ChatDetails memoryKey="notice" className="chat-compact chat-notice">
       <summary><span className="chat-notice-label">{noticeLabel(t, notice)}</span>{time !== null && <> · {time}</>}</summary>
       <pre className="chat-compact-text chat-notice-text">{notice.text}</pre>
@@ -647,28 +660,30 @@ const Turn = memo(function Turn({ paneId, turn, live, waiting, showThinking, ski
       <UserImages paneId={paneId} parts={turn.parts} text={text} />
       {/* one row: with a mouse the time and copy sit beside the bubble, on touch under it */}
       <div className="chat-user-row">
-        {text.length > 0 && <UserMessage text={text} skills={userSkills} />}
+        {text.length > 0 && <UserMessage text={text} skills={userSkills} proseRef={(node) => { proseBody.current = node; }} />}
         <div className="chat-turn-meta">{time}{text.length > 0 && <CopyButton text={text} label={t("Copy message")} onResult={copied} />}</div>
       </div>
       {copyError}
+      {highlights !== undefined && text.trim() && <ChatHighlightsActions body={proseBody} highlights={highlights} answer="" />}
       {/* the skill this message invoked (omp, omo, pi): the runtime recorded its instructions with it */}
-      <SkillActivityList parts={turn.parts} />
+      {!textOnly && <SkillActivityList parts={turn.parts} />}
     </article>;
   }
   const { work, answer } = splitTurn(turn.parts);
-  const answerText = answer.map((part) => part.text).join("\n\n");
+  const answerText = answer.map((part) => part.text).join("\n\n") || (textOnly ? prose : "");
   const goal = turnGoal(turn.parts);
   return <article className="chat-turn chat-turn-agent">
-    <SkillActivityList parts={turn.parts} />
-    {goal !== null && <GoalActivity goal={goal} />}
-    {work.length > 0 && <WorkBlockView paneId={paneId} parts={work} duration={formatWorkDuration(turn.ts, turn.end_ts ?? null)} live={live} waiting={waiting} defaultOpen={workStartsOpen(live, turn.parts)} showThinking={showThinking} />}
-    {answer.map((part, index) => <Markdown key={index} skills={skills}>{part.text}</Markdown>)}
+    {!textOnly && <SkillActivityList parts={turn.parts} />}
+    {!textOnly && goal !== null && <GoalActivity goal={goal} />}
+    {!textOnly && work.length > 0 && <WorkBlockView paneId={paneId} parts={work} duration={formatWorkDuration(turn.ts, turn.end_ts ?? null)} live={live} waiting={waiting} defaultOpen={workStartsOpen(live, turn.parts)} showThinking={showThinking} />}
+    <div ref={proseBody} className="chat-highlights-prose">{textOnly ? <ChatHighlightsProse turn={turn} skills={skills} /> : answer.map((part, index) => <Markdown key={index} skills={skills}>{part.text}</Markdown>)}</div>
     {answerText.length > 0 && <div className="chat-turn-meta chat-agent-meta">
       {/* a mouse reads one copy glyph and the words "Plain text"; touch reads the two formats */}
       <CopyButton className="chat-meta-btn" text={answerText} label={t("Copy as markdown")} onResult={copied}><span className="chat-meta-fmt">MD</span></CopyButton>
       <CopyButton className="chat-meta-btn chat-meta-plain" text={plainText(answerText)} label={t("Copy as plain text")} onResult={copied}><span className="chat-meta-fmt">TXT</span><span className="chat-meta-word">{t("Plain text")}</span></CopyButton>
       {time}
     </div>}
+    {highlights !== undefined && prose.trim() && <ChatHighlightsActions body={proseBody} highlights={highlights} answer={answerText} />}
     {copyError}
   </article>;
 });
@@ -714,8 +729,12 @@ function TerminalFallback({ paneId, visible }: { paneId: string; visible: boolea
 }
 
 // the app re-renders on every pane-status and poll; an unchanged transcript sits those out
-export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered }: ChatViewProps) {
+export const ChatView = memo(function ChatView({ paneId, active = true, visible: paneVisible = true, pageScroll, refreshKey, invalidationKey = 0, onConversationWatch, conversationPushes = false, onTerminalOutput, sentKey = 0, connected, ended, agent, agentStatus, onMetadata, onRead, greeted = false, onPrompt, onSuggestion, onRestored, promptRefreshKey = 0, pendingAnswer = null, onPendingAnswerDone, promptDock = null, onPromptAnswered, onAppendQuote, textOnly: controlledTextOnly, onTextOnlyChange }: ChatViewProps) {
   const t = useT();
+  const [localTextOnly, setLocalTextOnly] = useState(false);
+  const highlightsEnabled = agent === "codex" || agent === "claude";
+  const textOnly = highlightsEnabled && (controlledTextOnly ?? localTextOnly);
+  const changeTextOnly = (next: boolean) => { setLocalTextOnly(next); onTextOnlyChange?.(next); };
   const { fetchPaneConversation, peekPaneConversation, fetchPanePromptState, fetchPaneTranscript } = useMachineApi();
   const { settings } = useSettings();
   const machineId = useMachineId();
@@ -1228,7 +1247,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
     const scroll = (direction: -1 | 1) => {
       const node = scroller.current;
       if (!node) return;
-      const prose = node.querySelector<HTMLElement>(".chat-turn-agent > .markdown, .chat-bubble") ?? node;
+      const prose = node.querySelector<HTMLElement>(".chat-turn-agent > .chat-highlights-prose > .markdown, .chat-bubble") ?? node;
       const style = getComputedStyle(prose);
       const lineHeight = parseFloat(style.lineHeight);
       const rowHeight = Number.isFinite(lineHeight) ? lineHeight : parseFloat(style.fontSize);
@@ -1257,6 +1276,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
     return () => { if (pageScroll.current === scroll) pageScroll.current = null; };
   });
   const turns = useMemo(() => older.length > 0 ? [...older, ...state.turns] : state.turns, [older, state.turns]);
+  const matchingPrompts = useMemo(() => matchingChatPrompts(turns), [turns]);
   // A cancelled send back in the agent's input box is no sent turn: the transcript still holds it
   // (empty, blank, held and onRead keep the turns as read), but the rendered list drops it while
   // the last turn is that very send — matching the terminal, which shows it only as typed text.
@@ -1270,7 +1290,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
   const finishedBeforeSend = sentOver !== null && sentOver.page === state.turns ? sentOver.turn : null;
   // the last turn is an open work block, whose head already says the agent works
   const lastShownTurn = state.source === "conversation" ? shownTurns.at(-1) : undefined;
-  const workBlockLive = lastShownTurn !== undefined && isLiveWorkTurn(lastShownTurn, true, workStatus, finishedBeforeSend);
+  const workBlockLive = !textOnly && lastShownTurn !== undefined && isLiveWorkTurn(lastShownTurn, true, workStatus, finishedBeforeSend);
   const empty = state.source === "conversation" ? turns.length === 0 : agent === null && state.messages.length === 0;
   const blank = !ended && chatIsBlank({ loaded, failed: error !== null, transcript: state.source === "conversation", turns: turns.length, older: typeof olderCursor === "string", abandoned: abandoned?.count ?? 0, prompt: prompt !== null, agent });
   // the scrollback standing in says nothing of the conversation: it has no history to compare
@@ -1342,14 +1362,15 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
     const { turn } = row;
     const live = isLiveWorkTurn(turn, index === shownTurns.length - 1, workStatus, finishedBeforeSend);
     return <RenderBoundary resetKey={turnRevision(turn, true)} fallback={() => <p className="chat-inline-state chat-inline-error">{t("This message can't be shown here. The terminal has it.")}</p>}>
-      <Turn paneId={paneId} turn={turn} live={live} waiting={isWaitingWorkTurn(live, agentStatus)} showThinking={settings.showThinking} skills={skillMatcher} userSkills={skillMatcher} />
+      <Turn paneId={paneId} turn={turn} live={live} waiting={isWaitingWorkTurn(live, agentStatus)} showThinking={settings.showThinking} skills={skillMatcher} userSkills={skillMatcher}
+        highlights={highlightsEnabled ? { textOnly, reference: { paneId, historyId: historyId ?? "", turnKey: row.key, role: turn.role, timestamp: turn.ts, text: chatProse(turn) }, prompt: matchingPrompts.get(turn) ?? null, onAppendQuote } : undefined} />
     </RenderBoundary>;
-  }, [shownTurns.length, workStatus, finishedBeforeSend, t, paneId, agentStatus, settings.showThinking, skillMatcher]);
+  }, [shownTurns.length, workStatus, finishedBeforeSend, t, paneId, agentStatus, settings.showThinking, skillMatcher, highlightsEnabled, textOnly, historyId, matchingPrompts, onAppendQuote]);
   const header = <>
       {/* the conversation below is not all the file holds: a /tree left these behind, and pi moved
           its leaf without writing anything, so nothing here could say they were ever there. First
           in the transcript, because paging back would otherwise drop them under their own heading */}
-      {state.source === "conversation" && abandoned !== null && abandoned.count > 0 && (
+      {!textOnly && state.source === "conversation" && abandoned !== null && abandoned.count > 0 && (
         <details className="chat-compact chat-abandoned">
           <summary>{t(abandoned.branches > 1
             ? abandoned.count === 1 ? "{n} earlier turn on {b} branches you navigated away from" : "{n} earlier turns on {b} branches you navigated away from"
@@ -1384,6 +1405,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
     : away && <button type="button" className="btn chat-new-messages chat-virtual-jump is-icon" aria-label={t("Jump to latest")} title={t("Jump to latest")} onClick={scrollToBottom}><ArrowDown aria-hidden="true" /></button>;
   return <ChatPaneContext.Provider value={paneId}><ChatHistoryContext.Provider value={historyId ?? ""}><ImageViewerContext.Provider value={openViewer}>
     <div className="chat-frame">
+    {highlightsEnabled && <ChatHighlightsMode textOnly={textOnly} onChange={changeTextOnly} />}
     <div className="chat-frame-body">
     {state.source === "conversation" ? ChatTimeline === null
       // its chunk is still loading: no turn is read until it arrives, so this is the loading state
@@ -1409,7 +1431,7 @@ export const ChatView = memo(function ChatView({ paneId, active = true, visible:
       renderRow={renderTurn}
     /> : <div className="chat-view" ref={scroller} onScroll={onScroll} role="log" aria-live="polite" aria-label={t("conversation of {pane}", { pane: paneId })}>
       <div className="chat-transcript" data-conversation-source={state.conversationSource}>
-        {agent !== null ? <TerminalFallback key={paneId} paneId={paneId} visible={visible} />
+        {textOnly ? <p className="chat-inline-state">{t("Text-only Chat is unavailable until the conversation loads.")}</p> : agent !== null ? <TerminalFallback key={paneId} paneId={paneId} visible={visible} />
           : state.messages.map((message, index) => <FallbackTurn key={index} paneId={paneId} message={message} />)}
         {footer}
       </div>

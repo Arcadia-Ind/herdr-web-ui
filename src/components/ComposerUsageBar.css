@@ -1,0 +1,74 @@
+.composer-usage-bar {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--text-dim);
+  font-size: var(--fs-2xs);
+}
+
+.composer-usage-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 4px 1px;
+  scrollbar-width: thin;
+}
+
+.composer-usage-item {
+  flex: 0 0 auto;
+  max-width: min(280px, 85vw);
+}
+
+.composer-usage-item summary {
+  display: flex;
+  position: relative;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 7px 6px;
+  border: var(--hairline) solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  list-style: none;
+  white-space: nowrap;
+}
+
+.composer-usage-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.composer-usage-item summary:focus-visible {
+  outline: var(--ring);
+  outline-offset: 1px;
+}
+
+.composer-usage-value {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.composer-usage-state {
+  font-size: 0.9em;
+}
+
+.composer-usage-meter {
+  position: absolute;
+  inset: auto 5px 2px;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(to right, var(--text-dim) var(--usage-fill), var(--border) var(--usage-fill));
+}
+
+.composer-usage-item.is-stale .composer-usage-meter,
+.composer-usage-item.is-rate_limited .composer-usage-meter {
+  opacity: 0.5;
+}
+
+.composer-usage-detail {
+  padding: 6px 7px;
+  max-width: 280px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
+}

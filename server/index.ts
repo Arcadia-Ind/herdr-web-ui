@@ -40,6 +40,9 @@ import { createDirectory, listDirectories } from "./directories.ts";
 import { claudeSessionTempDir } from "./claude-store.ts";
 import { fileResponse, findFile, crossSiteFileRead } from "./file-view.ts";
 import { repoDiffResponse } from "./repo-diff.ts";
+import { cachedCatalog, installedProjects, installedThemes, type CatalogPaths } from "./local-catalog.ts";
+import { ThreadDiffCache, threadDiffBatch } from "./thread-diffs.ts";
+import { explorerResponse } from "./explorer.ts";
 import {
   agentManifests,
   agentPrompt,
@@ -444,6 +447,8 @@ export interface ServerInstance {
 
 export function createServer(
   options: {
+    /** Tests pass isolated catalogs and a synthetic pane roster. */
+    customization?: { paths: CatalogPaths; snapshot?: () => Promise<SessionSnapshot>; diffs?: ThreadDiffCache };
     port?: number;
     hostname?: string;
     token?: string;
@@ -569,6 +574,9 @@ export function createServer(
   const typedEscape = new Set<string>();
   /** per pane, the WS keys still waiting at the tail of the pane's queue: later keys of the same sender join them */
   const waitingKeys = new Map<string, { keys: string[]; client: unknown; origin: unknown; pty: unknown; claim: unknown; roles: number; run: Promise<unknown> | null; sent: boolean }>();
+  const readThemes = cachedCatalog(() => installedThemes(options.customization?.paths), 60_000);
+  const readProjects = cachedCatalog(() => installedProjects(options.customization?.paths));
+  const threadDiffs = options.customization?.diffs ?? new ThreadDiffCache();
   const hostname = options.hostname ?? process.env["HOST"] ?? "127.0.0.1";
   /** Empty token = gate disabled; every route then behaves exactly as it did before auth existed. */
   const token = options.token ?? process.env["HERDR_WEB_TOKEN"] ?? "";
@@ -1869,7 +1877,9 @@ export function createServer(
       const url = new URL(request.url);
       let { pathname } = url;
       const bridgeAuthorized = isAuthenticated(request, bridgeToken);
-      const bridgePath = pathname === "/api/bridge" || pathname === "/api/session" || pathname === "/api/agents" || pathname === "/api/agent/rename" || pathname === "/api/integrations" || pathname === "/api/plugins/actions" || pathname === "/api/plugin/action" || pathname.startsWith("/api/pane/") || pathname.startsWith("/api/workspace/") || pathname.startsWith("/api/worktree/") || pathname.startsWith("/api/tab/") || pathname === "/api/layout/ratio" || pathname.startsWith("/api/fs/") || pathname === "/ws";
+      // Registered bridges read the cached report only, without browser cookies or forced refresh.
+      const bridgeUsageRead = pathname === "/api/usage" && request.method === "GET" && url.search === "" && sameOrigin(request) && bearerMatches(request, bridgeToken);
+      const bridgePath = bridgeUsageRead || pathname === "/api/bridge" || pathname === "/api/session" || pathname === "/api/agents" || pathname === "/api/agent/rename" || pathname === "/api/integrations" || pathname === "/api/plugins/actions" || pathname === "/api/plugin/action" || pathname.startsWith("/api/pane/") || pathname.startsWith("/api/workspace/") || pathname.startsWith("/api/worktree/") || pathname.startsWith("/api/tab/") || pathname === "/api/layout/ratio" || pathname.startsWith("/api/fs/") || pathname === "/ws";
       const ip = bunServer.requestIP(request);
       const loopback = ip !== null && isLoopbackAddress(ip.address);
       const forwarded = cameThroughProxy(request.headers);
@@ -1960,7 +1970,7 @@ export function createServer(
       }
       // Chat reads can chain several valid 10 s RPCs. Leave the 15/30 s client deadline
       // in charge rather than Bun's default 10 s idle cutoff. PC proxies have their own budget above.
-      if (pathname === "/api/pane/read" || pathname === "/api/pane/conversation") bunServer.timeout(request, 60);
+      if (pathname === "/api/pane/read" || pathname === "/api/pane/conversation" || pathname === "/api/workspace/diff/summaries") bunServer.timeout(request, 60);
       if (pathname === "/ws") {
         if (!sameOrigin(request)) return new Response("invalid origin", { status: 403 });
         const deviceId = access.level === "full" ? access.device?.id : undefined;
@@ -2049,6 +2059,25 @@ export function createServer(
       if (pathname === "/api/access") {
         if (request.method !== "GET") return badRequest("method_not_allowed", "use GET");
         return jsonResponse(await remoteAccess(bunServer.port ?? DEFAULT_PORT), 200, { "cache-control": "no-store" });
+      }
+
+      if (/^\/api\/workspace\/explorer\/(?:list|stat|file)$/.test(pathname)) {
+        return explorerResponse(request, { canRead: authenticated && !readOnly, catalog: readProjects,
+          snapshot: options.customization?.snapshot ?? sessionSnapshot });
+      }
+
+      if (pathname === "/api/themes" || pathname === "/api/workspace/projects" || pathname === "/api/workspace/diff/summaries") {
+        if (request.method !== "GET") return badRequest("method_not_allowed", "use GET");
+        if (request.headers.get("sec-fetch-site") === "cross-site") return jsonResponse({ error: { code: "cross_site", message: "Read local catalogs from this app" } }, 403);
+        try {
+          if (pathname === "/api/themes") return jsonResponse(await readThemes());
+          const catalog = await readProjects();
+          if (pathname === "/api/workspace/projects") return jsonResponse(catalog);
+          const ids = (url.searchParams.get("pane_ids") ?? "").split(",");
+          if (ids.length > 8 || ids.some((id) => !/^w[0-9A-Za-z]+:p[0-9A-Za-z]+$/.test(id)) || new Set(ids).size !== ids.length) return badRequest("invalid_panes", "name one to eight distinct panes");
+          const snapshot = await (options.customization?.snapshot ?? sessionSnapshot)();
+          return jsonResponse(await threadDiffBatch(catalog, snapshot, ids, threadDiffs));
+        } catch { return jsonResponse({ error: { code: "catalog_unavailable", message: "The local catalog could not be read" } }, 503); }
       }
 
       if (pathname === "/api/session") {

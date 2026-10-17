@@ -27,6 +27,8 @@ import { answerFromText, answerHint, answerRefusal, needsConfirmation, type Type
 import { ApiError, assertAttachable, fetchPaneScroll, fetchPaneSelection, scrollPane } from "../lib/api.ts";
 import { parseOsc52 } from "../lib/osc52.ts";
 import { composerDrafts } from "../lib/composerDraft.ts";
+import { appendChatQuoteDraft } from "../lib/chatQuoteDraft.ts";
+import type { ChatQuoteReference } from "../lib/chatHighlights.ts";
 import { appendQuote, formatTerminalQuote } from "../lib/terminalQuote.ts";
 import { matchHerdrWidths } from "../lib/terminalWidths.ts";
 import { useMachineApi, useMachineId } from "../lib/machineContext.tsx";
@@ -327,7 +329,7 @@ export function PaneTerminal({
   // keyboard by itself, only a tap on the message box or the grid does. A desktop has no keyboard
   // to raise, and the pane it picks takes the typing at once.
   const coarseRef = useRef(coarse); coarseRef.current = coarse;
-  const { settings, update: updateSettings } = useSettings();
+  const { settings, installedTheme, update: updateSettings } = useSettings();
   const availableModifiers = settings.keyBarItems.reduce((mask, item) => item.type === "modifier"
     ? mask | { ctrl: 4, alt: 2, shift: 1 }[item.modifier] : mask, 0);
   useLayoutEffect(() => {
@@ -412,6 +414,12 @@ export function PaneTerminal({
     if (next === memory) return;
     rememberGreeting(owner, next); redrawGreeting();
   }, [machineId]);
+  const onAppendChatQuote = useCallback((quote: ChatQuoteReference): boolean => {
+    if (paneId !== paneRef.current) return false;
+    const history = paneId === null ? null : greetingMemory(paneStorageId(machineId, paneId)).history;
+    return appendChatQuoteDraft(composerDrafts, machineId, paneId, history, quote,
+      quote.role === "user" ? t("User") : agentDisplayLabel(agent), MAX_COMPOSER_CHARS);
+  }, [machineId, paneId, agent, t]);
   // the stack (stackRef, above) holds the composer and the greeting over it (measured below)
   const [greetingRoom, setGreetingRoom] = useState(true);
   const greetingRef = useRef<HTMLDivElement | null>(null);
@@ -465,7 +473,8 @@ export function PaneTerminal({
     setChatMetadata((previous) => previous?.pane === pane && previous.value?.model === value?.model
       && previous.value?.reasoning_effort === value?.reasoning_effort
       && previous.value?.context?.used === value?.context?.used
-      && previous.value?.context?.window === value?.context?.window ? previous : { pane, value });
+      && previous.value?.context?.window === value?.context?.window
+      && JSON.stringify(previous.value?.usage) === JSON.stringify(value?.usage) ? previous : { pane, value });
   }, []);
   const queueStore = messageQueues;
   const queueOwner = paneId === null ? null : paneStorageId(machineId, paneId);
@@ -548,7 +557,7 @@ export function PaneTerminal({
       fontSize: terminalFontSize,
       // a chosen family follows in the font effect below, once its faces have loaded
       fontFamily: TERMINAL_FONT_STACK,
-      theme: terminalTheme(theme, palette),
+      theme: terminalTheme(theme, palette, installedTheme),
       // a program's own colors suit one background (Claude Code's question titles are #ffffff, near
       // 1:1 on a light palette): xterm moves a foreground under 4.5:1 toward black or white. Dim text
       // needs half that, and box, block and powerline glyphs keep their color.
@@ -1995,8 +2004,8 @@ export function PaneTerminal({
   // the theme follows the settings without a remount
   useEffect(() => {
     const term = termRef.current;
-    if (term) term.options.theme = terminalTheme(theme, palette);
-  }, [theme, palette]);
+    if (term) term.options.theme = terminalTheme(theme, palette, installedTheme);
+  }, [theme, palette, installedTheme]);
 
   // the font follows too, and a font change moves the grid. xterm measures the cell (and the DOM
   // renderer its glyph widths) when fontFamily or fontSize changes, and setting the same value
@@ -2873,6 +2882,9 @@ export function PaneTerminal({
             agentStatus={agentStatus}
             onMetadata={onChatMetadata}
             onRead={onChatRead}
+            onAppendQuote={onAppendChatQuote}
+            textOnly={settings.chatTextOnly}
+            onTextOnlyChange={(chatTextOnly) => updateSettings({ chatTextOnly })}
             greeted={greeted}
             onPrompt={onChatPrompt}
             onSuggestion={onChatSuggestion}

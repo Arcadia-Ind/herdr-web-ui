@@ -82,6 +82,55 @@ describe("recorded conversation model settings", () => {
   });
 });
 
+describe("composer usage metadata wiring", () => {
+  const tokens = (read: number) => ({ type: "event_msg", timestamp: "2026-10-17T05:00:00Z", payload: {
+    type: "token_count", info: { model_context_window: 200_000,
+      last_token_usage: { input_tokens: 30_000, output_tokens: 1000, total_tokens: 31_000, cached_input_tokens: read } },
+  } });
+
+  it("folds request, cache-only, and quota-only changes without a second transcript read", () => {
+    const first = parseConversationMetadata(jsonl(tokens(10_000)), "codex-transcript");
+    const cached = parseConversationMetadata(jsonl(tokens(20_000)), "codex-transcript", first);
+    expect(cached.context).toEqual(first.context);
+    expect(cached.usage?.cache.read_tokens).toBe(20_000);
+    expect(first.usage?.cache.read_tokens).toBe(10_000);
+    const quota = parseConversationMetadata(jsonl({ type: "event_msg", timestamp: "2026-10-17T05:01:00Z", payload: {
+      type: "token_count", info: null, rate_limits: { primary: { used_percent: 25, window_minutes: 300, resets_at: 1792218000 } },
+    } }), "codex-transcript", cached);
+    expect(quota.usage?.context).toEqual(cached.usage?.context);
+    expect(quota.usage?.quota?.windows[0]?.minutes).toBe(300);
+    expect(quota.usage?.quota?.windows[0]?.used_percent).toBe(25);
+  });
+
+  it("starts new transcript state clean and invalidates counters on a model change", () => {
+    const before = parseConversationMetadata(jsonl(tokens(10_000)), "codex-transcript");
+    expect(parseConversationMetadata("", "codex-transcript").usage).toBeUndefined();
+    const changed = parseConversationMetadata(jsonl({ type: "turn_context", payload: { model: "new-model" } }), "codex-transcript", before);
+    expect(changed.usage?.context.used).toBeNull();
+    expect(parseConversationMetadata("{}", "pi-transcript", before).usage).toBeNull();
+  });
+
+  it("retains a recorded model across slices before the first request reports usage", () => {
+    const context = { type: "turn_context", payload: { model: "recorded-model" } };
+    const head = parseConversationMetadata(jsonl(context), "codex-transcript");
+    const request = parseConversationMetadata(jsonl(tokens(10_000)), "codex-transcript", head);
+    expect(request.usage?.model).toBe("recorded-model");
+    const next = parseConversationMetadata(jsonl(context), "codex-transcript", request);
+    expect(next.usage?.context).toEqual(request.usage?.context);
+    expect(next.usage?.cache).toEqual(request.usage?.cache);
+  });
+
+  it("uses Claude request counters and leaves an unreported context limit unknown", () => {
+    const parsed = parseConversationMetadata(jsonl(
+      { type: "assistant", timestamp: "2026-10-17T05:00:00Z", message: { model: "claude-test",
+        usage: { input_tokens: 100, cache_read_input_tokens: 300_000, cache_creation_input_tokens: 1000 } } },
+      { type: "assistant", message: { model: "<synthetic>" } },
+    ), "claude-transcript");
+    expect(parsed.usage?.context).toEqual({ used: 301_100, limit: null, basis: "input" });
+    expect(parsed.usage?.cache.read_tokens).toBe(300_000);
+  });
+});
+
 describe("context use", () => {
   const assistant = (usage: Record<string, number>, model = "claude-opus-5-5", extra: Record<string, unknown> = {}) =>
     ({ type: "assistant", ...extra, message: { role: "assistant", model, usage } });

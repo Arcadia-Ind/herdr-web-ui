@@ -7,7 +7,7 @@ import { isJsonObject, jsonResponse } from "./http.ts";
 import { crossSiteFileRead } from "./file-view.ts";
 
 const fail = (code: string, message: string, status: number) => jsonResponse({ error: { code, message } }, status);
-export const MACHINE_PROXY_PATH = /^(?:session|agents|integrations|pane\/(?:read|scroll|find|selection|conversation(?:\/image|\/tool-output)?|commands|files|omo-tasks|plan|prompt|prompt\/answer|input|keys|close|rename|image|split|zoom|swap|resize|clear|focus)|workspace\/(?:create|rename|move|close|directories|diff\/files|diff\/file)|worktree\/(?:create|list|open|remove)|tab\/(?:create|rename|close|move)|layout\/ratio|agent\/rename|plugins\/actions|plugin\/action|fs\/(?:stat|file))$/;
+export const MACHINE_PROXY_PATH = /^(?:session|agents|integrations|usage|pane\/(?:read|scroll|find|selection|conversation(?:\/image|\/tool-output)?|commands|files|omo-tasks|plan|prompt|prompt\/answer|input|keys|close|rename|image|split|zoom|swap|resize|clear|focus)|workspace\/(?:create|rename|move|close|directories|projects|diff\/files|diff\/file|diff\/summaries)|worktree\/(?:create|list|open|remove)|tab\/(?:create|rename|close|move)|layout\/ratio|agent\/rename|plugins\/actions|plugin\/action|fs\/(?:stat|file))$/;
 
 
 /**
@@ -104,6 +104,10 @@ export async function handleMachineRequest(request: Request, manager: MachineMan
     }
     if (parts.length === 1 && request.method === "DELETE") { manager.remove(id); return jsonResponse({ ok: true }); }
     const path = parts.slice(1).join("/");
+    if (path === "usage") {
+      if (request.method !== "GET") return fail("method_not_allowed", "Use GET for cached usage", 405);
+      if (url.search !== "") return fail("invalid_query", "Read cached usage without refresh parameters", 400);
+    }
     if (MACHINE_PROXY_PATH.test(path)) {
       const endpoint = manager.endpoint(id);
       if (!endpoint) return fail("machine_offline", "This PC is disconnected", 503);

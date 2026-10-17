@@ -90,8 +90,8 @@ export function fetchRemoteAccess(): Promise<RemoteAccess> {
 }
 
 /** The sidebar's plan meters; `refresh` asks the providers again instead of the server's recent answer. */
-export function fetchUsage(refresh = false): Promise<UsageReport> {
-  return getJson<UsageReport>(refresh ? "/api/usage?refresh=1" : "/api/usage");
+export function fetchUsage(refresh = false, machineId = "local"): Promise<UsageReport> {
+  return getJson<UsageReport>(machinePath(machineId, refresh ? "usage?refresh=1" : "usage"));
 }
 
 /** Local server's CLIProxyAPI controls; secrets are only ever sent, never read back. */
@@ -809,4 +809,15 @@ export async function saveVoiceConfig(update: VoiceConfigUpdate): Promise<VoiceS
   const response = await fetch("/api/voice/config", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(update) });
   if (!response.ok) throw await errorFrom("/api/voice/config", response);
   return (await response.json()) as VoiceStatus;
+}
+
+/** Local installed colors; no native theme or layout setting is changed. */
+export async function fetchInstalledThemes(): Promise<import("../../shared/protocol.ts").ThemeCatalog> {
+  return getJson("/api/themes");
+}
+export async function fetchProjects(machineId: string, signal?: AbortSignal): Promise<import("../../shared/protocol.ts").ProjectCatalog> {
+  return getJson(machinePath(machineId, "workspace/projects"), { signal });
+}
+export async function fetchThreadDiffs(machineId: string, ids: string[], signal?: AbortSignal): Promise<import("../../shared/protocol.ts").ThreadDiffBatch> {
+  return getJson(machinePath(machineId, "workspace/diff/summaries?pane_ids=" + encodeURIComponent(ids.join(","))), { signal: signal ?? AbortSignal.timeout(30_000) });
 }

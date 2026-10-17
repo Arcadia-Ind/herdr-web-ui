@@ -7,6 +7,16 @@
  * types that quietly disagree with the server.
  */
 
+/** Read-only catalogs and batched thread summaries; no configuration documents are returned.
+ * GET /api/themes -> ThemeCatalog (installed local colors)
+ * GET /api/workspace/projects -> ProjectCatalog (registry bound to this bridge's socket)
+ * GET /api/workspace/diff/summaries?pane_ids=a,b -> ThreadDiffBatch (at most eight panes)
+ * GET /api/workspace/explorer/list|stat|file -> scoped project files (shared/explorer.ts)
+ * Summary counts compare the recorded thread worktree with HEAD, including staged changes.
+ * Untracked and binary files are reported as partial counts, never as a clean worktree.
+ */
+export type { ThemeCatalog, InstalledTheme, ProjectCatalog, HerdrProject, ProjectThread, ThreadDiffSummary, ThreadDiffBatch } from "./customization.ts";
+
 export type {
   AgentInfo,
   AgentSessionInfo,
@@ -26,6 +36,7 @@ export type {
 } from "./herdr-api.generated.ts";
 
 import type { AgentStatus, PaneInfo, PaneScrollInfo, SessionSnapshot, TabInfo, WorkspaceInfo } from "./herdr-api.generated.ts";
+import type { SessionUsage } from "./composer-usage.ts";
 
 /** Friendly aliases used across the UI. */
 export type HerdrWorkspace = WorkspaceInfo;
@@ -513,6 +524,8 @@ export interface ConversationMetadata {
    * response reports its usage. `window` is null when the transcript does not say it.
    */
   context?: { used: number; window: number | null };
+  /** Recorded request/cache counters and account limits; no model-name inference. */
+  usage?: SessionUsage | null;
 }
 
 /** One background task of an OmO session, or one subagent of a Claude Code session (GET /api/pane/omo-tasks), from OmO's task record or the subagent's files. */
@@ -729,7 +742,7 @@ export interface FileInfo {
 }
 
 /** Which two states of a repository are compared. */
-export type RepoDiffScope = "workspace" | "staged" | "commit";
+export type RepoDiffScope = "workspace" | "staged" | "commit" | "combined";
 
 /** How one file changed. `untracked` exists only in the `workspace` scope. */
 export type RepoDiffStatus = "added" | "deleted" | "modified" | "renamed" | "copied" | "type_changed" | "unmerged" | "untracked";

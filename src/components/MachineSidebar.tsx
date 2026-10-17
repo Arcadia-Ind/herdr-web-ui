@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ChevronRight, Download, Monitor, Plus, Settings, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, ChevronRight, Download, Monitor, PanelLeftClose, PanelLeftOpen, Plus, Settings, SlidersHorizontal, X } from "lucide-react";
 import type { Machine, MachineState, MachineUpdate } from "../../shared/machines.ts";
 import { MachineContext } from "../lib/machineContext.tsx";
 import { answerMachineSetup, machineRequest } from "../lib/api.ts";
@@ -13,6 +13,11 @@ import { SidebarActivityProvider, useSidebarActivityState } from "../lib/sidebar
 import { UsageMeters } from "./UsageMeters.tsx";
 import "./Machines.css";
 import { useT } from "../lib/i18n.ts";
+import { useSettings } from "../lib/settings.ts";
+import { ungroupedSnapshot } from "../lib/projectSidebar.ts";
+import { useProjectCatalogs, type ProjectLoad } from "../lib/useProjectCatalogs.ts";
+import { ProjectCatalogNotice, ProjectSidebar } from "./ProjectSidebar.tsx";
+import type { ExplorerContext } from "../../shared/explorer.ts";
 
 /** The PC header's state word; "connected" is the quiet default and shows as a dot alone, every other state also writes its word under the name. */
 export const STATE_WORD: Readonly<Record<MachineState, string>> = {
@@ -23,20 +28,26 @@ export const STATE_WORD: Readonly<Record<MachineState, string>> = {
   error: "Connection error",
 };
 
-interface Props { machines: Machine[]; selectedMachineId: string; selectedPaneId: string | null; actions: AppActions; onSelect(machineId: string, paneId: string | null): void; onNew(machineId: string): void; onSetup(machine: Machine, update?: boolean): void }
+interface Props { machines: Machine[]; selectedMachineId: string; selectedPaneId: string | null; actions: AppActions; onSelect(machineId: string, paneId: string | null): void; onNew(machineId: string): void; onSetup(machine: Machine, update?: boolean): void; onChanges(machineId: string, paneId: string, directory: string | null): void; onExplore(context: ExplorerContext): void }
 export function MachineSidebar(props: Props) {
   const t = useT();
+  const { settings, update } = useSettings();
+  const projects = useProjectCatalogs(props.machines);
+  const ungrouped = props.machines.map((machine) => ({ ...machine, snapshot: ungroupedSnapshot(machine.snapshot, projects.get(machine.id)?.catalog ?? null) }));
   const { canInstall, installed, install, help } = useInstallPrompt();
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
   // both lists draw from it: live counters per PC (lib/sidebarActivity.tsx)
   const activity = useSidebarActivityState(props.machines);
   // no top bar: a workspace starts from its PC's header, and Add PC lives in Settings → Remote PCs
   return <SidebarActivityProvider value={activity}><div className="sidebar-shell">
+    <button type="button" className="btn btn-ghost sidebar-compact-toggle" aria-pressed={settings.compactSidebar} title={t(settings.compactSidebar ? "Expand sidebar labels" : "Compact sidebar")} onClick={() => update({ compactSidebar: !settings.compactSidebar })}>
+      {settings.compactSidebar ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}<span>{t(settings.compactSidebar ? "Expand sidebar labels" : "Compact sidebar")}</span>
+    </button>
     <div className="machine-list" aria-label={t("PCs and workspaces")}>
-      {props.machines.map((machine) => <MachineGroup key={machine.id} {...props} machine={machine} />)}
+      {props.machines.map((machine) => <MachineGroup key={machine.id} {...props} machine={machine} projects={projects.get(machine.id)} />)}
       {!props.machines.length && <p className="tree-state" role="status">{t("Loading PCs…")}</p>}
     </div>
-    <AgentSidebar machines={props.machines} selectedMachineId={props.selectedMachineId} selectedPaneId={props.selectedPaneId} stateWord={(machine) => t(STATE_WORD[machine.state])} onSelect={props.onSelect} />
+    <AgentSidebar machines={ungrouped} selectedMachineId={props.selectedMachineId} selectedPaneId={props.selectedPaneId} stateWord={(machine) => t(STATE_WORD[machine.state])} onSelect={props.onSelect} />
     <footer className="sidebar-footer">
       {/* browsers without an install prompt (iOS, plain HTTP) get the steps instead */}
       {!installed && <button className="btn btn-ghost sidebar-footer-action" aria-expanded={canInstall ? undefined : installHelpOpen} onClick={() => { if (canInstall) void install(); else setInstallHelpOpen(!installHelpOpen); }}><Download aria-hidden="true" />{t("Install app")}</button>}
@@ -49,7 +60,7 @@ export function MachineSidebar(props: Props) {
   </div></SidebarActivityProvider>;
 }
 
-function MachineGroup({ machine, ...props }: Props & { machine: Machine }) {
+function MachineGroup({ machine, projects, ...props }: Props & { machine: Machine; projects?: ProjectLoad }) {
   const t = useT();
   const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem(`herdr-web-ui:pc-collapsed:${machine.id}`) === "1"; } catch { return false; } });
   const [editing, setEditing] = useState(false);
@@ -112,8 +123,11 @@ function MachineGroup({ machine, ...props }: Props & { machine: Machine }) {
       {confirmDelete && <p className="field-hint">{t("Removes this registration. Remote sessions keep running.")}</p>}
     </div>}
     {error && <p className="machine-error" role="alert">{error}</p>}
+    {!collapsed && <ProjectCatalogNotice load={projects} />}
+    {!collapsed && projects?.catalog?.partial && <p className="tree-state" role="status">{t("Some project records could not be read")}</p>}
+    {!collapsed && projects?.catalog && <ProjectSidebar machineId={machine.id} catalog={projects.catalog} snapshot={machine.snapshot} online={online} selectedPaneId={props.selectedMachineId === machine.id ? props.selectedPaneId : null} onSelect={(pane) => props.onSelect(machine.id, pane)} onChanges={(pane, directory) => props.onChanges(machine.id, pane, directory)} onExplore={props.onExplore} />}
     {!collapsed && <div className={online ? "" : "machine-offline"} inert={!online}>
-      {!online && !machine.snapshot ? <p className="tree-state machine-empty" role="status">{t("No saved sessions")}</p> : <MachineContext.Provider value={machine.id}><Sidebar snapshot={machine.snapshot} online={online} selectedPaneId={props.selectedMachineId === machine.id ? props.selectedPaneId : null} actions={actions} /></MachineContext.Provider>}
+      {!online && !machine.snapshot ? <p className="tree-state machine-empty" role="status">{t("No saved sessions")}</p> : <MachineContext.Provider value={machine.id}><Sidebar snapshot={ungroupedSnapshot(machine.snapshot, projects?.catalog ?? null)} online={online} selectedPaneId={props.selectedMachineId === machine.id ? props.selectedPaneId : null} actions={actions} /></MachineContext.Provider>}
     </div>}
   </section>;
 }

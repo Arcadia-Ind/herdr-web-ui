@@ -1,0 +1,43 @@
+.project-list { padding: var(--space-1) var(--space-2); }
+.project-group { margin-bottom: var(--space-2); }
+.project-header, .project-thread { display: flex; align-items: center; min-width: 0; }
+.project-header { border-bottom: var(--hairline) solid var(--border); }
+.project-select, .project-thread-select {
+  display: flex; align-items: center; gap: var(--space-2); min-width: 0;
+  flex: 1; border: 0; border-radius: var(--radius-sm); padding: var(--space-2);
+  background: transparent; color: var(--text); text-align: left; font-size: var(--fs-sm);
+}
+.project-select { font-weight: var(--fw-semibold); }
+.project-select:hover, .project-thread-select:hover, .thread-diff:hover { background: var(--bg-hover); }
+.project-select:focus-visible, .project-thread-select:focus-visible, .thread-diff:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.project-thread-select[aria-current="page"] { background: var(--bg-selected); color: var(--text-strong); }
+.project-group.has-selection > .project-header { border-color: var(--accent); }
+.project-name, .thread-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.project-number, .thread-number { font: var(--fs-xs) var(--font-mono); flex: none; }
+.project-number { color: var(--text-dim); }
+.project-threads { list-style: none; margin: 0; padding: var(--space-1) 0 0 var(--space-2); }
+.project-threads[hidden] { display: none; }
+.project-thread { flex-wrap: wrap; }
+.project-thread-select { min-height: var(--side-row); flex-basis: 100%; }
+.thread-diff {
+  display: flex; align-items: center; gap: var(--space-1); margin: 0 var(--space-2) var(--space-1) auto;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-dim);
+  font: var(--fs-xs) var(--font-mono); padding: var(--space-1) var(--space-2);
+}
+.thread-diff svg { width: var(--space-4); height: var(--space-4); }
+.thread-explore { flex: none; margin-bottom: var(--space-1); }
+.thread-lifecycle { margin: 0 var(--space-2) var(--space-1); color: var(--text-dim); font-size: var(--fs-xs); }
+.project-thread:has([aria-current="page"]) .thread-diff { color: var(--accent); }
+.sidebar-compact-toggle { width: 100%; justify-content: flex-start; min-height: var(--control-h); }
+[data-sidebar-compact="true"] .project-number,
+[data-sidebar-compact="true"] .thread-diff-count { display: none; }
+[data-sidebar-compact="true"] .thread-diff { padding: var(--space-1); min-height: var(--control-h); }
+[data-sidebar-compact="true"] .project-list { padding: var(--space-1); }
+[data-sidebar-compact="true"] .project-threads { padding-left: var(--space-1); }
+[data-sidebar-compact="true"] .project-thread-select {
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--side-box);
+  gap: var(--space-1); padding: var(--space-1);
+}
+[data-sidebar-compact="true"] .project-thread-select .thread-number,
+[data-sidebar-compact="true"] .project-thread-select .thread-title { grid-column: 1; }
+[data-sidebar-compact="true"] .project-thread-select .sidebar-status { grid-column: 2; grid-row: 1 / 3; }

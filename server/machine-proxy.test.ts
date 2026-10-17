@@ -8,10 +8,15 @@ const asked: (string | null)[] = [];
 const promptAsked: (string | null)[] = [];
 const PLAN_CARD = { id: "claude-plan:abc", agent: "claude", kind: "plan", title: "Plan", question: "Would you like to proceed?", options: [{ label: "Yes", description: null }], multi_select: false, custom_option_index: null };
 const diffAsked: { path: string; search: string; authorization: string | null; cookie: string | null; forwarded: string | null }[] = [];
+const usageAsked: { authorization: string | null; cookie: string | null }[] = [];
 const remote = Bun.serve({
   port: 0,
   fetch(request) {
     const path = new URL(request.url).pathname;
+    if (path === "/api/usage") {
+      usageAsked.push({ authorization: request.headers.get("authorization"), cookie: request.headers.get("cookie") });
+      return Response.json({ providers: [{ id: "codex", key: "remote-account", windows: [] }] });
+    }
     if (path === "/api/pane/conversation/image") return new Response(new Uint8Array([137, 80, 78, 71]), { headers: { "content-type": "image/png" } });
     if (path === "/api/pane/conversation/tool-output") return new Response("complete remote output", { headers: { "content-type": "text/plain; charset=utf-8" } });
     if (path === "/api/fs/file") return new Response("%PDF-1.7", { headers: { "content-type": "application/pdf" } });
@@ -42,6 +47,24 @@ const manager = {
 } as unknown as MachineManager;
 
 describe("PC proxy", () => {
+  it("reads the selected PC's cached account observations without browser credentials", async () => {
+    const response = await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage", {
+      headers: { cookie: "browser=private", authorization: "Bearer browser-token" },
+    }), manager);
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ providers: [{ key: "remote-account" }] });
+    expect(usageAsked).toEqual([{ authorization: "Bearer remote-token", cookie: null }]);
+    const crossSite = await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage", { headers: { "sec-fetch-site": "cross-site" } }), manager);
+    expect(crossSite.status).toBe(403);
+    expect((await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage/credentials"), manager)).status).toBe(404);
+    for (const method of ["POST", "PUT", "DELETE", "HEAD"]) {
+      expect((await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage", { method, headers: { "x-herdr-machine": "1" } }), manager)).status).toBe(405);
+    }
+    for (const query of ["?refresh=1", "?refresh=0", "?account=other"]) {
+      expect((await handleMachineRequest(new Request("http://127.0.0.1/api/machines/pc1/usage" + query), manager)).status).toBe(400);
+    }
+    expect(usageAsked).toHaveLength(1);
+  });
   it("carries a conversation's ETag both ways and passes an unchanged answer on as a bodyless 304", async () => {
     const url = "http://127.0.0.1/api/machines/pc1/pane/conversation?pane_id=w1%3Ap1";
     const first = await handleMachineRequest(new Request(url), manager);

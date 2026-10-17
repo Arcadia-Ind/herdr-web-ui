@@ -78,7 +78,7 @@ function alignBreath(event: AnimationEvent<HTMLSpanElement>) {
   for (const animation of event.currentTarget.getAnimations()) animation.startTime = 0;
 }
 
-export function StatusBadge({ status, compact = false }: { status?: AgentStatus; compact?: boolean }) {
+export function StatusBadge({ status, compact = false, alwaysVisible = false }: { status?: AgentStatus; compact?: boolean; alwaysVisible?: boolean }) {
   const t = useT();
   const { settings } = useSettings();
   const value = knownStatus(status);
@@ -89,7 +89,7 @@ export function StatusBadge({ status, compact = false }: { status?: AgentStatus;
   // at, a working-coloured dot that breathes while it runs, a working-coloured ring held still while
   // its turn waits on background work. Ready and unknown keep the cell, its label and its tooltip.
   // Dots or Symbols: herdr's TUI glyph for every state, in herdr's color (lib/status.ts, Sidebar.css)
-  const indicators = settings.statusIndicators;
+  const indicators = alwaysVisible && settings.statusIndicators === "classic" ? "symbols" : settings.statusIndicators;
   const dot = value === "working" || value === "done" || value === "waiting";
   return (
     <span
@@ -672,6 +672,7 @@ export function Sidebar({ snapshot, online, selectedPaneId, actions }: SidebarPr
           aria-keyshortcuts={fixed ? undefined : "Alt+ArrowUp Alt+ArrowDown"}
           aria-description={fixed ? undefined : `${t("Reorder workspace {name}", { name: workspace.label })} · ${t("Drag to reorder · Alt+↑/↓")}`}
           data-pane={pane.pane_id}
+          aria-label={settings.compactSidebar ? rowTitle : undefined}
           aria-current={selected ? "true" : undefined}
           title={[`${pane.pane_id} — ${rowTitle}`, branchNote, ...paths, paneTitle(pane), agentsTitle(workspace)].filter(Boolean).join(" — ")}
           onClick={() => actions.selectPane(pane.pane_id)}

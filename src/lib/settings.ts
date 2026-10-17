@@ -5,6 +5,9 @@
  * `--term-*` tokens of each theme for PaneTerminal's theme object.
  */
 
+import type { InstalledTheme } from "../../shared/customization.ts";
+import { applyInstalledTheme, installedThemeTokens } from "./installedTheme.ts";
+import { fetchInstalledThemes } from "./api.ts";
 import type { TelemetrySettings } from "../../shared/telemetry.ts";
 import { SHARED_SETTING_KEYS, type SharedSettingKey } from "../../shared/preferences.ts";
 import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -65,6 +68,12 @@ export interface Settings {
   keyBarItems: KeyBarItem[];
   shortcutOverrides: ShortcutOverrides;
   theme: ThemeSetting;
+  /** Installed host palette; null uses the web palettes and Dark/Light/System controls. */
+  herdrTheme: string | null;
+  /** Browser sidebar only; the expanded width and project folds are retained. */
+  compactSidebar: boolean;
+  /** Text-focused chat in this browser; tool details remain available when turned off. */
+  chatTextOnly: boolean;
   density: Density;
   /** How much a workspace row says: its name, or its pane's title over its place. */
   sidebarRows: SidebarRows;
@@ -164,7 +173,7 @@ export type DiffStyle = (typeof DIFF_STYLES)[number];
  * Settings field in the projection makes a new field require an explicit collection decision. */
 type TelemetrySourceSettings = Omit<Settings,
   "keyBarExtras" | "keyBarItems" | "shortcutOverrides" | "terminalFontFamily" | "chatFontFamily"
-  | "quickReplies" | "usageOrder" | "usageHidden">;
+  | "quickReplies" | "usageOrder" | "usageHidden" | "herdrTheme" | "compactSidebar" | "chatTextOnly">;
 
 /** Compare structured custom settings by content against this app's built-in defaults. */
 function differsFromDefault(value: unknown, defaultValue: unknown): boolean {
@@ -232,6 +241,7 @@ export function telemetrySettingsSnapshot(settings: Settings): TelemetrySettings
  * must be placed here, or the build fails; when in doubt it is the device's.
  */
 export const SETTING_SCOPE = {
+  herdrTheme: "device", compactSidebar: "device", chatTextOnly: "device",
   theme: "shared", palette: "shared", language: "shared", sidebarRows: "shared", agentOrder: "shared",
   agentMarks: "shared", autoSendQueued: "shared", showThinking: "shared", quickReplies: "shared",
   showQuickReplies: "shared", showUsage: "shared", usageCount: "shared",
@@ -258,6 +268,9 @@ export const DEFAULT_SETTINGS: Settings = {
   keyBarItems: DEFAULT_KEY_BAR_ITEMS,
   shortcutOverrides: {},
   theme: "dark",
+  herdrTheme: null,
+  compactSidebar: false,
+  chatTextOnly: false,
   density: "comfortable",
   sidebarRows: "one",
   agentOrder: "workspace",
@@ -423,6 +436,9 @@ export function sanitizeSettings(raw: unknown): Settings {
     keyBarExtras,
     keyBarItems: sanitizeKeyBarItems(record["keyBarItems"], keyBarFallback),
     shortcutOverrides: sanitizeShortcutOverrides(record["shortcutOverrides"]),
+    herdrTheme: typeof record["herdrTheme"] === "string" && /^[a-z0-9][a-z0-9-]{0,79}$/.test(record["herdrTheme"]) ? record["herdrTheme"] : null,
+    compactSidebar: record["compactSidebar"] === true,
+    chatTextOnly: record["chatTextOnly"] === true,
     theme: theme === "dark" || theme === "light" || theme === "system" ? theme : DEFAULT_SETTINGS.theme,
     density: density === "compact" || density === "comfortable" ? density : DEFAULT_SETTINGS.density,
     sidebarRows: record["sidebarRows"] === "one" || record["sidebarRows"] === "two" ? record["sidebarRows"] : DEFAULT_SETTINGS.sidebarRows,
@@ -520,7 +536,11 @@ const TERMINAL_THEMES: Record<Palette, Record<ResolvedTheme, TerminalColors>> = 
   },
 };
 
-export function terminalTheme(theme: ResolvedTheme, palette: Palette = "amber"): TerminalColors {
+export function terminalTheme(theme: ResolvedTheme, palette: Palette = "amber", installed: InstalledTheme | null = null): TerminalColors {
+  if (installed) {
+    const colors = installedThemeTokens(installed);
+    return { background: colors["--term-bg"]!, foreground: colors["--term-fg"]!, cursor: colors["--term-cursor"]!, selectionBackground: colors["--term-selection"]! };
+  }
   return TERMINAL_THEMES[palette][theme];
 }
 
@@ -536,6 +556,7 @@ function applyToDocument(settings: Settings, resolved: ResolvedTheme, palette: P
   root.lang = LOCALE_TAGS[language];
   root.dataset["theme"] = resolved;
   root.dataset["density"] = settings.density;
+  root.dataset["sidebarCompact"] = String(settings.compactSidebar);
   root.dataset["palette"] = palette;
   root.dataset["chatWidth"] = settings.chatWidth;
   // src/components/AgentMark.css keys the mono logos on it
@@ -556,6 +577,9 @@ function applyToDocument(settings: Settings, resolved: ResolvedTheme, palette: P
 
 interface SettingsContextValue {
   settings: Settings;
+  installedTheme: InstalledTheme | null;
+  installedThemes: InstalledTheme[];
+  themeCatalogState: "loading" | "ready" | "partial" | "unavailable";
   /** the theme after resolving `system` against the OS preference */
   resolvedTheme: ResolvedTheme;
   /** the palette drawn now: `settings.palette`, or in System mode the Light or Dark one (lib/paletteFor.ts) */
@@ -569,6 +593,16 @@ const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(loadSettings);
+  const [installedThemes, setInstalledThemes] = useState<InstalledTheme[]>([]);
+  const [themeCatalogState, setThemeCatalogState] = useState<SettingsContextValue["themeCatalogState"]>("loading");
+  useEffect(() => {
+    let live = true;
+    void fetchInstalledThemes().then((catalog) => {
+      if (live) { setInstalledThemes(catalog.themes); setThemeCatalogState(catalog.partial ? "partial" : "ready"); }
+    }, () => { if (live) setThemeCatalogState("unavailable"); });
+    return () => { live = false; };
+  }, []);
+  const installedTheme = installedThemes.find((item) => item.id === settings.herdrTheme) ?? null;
   const [systemDark, setSystemDark] = useState(() => resolveTheme("system") === "dark");
 
   useEffect(() => {
@@ -579,7 +613,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     return () => query.removeEventListener("change", onChange);
   }, []);
 
-  const resolvedTheme: ResolvedTheme = settings.theme === "system" ? (systemDark ? "dark" : "light") : settings.theme;
+  const resolvedTheme: ResolvedTheme = installedTheme?.mode ?? (settings.theme === "system" ? (systemDark ? "dark" : "light") : settings.theme);
 
   const resolvedPalette = paletteFor(settings, resolvedTheme);
 
@@ -595,7 +629,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     applyToDocument(settings, resolvedTheme, resolvedPalette, resolvedLanguage);
-  }, [settings, resolvedTheme, resolvedPalette, resolvedLanguage]);
+    applyInstalledTheme(document.documentElement, installedTheme);
+    if (installedTheme) document.querySelector('meta[name="theme-color"]')?.setAttribute("content", installedTheme.colors.sidebar_bg ?? installedTheme.colors.panel_bg);
+  }, [settings, resolvedTheme, resolvedPalette, resolvedLanguage, installedTheme]);
 
   const update = useCallback((patch: Partial<Settings>) => {
     setSettings((current) => {
@@ -605,7 +641,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const value = useMemo(() => ({ settings, resolvedTheme, resolvedPalette, resolvedLanguage, update }), [settings, resolvedTheme, resolvedPalette, resolvedLanguage, update]);
+  const value = useMemo(() => ({ settings, installedTheme, installedThemes, themeCatalogState, resolvedTheme, resolvedPalette, resolvedLanguage, update }), [settings, installedTheme, installedThemes, themeCatalogState, resolvedTheme, resolvedPalette, resolvedLanguage, update]);
   return createElement(SettingsContext.Provider, { value }, children);
 }
 
