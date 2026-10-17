@@ -110,6 +110,16 @@ describe("composer usage metadata wiring", () => {
     expect(parseConversationMetadata("{}", "pi-transcript", before).usage).toBeNull();
   });
 
+  it("retains a recorded model across slices before the first request reports usage", () => {
+    const context = { type: "turn_context", payload: { model: "recorded-model" } };
+    const head = parseConversationMetadata(jsonl(context), "codex-transcript");
+    const request = parseConversationMetadata(jsonl(tokens(10_000)), "codex-transcript", head);
+    expect(request.usage?.model).toBe("recorded-model");
+    const next = parseConversationMetadata(jsonl(context), "codex-transcript", request);
+    expect(next.usage?.context).toEqual(request.usage?.context);
+    expect(next.usage?.cache).toEqual(request.usage?.cache);
+  });
+
   it("uses Claude request counters and leaves an unreported context limit unknown", () => {
     const parsed = parseConversationMetadata(jsonl(
       { type: "assistant", timestamp: "2026-10-17T05:00:00Z", message: { model: "claude-test",

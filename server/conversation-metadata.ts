@@ -42,15 +42,19 @@ export function parseConversationMetadata(text: string, source: ConversationResp
   // pi states the provider on the same records that state usage, so the window is asked for
   // from what this line says rather than remembered across sources
   let piProvider: string | null = null;
+  let requestUsage = metadata.usage;
   for (const line of text.split("\n")) {
     let entry: RecordValue;
     try { entry = record(JSON.parse(line)); } catch { continue; }
-    const usage = foldSessionUsage(metadata.usage, source, entry);
+    requestUsage = foldSessionUsage(requestUsage, source, entry);
+    const cleared = isContextClear(entry, source);
+    // A previous slice can report a model before it reports any counters.
+    if (!cleared && requestUsage?.model === null && metadata.model !== null) requestUsage = { ...requestUsage, model: metadata.model };
     // Keep the additive field absent until a request reports counters. Once present,
     // preserve explicit clears so old values cannot survive compaction or a model change.
-    if (metadata.usage !== undefined || usage && (usage.observed_at !== null || usage.context.used !== null
-      || usage.cache.read_tokens !== null || usage.cache.creation_tokens !== null || usage.quota !== null)) metadata.usage = usage;
-    if (isContextClear(entry, source)) { metadata.model = null; metadata.reasoning_effort = null; piProvider = null; delete metadata.context; continue; }
+    if (metadata.usage !== undefined || requestUsage && (requestUsage.observed_at !== null || requestUsage.context.used !== null
+      || requestUsage.cache.read_tokens !== null || requestUsage.cache.creation_tokens !== null || requestUsage.quota !== null)) metadata.usage = requestUsage;
+    if (cleared) { metadata.model = null; metadata.reasoning_effort = null; piProvider = null; delete metadata.context; continue; }
     if (source === "grok-transcript") {
       const update = record(record(entry.params).update);
       if (entry.method === "session/update" && update.sessionUpdate === "user_message_chunk") {
