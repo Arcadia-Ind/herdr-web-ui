@@ -36,8 +36,13 @@ it("binds projects to the exact session and returns only selected registry field
   put(join(project, ".state/coordinator.json"), JSON.stringify({ socket: paths.socket, pane_id: "w1:p1", workspace_id: "w1", secret: "private" }));
   put(join(project, "threads/t-0042.toml"), 'id="t-0042"\ntitle="A real title"\nstatus="open"\npane_id="w2:p1"\nworkspace_id="w2"\nworktree_path="/fixture/repo"\nerror="private"\n');
   put(join(project, "threads/t-0043.toml"), 'id="t-0043"\nstatus="resolved"\n');
+  put(join(project, "threads/t-0044.toml"), 'id="t-0044"\ntitle="Retained work"\nstatus="resolved"\npane_id="w3:p1"\nworkspace_id="w3"\nworktree_path="/fixture/retained"\n');
+  put(join(project, "threads/t-0045.toml"), 'id="t-0045"\nstatus="resolved"\nmachine="another-pc"\npane_id="w4:p1"\nworkspace_id="w4"\n');
   let result = await installedProjects(paths);
-  expect(result.projects[0]?.threads).toEqual([{ id: "t-0042", title: "A real title", lifecycle: "open", pane_id: "w2:p1", workspace_id: "w2", directory: "/fixture/repo" }]);
+  expect(result.projects[0]?.threads).toEqual([
+    { id: "t-0042", title: "A real title", lifecycle: "open", pane_id: "w2:p1", workspace_id: "w2", directory: "/fixture/repo" },
+    { id: "t-0044", title: "Retained work", lifecycle: "resolved", pane_id: "w3:p1", workspace_id: "w3", directory: "/fixture/retained" },
+  ]);
   expect(JSON.stringify(result)).not.toContain("private");
   put(join(project, ".state/coordinator.json"), JSON.stringify({ socket: paths.socket + "-other", pane_id: "w1:p1", workspace_id: "w1" }));
   result = await installedProjects(paths);

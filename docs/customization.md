@@ -16,7 +16,11 @@ The sidebar reads project names, coordinator identities, and thread metadata fro
 
 A project fold is saved per project and PC. The compact control shows stable native project numbers and thread IDs. Full titles remain in accessible names and tooltips. Expanded width and selection are retained. Other tabs and split panes remain within their project. Grouped panes do not appear again in the generic workspace and agent lists. Unregistered workspaces remain available.
 
+Resolved threads with retained native panes stay in their recorded project and show Resolved. The pane and workspace must match the record; a recorded directory must also match the native worktree root or pane directory. Closed archived threads add no rows. Selection still opens the retained pane's transcript. These records do not claim current project activity or expand a manually folded project. New active thread or pane identities still expand the project once after initial discovery.
+
 Connected, visible pages refresh the registry every fifteen seconds. Disconnected PCs retain the last known group with an unknown live state. Unreadable records are reported. No native focus, pane size, or layout changes are needed.
+
+A failed refresh keeps the last catalog and shows that the refresh failed. Projects unavailable applies when no result has been obtained. Bounded failure details and the observation time are retained in browser diagnostics. A successful refresh clears the warning.
 
 ## Thread changes
 

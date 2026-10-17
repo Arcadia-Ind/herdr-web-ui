@@ -15,7 +15,7 @@ export interface ThemeCatalog { themes: InstalledTheme[]; partial: boolean }
 export interface ProjectThread {
   id: string;
   title: string;
-  lifecycle: "starting" | "open" | "failed";
+  lifecycle: "starting" | "open" | "failed" | "resolved";
   pane_id: string;
   workspace_id: string;
   /** The recorded thread worktree, never the web server's working directory. */

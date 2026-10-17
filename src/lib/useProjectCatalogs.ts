@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import type { ProjectCatalog, ThreadDiffSummary } from "../../shared/customization.ts";
+import type { ThreadDiffSummary } from "../../shared/customization.ts";
 import type { Machine } from "../../shared/machines.ts";
 import { fetchProjects, fetchThreadDiffs } from "./api.ts";
+import { projectReadFailed, projectReadSucceeded, type ProjectLoad } from "./projectCatalogState.ts";
 
-export interface ProjectLoad { catalog: ProjectCatalog | null; unavailable: boolean }
+export type { ProjectLoad } from "./projectCatalogState.ts";
 /** One read per connected PC every fifteen seconds. Hidden pages and disconnected PCs do no work. */
 export function useProjectCatalogs(machines: Machine[]): ReadonlyMap<string, ProjectLoad> {
   const key = JSON.stringify(machines.map(({ id, state }) => [id, state]));
@@ -21,9 +22,13 @@ export function useProjectCatalogs(machines: Machine[]): ReadonlyMap<string, Pro
           if (state !== "connected" || controller.signal.aborted) continue;
           try {
             const catalog = await fetchProjects(id, AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]));
-            if (!controller.signal.aborted) setLoads((current) => new Map(current).set(id, { catalog, unavailable: false }));
-          } catch {
-            if (!controller.signal.aborted) setLoads((current) => new Map(current).set(id, { catalog: current.get(id)?.catalog ?? null, unavailable: true }));
+            if (!controller.signal.aborted) setLoads((current) => new Map(current).set(id, projectReadSucceeded(catalog)));
+          } catch (error) {
+            if (!controller.signal.aborted) {
+              const failure = projectReadFailed(undefined, error);
+              console.warn("Project catalog refresh failed", { machine: id, ...failure.error });
+              setLoads((current) => new Map(current).set(id, { ...failure, catalog: current.get(id)?.catalog ?? null }));
+            }
           }
         }
       } finally {

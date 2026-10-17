@@ -62,3 +62,21 @@ it("detects a new coordinator pane and a replacement terminal without treating a
   expect(discoverProjectMembers(joined.seen, projectMemberIds(coordinated, { ...snapshot, panes: [pane, home] }), true).added).toBe(false);
   expect(discoverProjectMembers(joined.seen, projectMemberIds(coordinated, { ...snapshot, panes: [home, { ...pane, terminal_id: "new-terminal" }] }), true).added).toBe(true);
 });
+
+it("does not reopen for resolved metadata or retained panes, but still opens for new active threads", () => {
+  const initial = discoverProjectMembers(null, projectMemberIds(project, snapshot), true);
+  const retained = { ...project.threads[0]!, id: "t-0160", pane_id: "w60:p1", workspace_id: "w60", lifecycle: "resolved" as const };
+  const archive = { ...project, threads: [...project.threads, retained] };
+  const native = { ...snapshot, panes: [pane, { ...pane, pane_id: "w60:p1", workspace_id: "w60", cwd: "/fixture", terminal_id: "retained" }] };
+  const unchanged = discoverProjectMembers(initial.seen, projectMemberIds(archive, native), true);
+  expect(unchanged.added).toBe(false);
+  const resolved = { ...archive, threads: archive.threads.map((thread) => ({ ...thread, lifecycle: "resolved" as const })) };
+  expect(discoverProjectMembers(unchanged.seen, projectMemberIds(resolved, native), true).added).toBe(false);
+  const home = { ...pane, pane_id: "w60:p2", workspace_id: "w60", terminal_id: "coordinator" };
+  const shared = { ...archive, coordinators: [{ pane_id: home.pane_id, workspace_id: home.workspace_id }] };
+  const sharedMembers = projectMemberIds(shared, { ...native, panes: [...native.panes, home] });
+  expect(sharedMembers.has("pane:w60:p1:retained")).toBe(false);
+  expect(sharedMembers.has("pane:w60:p2:coordinator")).toBe(true);
+  const added = { ...archive, threads: [...archive.threads, { ...retained, id: "t-0170", lifecycle: "starting" as const, pane_id: "", workspace_id: "" }] };
+  expect(discoverProjectMembers(unchanged.seen, projectMemberIds(added, native), true).added).toBe(true);
+});

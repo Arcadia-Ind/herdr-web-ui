@@ -26,6 +26,7 @@
 }
 .thread-diff svg { width: var(--space-4); height: var(--space-4); }
 .thread-explore { flex: none; margin-bottom: var(--space-1); }
+.thread-lifecycle { margin: 0 var(--space-2) var(--space-1); color: var(--text-dim); font-size: var(--fs-xs); }
 .project-thread:has([aria-current="page"]) .thread-diff { color: var(--accent); }
 .sidebar-compact-toggle { width: 100%; justify-content: flex-start; min-height: var(--control-h); }
 [data-sidebar-compact="true"] .project-number,

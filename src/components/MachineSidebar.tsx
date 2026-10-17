@@ -16,7 +16,7 @@ import { useT } from "../lib/i18n.ts";
 import { useSettings } from "../lib/settings.ts";
 import { ungroupedSnapshot } from "../lib/projectSidebar.ts";
 import { useProjectCatalogs, type ProjectLoad } from "../lib/useProjectCatalogs.ts";
-import { ProjectSidebar } from "./ProjectSidebar.tsx";
+import { ProjectCatalogNotice, ProjectSidebar } from "./ProjectSidebar.tsx";
 import type { ExplorerContext } from "../../shared/explorer.ts";
 
 /** The PC header's state word; "connected" is the quiet default and shows as a dot alone, every other state also writes its word under the name. */
@@ -123,7 +123,7 @@ function MachineGroup({ machine, projects, ...props }: Props & { machine: Machin
       {confirmDelete && <p className="field-hint">{t("Removes this registration. Remote sessions keep running.")}</p>}
     </div>}
     {error && <p className="machine-error" role="alert">{error}</p>}
-    {!collapsed && projects?.unavailable && <p className="tree-state" role="status">{t("Projects unavailable")}</p>}
+    {!collapsed && <ProjectCatalogNotice load={projects} />}
     {!collapsed && projects?.catalog?.partial && <p className="tree-state" role="status">{t("Some project records could not be read")}</p>}
     {!collapsed && projects?.catalog && <ProjectSidebar machineId={machine.id} catalog={projects.catalog} snapshot={machine.snapshot} online={online} selectedPaneId={props.selectedMachineId === machine.id ? props.selectedPaneId : null} onSelect={(pane) => props.onSelect(machine.id, pane)} onChanges={(pane, directory) => props.onChanges(machine.id, pane, directory)} onExplore={props.onExplore} />}
     {!collapsed && <div className={online ? "" : "machine-offline"} inert={!online}>

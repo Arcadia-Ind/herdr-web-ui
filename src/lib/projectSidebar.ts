@@ -1,15 +1,31 @@
-import type { HerdrProject, ProjectCatalog } from "../../shared/customization.ts";
+import type { HerdrProject, ProjectCatalog, ProjectThread } from "../../shared/customization.ts";
 import type { PaneInfo, SessionSnapshot } from "../../shared/protocol.ts";
 
-export function projectPane(snapshot: SessionSnapshot | null, row: { pane_id: string; workspace_id: string }): PaneInfo | undefined {
-  return snapshot?.panes.find((pane) => pane.pane_id === row.pane_id && pane.workspace_id === row.workspace_id);
+export function projectPane(snapshot: SessionSnapshot | null, row: { pane_id: string; workspace_id: string } & Partial<Pick<ProjectThread, "lifecycle" | "directory">>): PaneInfo | undefined {
+  const pane = snapshot?.panes.find((pane) => pane.pane_id === row.pane_id && pane.workspace_id === row.workspace_id);
+  if (pane && row.lifecycle === "resolved" && row.directory) {
+    const checkout = snapshot?.workspaces.find((workspace) => workspace.workspace_id === row.workspace_id)?.worktree?.checkout_path;
+    if ((checkout || pane.cwd) !== row.directory) return undefined;
+  }
+  return pane;
 }
+
 /** Additional tabs and splits stay reachable inside their registered project's workspaces. */
 export function projectAdditionalPanes(snapshot: SessionSnapshot | null, project: HerdrProject): PaneInfo[] {
-  const registered = [...project.coordinators, ...project.threads];
+  const registered = [...project.coordinators, ...project.threads].filter((row) => projectPane(snapshot, row));
   const ids = new Set(registered.map((row) => row.pane_id));
-  const workspaces = new Set(registered.filter((row) => projectPane(snapshot, row)).map((row) => row.workspace_id));
+  const workspaces = new Set(registered.map((row) => row.workspace_id));
   return snapshot?.panes.filter((pane) => workspaces.has(pane.workspace_id) && !ids.has(pane.pane_id)) ?? [];
+}
+
+/** Retained completed rows establish grouping, but do not claim ongoing project activity. */
+export function projectActivePanes(project: HerdrProject, snapshot: SessionSnapshot | null): PaneInfo[] {
+  const current = { ...project, threads: project.threads.filter((thread) => thread.lifecycle !== "resolved") };
+  const resolvedIds = new Set(project.threads.filter((thread) => thread.lifecycle === "resolved" && projectPane(snapshot, thread)).map((thread) => thread.pane_id));
+  return [...current.coordinators, ...current.threads, ...projectAdditionalPanes(snapshot, current)].flatMap((row) => {
+    const pane = projectPane(snapshot, row);
+    return pane && !resolvedIds.has(pane.pane_id) ? [pane] : [];
+  });
 }
 /** No title or branch parsing: current registry identities establish each workspace's membership. */
 export function projectPaneIds(snapshot: SessionSnapshot | null, catalog: ProjectCatalog | null): Set<string> {
@@ -35,16 +51,11 @@ export function projectNumber(project: HerdrProject, snapshot: SessionSnapshot |
   return workspace ? "P" + workspace.number : project.workspace_id || project.id;
 }
 
-/** Registry membership and live pane identity, independent of status, titles, order and diff counts. */
+/** Active registry membership and live pane identity, independent of live status, titles and order. */
 export function projectMemberIds(project: HerdrProject, snapshot: SessionSnapshot | null): Set<string> {
-  const registered = [...project.coordinators, ...project.threads];
-  const panes = [...registered.flatMap((row) => {
-    const pane = projectPane(snapshot, row);
-    return pane ? [pane] : [];
-  }), ...projectAdditionalPanes(snapshot, project)];
   return new Set([
-    ...project.threads.map((thread) => `thread:${thread.id}`),
-    ...panes.map((pane) => `pane:${pane.pane_id}:${pane.terminal_id}`),
+    ...project.threads.filter((thread) => thread.lifecycle !== "resolved").map((thread) => `thread:${thread.id}`),
+    ...projectActivePanes(project, snapshot).map((pane) => `pane:${pane.pane_id}:${pane.terminal_id}`),
   ]);
 }
 

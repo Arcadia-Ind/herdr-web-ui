@@ -68,6 +68,8 @@ export const ZH: Record<string, string> = {
   "Expand sidebar labels": "展开侧边栏名称",
   "Compact sidebar": "紧凑侧边栏",
   "Projects unavailable": "项目不可用",
+  "Project refresh failed; showing the last result": "项目刷新失败；正在显示上次结果",
+  "Resolved": "已解决",
   "Some project records could not be read": "部分项目记录无法读取",
   "Coordinator": "协调者",
   "Not running": "未运行",

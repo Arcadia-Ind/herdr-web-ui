@@ -4,7 +4,8 @@ import type { ExplorerContext } from "../../shared/explorer.ts";
 import type { HerdrProject, ProjectCatalog, ProjectThread, ThreadDiffSummary } from "../../shared/customization.ts";
 import type { SessionSnapshot } from "../../shared/protocol.ts";
 import { useT } from "../lib/i18n.ts";
-import { discoverProjectMembers, projectAdditionalPanes, projectMemberIds, projectNumber, projectPane, readProjectFold, saveProjectFold } from "../lib/projectSidebar.ts";
+import { discoverProjectMembers, projectActivePanes, projectAdditionalPanes, projectMemberIds, projectNumber, projectPane, readProjectFold, saveProjectFold } from "../lib/projectSidebar.ts";
+import type { ProjectLoad } from "../lib/projectCatalogState.ts";
 import { paneStatus, rollupStatus, STATUS_WORD } from "../lib/status.ts";
 import { useThreadSummaries } from "../lib/useProjectCatalogs.ts";
 import { displayPaneTitle, StatusBadge } from "./Sidebar.tsx";
@@ -24,6 +25,12 @@ export function ProjectSidebar(props: Props) {
   return <div className="project-list">{props.catalog.projects.map((project) => <ProjectGroup key={project.id} {...props} project={project} />)}</div>;
 }
 
+export function ProjectCatalogNotice({ load }: { load?: ProjectLoad }) {
+  const t = useT();
+  if (!load?.unavailable) return null;
+  return <p className="tree-state" role="status">{t(load.catalog ? "Project refresh failed; showing the last result" : "Projects unavailable")}</p>;
+}
+
 function ProjectGroup({ project, ...props }: Props & { project: HerdrProject }) {
   const t = useT();
   const listId = useId();
@@ -40,12 +47,9 @@ function ProjectGroup({ project, ...props }: Props & { project: HerdrProject }) 
   }, [project, props.snapshot, props.online, props.catalog.partial, props.machineId]);
   const coordinator = project.coordinators.find((row) => projectPane(props.snapshot, row));
   const additional = projectAdditionalPanes(props.snapshot, project);
-  const liveRows = [...project.coordinators, ...project.threads, ...additional].flatMap((row) => {
-    const pane = projectPane(props.snapshot, row);
-    return pane ? [pane] : [];
-  });
+  const liveRows = projectActivePanes(project, props.snapshot);
   const status = props.online ? rollupStatus(liveRows.map(paneStatus)) : "unknown";
-  const selected = liveRows.some((pane) => pane.pane_id === props.selectedPaneId);
+  const selected = [...project.coordinators, ...project.threads, ...additional].some((row) => projectPane(props.snapshot, row)?.pane_id === props.selectedPaneId);
   const diffIds = folded ? [] : project.threads.filter((row) => projectPane(props.snapshot, row)).map((row) => row.pane_id);
   const summaries = useThreadSummaries(props.machineId, diffIds, props.online);
   const toggle = () => { const next = !folded; setFolded(next); saveProjectFold(props.machineId, project.id, next); };
@@ -75,7 +79,7 @@ function ProjectGroup({ project, ...props }: Props & { project: HerdrProject }) 
           <span className="thread-title">{displayPaneTitle(pane)}</span><StatusBadge status={props.online ? paneStatus(pane) : "unknown"} compact alwaysVisible />
         </button>
       </li>)}
-      {project.threads.map((thread) => <ThreadRow key={thread.id} {...props} projectId={project.id} thread={thread} summary={summaries.get(thread.pane_id)} />)}
+      {project.threads.filter((thread) => thread.lifecycle !== "resolved" || projectPane(props.snapshot, thread)).map((thread) => <ThreadRow key={thread.id} {...props} projectId={project.id} thread={thread} summary={summaries.get(thread.pane_id)} />)}
     </ul>
   </section>;
 }
@@ -84,18 +88,20 @@ function ThreadRow({ thread, summary, projectId, ...props }: Omit<Props, "catalo
   const t = useT();
   const pane = projectPane(props.snapshot, thread);
   const status = props.online && pane ? paneStatus(pane) : "unknown";
+  const resolved = thread.lifecycle === "resolved";
   const missing = t(thread.lifecycle === "failed" ? "Failed" : thread.lifecycle === "starting" ? "Starting…" : "Not running");
-  const state = !props.online ? t("Disconnected") : pane ? t(STATUS_WORD[status]) : missing;
+  const state = resolved ? t("Resolved") : !props.online ? t("Disconnected") : pane ? t(STATUS_WORD[status]) : missing;
   const title = `${thread.id} · ${thread.title} · ${state}`;
   const diffState = !props.online ? t("Disconnected") : !pane ? t("Not running") : !summary ? t("Loading changes…")
     : summary.state === "no-repo" ? t("No repository") : summary.state === "no-directory" ? t("No directory")
     : summary.state !== "ready" ? t("Changes unavailable") : summary.files === 0 && !summary.partial ? t("Clean")
     : `+${summary.additions} −${summary.deletions}${summary.untracked ? " · ?" + summary.untracked : ""}${summary.partial ? " *" : ""}`;
   const diffTitle = t("Working tree vs HEAD") + " · " + diffState + (summary?.partial ? " · " + t("Counts exclude unknown lines") : "");
-  return <li className="project-thread" data-thread={thread.id}>
+  return <li className="project-thread" data-thread={thread.id} data-lifecycle={thread.lifecycle}>
     <button type="button" className="project-thread-select" disabled={!props.online || !pane} aria-current={props.selectedPaneId === thread.pane_id ? "page" : undefined} aria-label={title} title={title} onClick={() => props.onSelect(thread.pane_id)}>
-      <span className="thread-number">{thread.id}</span><span className="thread-title">{thread.title}</span><StatusBadge status={status} compact alwaysVisible />
+      <span className="thread-number">{thread.id}</span><span className="thread-title">{thread.title}</span>{!resolved && <StatusBadge status={status} compact alwaysVisible />}
     </button>
+    {resolved && <span className="thread-lifecycle">{t("Resolved")}</span>}
     <button type="button" className="thread-diff" disabled={!props.online || !pane} aria-label={t("Changes for {name}", { name: thread.title }) + " · " + diffTitle} title={diffTitle} onClick={() => props.onChanges(thread.pane_id, thread.directory)}>
       <GitCompareArrows aria-hidden="true" /><span className="thread-diff-count">{diffState}</span>
     </button>

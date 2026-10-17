@@ -51,3 +51,25 @@ it("keeps additional tabs and split panes in their registered project", () => {
   expect(projectPaneIds(withSplit, catalog).has(extra.pane_id)).toBe(true);
   expect(ungroupedSnapshot(withSplit, catalog)!.panes.map((row) => row.pane_id)).toEqual(["w1E:p1"]);
 });
+
+it("groups a retained resolved thread by identity and directory, without claiming similar rows", () => {
+  const retained = structuredClone(catalog);
+  retained.projects[0]!.threads[0]!.lifecycle = "resolved";
+  const native = { ...snapshot, panes: snapshot.panes.map((row) => ({ ...row, cwd: "/fixture" })) };
+  expect([...projectPaneIds(native, retained)]).toEqual(["w1C:p1", "w1D:p1"]);
+  expect(ungroupedSnapshot(native, retained)!.panes.map((row) => row.pane_id)).toEqual(["w1E:p1"]);
+  const reused = { ...native, panes: native.panes.map((row) => ({ ...row, cwd: "/another-checkout" })) };
+  expect([...projectPaneIds(reused, retained)]).toEqual(["w1C:p1"]);
+  expect([...projectPaneIds({ ...native, panes: [] }, retained)]).toEqual([]);
+});
+
+it("checks a retained worktree root even when the pane is in a subdirectory", () => {
+  const retained = structuredClone(catalog);
+  retained.projects[0]!.threads[0]!.lifecycle = "resolved";
+  const native = { ...snapshot, panes: snapshot.panes.map((row) => ({ ...row, cwd: "/fixture/src" })), workspaces: snapshot.workspaces.map((row) => ({
+    ...row, worktree: { checkout_path: "/fixture", is_linked_worktree: true, repo_key: "fixture", repo_name: "fixture", repo_root: "/main" },
+  })) };
+  expect(projectPaneIds(native, retained).has("w1D:p1")).toBe(true);
+  native.workspaces[1]!.worktree.checkout_path = "/different-checkout";
+  expect(projectPaneIds(native, retained).has("w1D:p1")).toBe(false);
+});

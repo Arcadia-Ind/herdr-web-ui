@@ -135,8 +135,10 @@ export async function installedProjects(paths = localCatalogPaths()): Promise<Pr
       for (const file of names.slice(0, MAX_ENTRIES)) {
         try {
           const thread = object(Bun.TOML.parse(await catalogText(join(dir, "threads", file))));
-          if (thread.status === "resolved" || str(thread.machine)) continue;
-          if (!["starting", "open", "failed"].includes(str(thread.status)) || str(thread.id) !== file.slice(0, -5)) { partial = true; continue; }
+          if (str(thread.machine)) continue;
+          if (!["starting", "open", "failed", "resolved"].includes(str(thread.status)) || str(thread.id) !== file.slice(0, -5)) { partial = true; continue; }
+          // A resolved record can still identify a retained native workspace. No new workspace is opened.
+          if (thread.status === "resolved" && (!str(thread.pane_id) || !str(thread.workspace_id))) continue;
           threads.push({
             id: str(thread.id), title: str(thread.title).slice(0, 500), lifecycle: thread.status as ProjectThread["lifecycle"],
             pane_id: str(thread.pane_id), workspace_id: str(thread.workspace_id),

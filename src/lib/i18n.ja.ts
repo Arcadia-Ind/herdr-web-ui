@@ -66,6 +66,8 @@ export const JA: Record<string, string> = {
   "Expand sidebar labels": "サイドバーの名前を展開",
   "Compact sidebar": "コンパクトサイドバー",
   "Projects unavailable": "プロジェクトを利用できません",
+  "Project refresh failed; showing the last result": "プロジェクトの更新に失敗しました。前回の結果を表示しています",
+  "Resolved": "解決済み",
   "Some project records could not be read": "一部のプロジェクト記録を読み込めませんでした",
   "Coordinator": "コーディネーター",
   "Not running": "停止中",

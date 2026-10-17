@@ -64,6 +64,8 @@ export const KO: Record<string, string> = {
   "Expand sidebar labels": "사이드바 이름 펼치기",
   "Compact sidebar": "간단한 사이드바",
   "Projects unavailable": "프로젝트를 사용할 수 없습니다",
+  "Project refresh failed; showing the last result": "프로젝트 새로고침 실패; 마지막 결과를 표시합니다",
+  "Resolved": "해결됨",
   "Some project records could not be read": "일부 프로젝트 기록을 읽을 수 없습니다",
   "Coordinator": "조정자",
   "Not running": "실행 중 아님",
